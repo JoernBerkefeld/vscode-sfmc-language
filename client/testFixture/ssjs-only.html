@@ -1,0 +1,11 @@
+<script runat="server">
+  Platform.Load("core", "1.1.5");
+  var prox = new WSProxy();
+  var result = prox.retrieve("DataExtension", ["CustomerKey", "Name"]);
+  Write(Stringify(result));
+</script>
+<html>
+<body>
+  <p>Content rendered by SSJS above.</p>
+</body>
+</html>

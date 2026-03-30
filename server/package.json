@@ -1,0 +1,21 @@
+{
+    "name": "sfmc-language-server",
+    "description": "Language server for SFMC languages (AMPscript, SSJS, GTL) providing completions, hover, diagnostics, and signature help.",
+    "version": "1.0.0",
+    "author": "Jörn Berkefeld",
+    "license": "MIT",
+    "engines": {
+        "node": "*"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/JoernBerkefeld/sfmc-ampscript-language.git"
+    },
+    "dependencies": {
+        "ampscript-data": "*",
+        "ssjs-data": "*",
+        "vscode-languageserver": "^9.0.1",
+        "vscode-languageserver-textdocument": "^1.0.11"
+    },
+    "scripts": {}
+}

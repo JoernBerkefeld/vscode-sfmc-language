@@ -1,0 +1,51 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "SSJS",
+	"scopeName": "source.ssjs",
+	"patterns": [
+		{ "include": "#ssjs-globals" },
+		{ "include": "source.js" }
+	],
+	"repository": {
+		"ssjs-globals": {
+			"patterns": [
+				{
+					"match": "\\b(Platform)\\s*\\.\\s*(Function|Variable|Response|Request|Recipient)\\b",
+					"captures": {
+						"1": { "name": "support.class.ssjs" },
+						"2": { "name": "support.class.ssjs" }
+					}
+				},
+				{
+					"match": "\\b(Platform)\\s*\\.\\s*(Load)\\b",
+					"captures": {
+						"1": { "name": "support.class.ssjs" },
+						"2": { "name": "support.function.ssjs" }
+					}
+				},
+				{
+					"match": "\\b(Write|Stringify|Variable|Attribute|ContentBlockByKey|ContentBlockByName)\\b(?=\\s*\\()",
+					"name": "support.function.ssjs"
+				},
+				{
+					"match": "\\b(DataExtension|Subscriber|Email|TriggeredSend|List|ContentArea|Folder|QueryDefinition|Send|Template|DeliveryProfile|SenderProfile|SendClassification|FilterDefinition|Account|AccountUser|Portfolio)\\s*\\.\\s*(Init)\\b",
+					"captures": {
+						"1": { "name": "support.class.ssjs" },
+						"2": { "name": "support.function.ssjs" }
+					}
+				},
+				{
+					"match": "\\b(WSProxy)\\b",
+					"name": "support.class.ssjs"
+				},
+				{
+					"match": "\\b(HTTP)\\s*\\.\\s*(Get|Post|GetRequest|PostRequest)\\b",
+					"captures": {
+						"1": { "name": "support.class.ssjs" },
+						"2": { "name": "support.function.ssjs" }
+					}
+				}
+			]
+		}
+	}
+}

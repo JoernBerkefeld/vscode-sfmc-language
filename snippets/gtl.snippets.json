@@ -1,0 +1,75 @@
+{
+  "GTL Each Loop": {
+    "prefix": "gtl-each",
+    "body": [
+      "{{#each ${1:items}}}",
+      "  $0",
+      "{{/each}}"
+    ],
+    "description": "GTL each block – iterates over an array of items"
+  },
+  "GTL If Condition": {
+    "prefix": "gtl-if",
+    "body": [
+      "{{#if ${1:condition}}}",
+      "  $0",
+      "{{/if}}"
+    ],
+    "description": "GTL if block – renders content when the condition is truthy"
+  },
+  "GTL If/Else Condition": {
+    "prefix": "gtl-ifelse",
+    "body": [
+      "{{#if ${1:condition}}}",
+      "  $2",
+      "{{else}}",
+      "  $0",
+      "{{/if}}"
+    ],
+    "description": "GTL if/else block – renders one branch based on a condition"
+  },
+  "GTL Switch": {
+    "prefix": "gtl-switch",
+    "body": [
+      "{{#switch ${1:variable}}}",
+      "  {{#case ${2:value1}}}$3{{/case}}",
+      "  {{#default}}$0{{/default}}",
+      "{{/switch}}"
+    ],
+    "description": "GTL switch block – matches a variable against case values"
+  },
+  "GTL Datasource (Query)": {
+    "prefix": "gtl-datasource-query",
+    "body": [
+      "{{.datasource ${1:name} type=query}}",
+      "  {{query \"SELECT ${2:*} FROM ${3:DataExtension}\"}}",
+      "{{/.datasource}}"
+    ],
+    "description": "GTL query datasource – runs a SQL query to populate data"
+  },
+  "GTL Datasource (Inline)": {
+    "prefix": "gtl-datasource-inline",
+    "body": [
+      "{{.datasource ${1:name} type=inline}}",
+      "  {\"${2:key}\": \"${3:value}\"}",
+      "{{/.datasource}}"
+    ],
+    "description": "GTL inline datasource – defines data directly in the template"
+  },
+  "GTL Datasource (Variable)": {
+    "prefix": "gtl-datasource-variable",
+    "body": [
+      "{{.datasource ${1:name} type=variable}}",
+      "  {{target \"${2:attributeName}\"}}",
+      "{{/.datasource}}"
+    ],
+    "description": "GTL variable datasource – reads data from a subscriber attribute or DE field containing JSON"
+  },
+  "GTL Output Variable": {
+    "prefix": "gtl-output",
+    "body": [
+      "{{${1:variable}}}"
+    ],
+    "description": "GTL output expression – renders a variable value"
+  }
+}

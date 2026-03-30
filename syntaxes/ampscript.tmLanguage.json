@@ -1,0 +1,189 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "AMPscript",
+	"scopeName": "text.html.ampscript",
+	"injections": {
+		"L:string.quoted.double.html, L:string.quoted.single.html": {
+			"patterns": [
+				{ "include": "#ampscript-inline" },
+				{ "include": "#ampscript-block" },
+				{ "include": "#personalization-string" },
+				{ "include": "#gtl-expression" }
+			]
+		}
+	},
+	"patterns": [
+		{ "include": "#ampscript-block" },
+		{ "include": "#ampscript-inline" },
+		{ "include": "#ampscript-tag" },
+		{ "include": "#content-syndication" },
+		{ "include": "#personalization-string" },
+		{ "include": "#gtl-expression" },
+		{ "include": "text.html.basic" }
+	],
+	"repository": {
+		"ampscript-block": {
+			"begin": "%%\\[",
+			"end": "\\]%%",
+			"beginCaptures": { "0": { "name": "punctuation.definition.block.begin.ampscript" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.block.end.ampscript" } },
+			"name": "meta.block.ampscript",
+			"patterns": [
+				{ "include": "#ampscript-internals" }
+			]
+		},
+		"ampscript-inline": {
+			"begin": "%%=",
+			"end": "=%%",
+			"beginCaptures": { "0": { "name": "punctuation.definition.inline.begin.ampscript" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.inline.end.ampscript" } },
+			"name": "meta.inline.ampscript",
+			"patterns": [
+				{ "include": "#ampscript-internals" }
+			]
+		},
+		"ampscript-tag": {
+			"begin": "(<)(script)(?=[^>]*\\brunat\\s*=\\s*[\"']server[\"'])(?=[^>]*\\blanguage\\s*=\\s*[\"']ampscript[\"'])([^>]*)(>)",
+			"end": "(</)(script)(\\s*>)",
+			"beginCaptures": {
+				"1": { "name": "punctuation.definition.tag.begin.html" },
+				"2": { "name": "entity.name.tag.html" },
+				"3": { "name": "string.unquoted.html" },
+				"4": { "name": "punctuation.definition.tag.end.html" }
+			},
+			"endCaptures": {
+				"1": { "name": "punctuation.definition.tag.begin.html" },
+				"2": { "name": "entity.name.tag.html" },
+				"3": { "name": "punctuation.definition.tag.end.html" }
+			},
+			"name": "meta.tag.script.ampscript",
+			"patterns": [
+				{ "include": "#ampscript-internals" }
+			]
+		},
+		"content-syndication": {
+			"match": "%%(?:After;)?(?i:HTTPGet|HTTPPost)\\s+\"[^\"]*\"%%",
+			"name": "meta.syndication.ampscript"
+		},
+		"personalization-string": {
+			"match": "%%(?!\\[|=)([a-zA-Z_][a-zA-Z0-9_ ]*)%%",
+			"name": "variable.other.personalization.ampscript",
+			"captures": {
+				"1": { "name": "variable.other.personalization.name.ampscript" }
+			}
+		},
+		"gtl-expression": {
+			"begin": "\\{\\{",
+			"end": "\\}\\}",
+			"beginCaptures": { "0": { "name": "punctuation.definition.template.begin.ampscript" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.template.end.ampscript" } },
+			"name": "meta.template.gtl.ampscript",
+			"patterns": [
+				{ "include": "#function-call" },
+				{ "include": "#string-double" },
+				{ "include": "#string-single" },
+				{ "include": "#numeric" },
+				{ "include": "#variable" },
+				{ "include": "#comma" },
+				{ "include": "#parentheses" }
+			]
+		},
+		"syndication-variable": {
+			"match": "\\[(jobid|email address|list_?|subscriber_?key)\\]",
+			"name": "variable.other.syndication.ampscript"
+		},
+		"ampscript-internals": {
+			"patterns": [
+				{ "include": "#comment" },
+				{ "include": "#string-double" },
+				{ "include": "#string-single" },
+				{ "include": "#numeric" },
+				{ "include": "#boolean" },
+				{ "include": "#keyword-control" },
+				{ "include": "#keyword-declaration" },
+				{ "include": "#operator-comparison" },
+				{ "include": "#operator-logical" },
+				{ "include": "#system-variable" },
+				{ "include": "#variable" },
+				{ "include": "#function-call" },
+				{ "include": "#attribute-bracketed" },
+				{ "include": "#comma" },
+				{ "include": "#parentheses" }
+			]
+		},
+		"comment": {
+			"begin": "/\\*",
+			"end": "\\*/",
+			"name": "comment.block.ampscript"
+		},
+		"string-double": {
+			"begin": "\"",
+			"end": "\"",
+			"name": "string.quoted.double.ampscript",
+			"beginCaptures": { "0": { "name": "punctuation.definition.string.begin.ampscript" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.string.end.ampscript" } }
+		},
+		"string-single": {
+			"begin": "'",
+			"end": "'",
+			"name": "string.quoted.single.ampscript",
+			"beginCaptures": { "0": { "name": "punctuation.definition.string.begin.ampscript" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.string.end.ampscript" } }
+		},
+		"numeric": {
+			"match": "(?<![a-zA-Z@_])-?\\b\\d+(\\.\\d+)?\\b",
+			"name": "constant.numeric.ampscript"
+		},
+		"boolean": {
+			"match": "(?i)\\b(true|false)\\b",
+			"name": "constant.language.boolean.ampscript"
+		},
+		"keyword-control": {
+			"match": "(?i)\\b(if|then|elseif|else|endif|for|to|downto|do|next)\\b",
+			"name": "keyword.control.ampscript"
+		},
+		"keyword-declaration": {
+			"match": "(?i)\\b(var|set)\\b",
+			"name": "keyword.other.declaration.ampscript"
+		},
+		"operator-comparison": {
+			"match": "==|!=|>=|<=|>|<",
+			"name": "keyword.operator.comparison.ampscript"
+		},
+		"operator-logical": {
+			"match": "(?i)\\b(and|or|not)\\b|&&|\\|\\|",
+			"name": "keyword.operator.logical.ampscript"
+		},
+		"system-variable": {
+			"match": "@@[a-zA-Z_][a-zA-Z0-9_]*",
+			"name": "variable.language.system.ampscript"
+		},
+		"variable": {
+			"match": "@[a-zA-Z_][a-zA-Z0-9_]*",
+			"name": "variable.other.ampscript"
+		},
+		"function-call": {
+			"match": "(?i)\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+			"captures": {
+				"1": { "name": "entity.name.function.ampscript" }
+			}
+		},
+		"attribute-bracketed": {
+			"match": "\\[[^\\]]+\\]",
+			"name": "entity.other.attribute-name.bracketed.ampscript"
+		},
+		"comma": {
+			"match": ",",
+			"name": "punctuation.separator.comma.ampscript"
+		},
+		"parentheses": {
+			"begin": "\\(",
+			"end": "\\)",
+			"beginCaptures": { "0": { "name": "punctuation.definition.arguments.begin.ampscript" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.arguments.end.ampscript" } },
+			"patterns": [
+				{ "include": "#ampscript-internals" }
+			]
+		}
+	}
+}

@@ -1,0 +1,569 @@
+{
+	"SSJS Script Block": {
+		"prefix": ["ssjsblock", "<script runat"],
+		"body": [
+			"<script runat=\"server\">",
+			"\t${0}",
+			"</script>"
+		],
+		"description": "SSJS server-side script block"
+	},
+	"Platform Load Core": {
+		"prefix": "ssjsplatformload",
+		"body": "Platform.Load(\"core\", \"1.1.5\");",
+		"description": "Load the Core SSJS library (required for Core library objects)"
+	},
+	"Platform.Function.Lookup": {
+		"prefix": "ssjslookup",
+		"body": "var ${1:result} = Platform.Function.Lookup(\"${2:DataExtensionName}\", \"${3:ReturnColumn}\", \"${4:FilterColumn}\", ${5:filterValue});",
+		"description": "Look up a single value from a Data Extension"
+	},
+	"Platform.Function.LookupRows": {
+		"prefix": "ssjslookuprows",
+		"body": "var ${1:rows} = Platform.Function.LookupRows(\"${2:DataExtensionName}\", \"${3:FilterColumn}\", ${4:filterValue});",
+		"description": "Look up multiple rows from a Data Extension"
+	},
+	"Platform.Function.InsertData": {
+		"prefix": "ssjsinsertdata",
+		"body": "Platform.Function.InsertData(\"${1:DataExtensionName}\", \"${2:Column1}\", ${3:value1}, \"${4:Column2}\", ${5:value2});",
+		"description": "Insert a row into a Data Extension"
+	},
+	"Platform.Function.UpsertData": {
+		"prefix": "ssjsupsertdata",
+		"body": "Platform.Function.UpsertData(\"${1:DataExtensionName}\", [\"${2:KeyColumn}\"], [${3:keyValue}], [\"${4:Column}\"], [${5:value}]);",
+		"description": "Insert or update a row in a Data Extension"
+	},
+	"HTTP GET Request": {
+		"prefix": "ssjshttpget",
+		"body": [
+			"var ${1:req} = new Script.Util.HttpRequest(\"${2:https://api.example.com/endpoint}\");",
+			"${1:req}.emptyContentHandling = 0;",
+			"${1:req}.retries = 2;",
+			"${1:req}.continueOnError = true;",
+			"${1:req}.method = \"GET\";",
+			"var ${3:resp} = ${1:req}.send();",
+			"var ${4:statusCode} = ${3:resp}.statusCode;",
+			"var ${5:content} = String(${3:resp}.content);"
+		],
+		"description": "HTTP GET request using Script.Util.HttpRequest"
+	},
+	"HTTP GET Simple": {
+		"prefix": "ssjshttpgetsimple",
+		"body": "var ${1:response} = HTTP.Get(\"${2:https://api.example.com/endpoint}\");",
+		"description": "Simple HTTP GET request"
+	},
+	"HTTP POST": {
+		"prefix": "ssjshttppost",
+		"body": [
+			"var ${1:contentType} = \"application/json\";",
+			"var ${2:payload} = Stringify({ ${3:key}: ${4:value} });",
+			"var ${5:result} = HTTP.Post(\"${6:https://api.example.com/endpoint}\", ${1:contentType}, ${2:payload});"
+		],
+		"description": "HTTP POST request with JSON payload"
+	},
+	"WSProxy Retrieve": {
+		"prefix": "ssjswsproxy",
+		"body": [
+			"var ${1:prox} = new WSProxy();",
+			"var ${2:cols} = [\"${3:Name}\", \"${4:CustomerKey}\"];",
+			"var ${5:filter} = {",
+			"\tProperty: \"${6:Name}\",",
+			"\tSimpleOperator: \"equals\",",
+			"\tValue: ${7:filterValue}",
+			"};",
+			"var ${8:result} = ${1:prox}.retrieve(\"${9:ObjectType}\", ${2:cols}, ${5:filter});",
+			"",
+			"if (${8:result}.Status === \"OK\") {",
+			"\tvar ${10:rows} = ${8:result}.Results;",
+			"\tfor (var ${11:i} = 0; ${11:i} < ${10:rows}.length; ${11:i}++) {",
+			"\t\t${0}",
+			"\t}",
+			"}"
+		],
+		"description": "WSProxy retrieve with filter"
+	},
+	"WSProxy Create": {
+		"prefix": "ssjswsproxycreate",
+		"body": [
+			"var ${1:prox} = new WSProxy();",
+			"var ${2:obj} = {",
+			"\t\"${3:Name}\": ${4:value}",
+			"};",
+			"var ${5:result} = ${1:prox}.createItem(\"${6:ObjectType}\", ${2:obj});",
+			"",
+			"if (${5:result}.Status === \"OK\") {",
+			"\t${0}",
+			"}"
+		],
+		"description": "WSProxy create object"
+	},
+	"Try/Catch Error Handling": {
+		"prefix": "ssjstrycatch",
+		"body": [
+			"try {",
+			"\t${0}",
+			"} catch (${1:e}) {",
+			"\tWrite(\"<br>Error: \" + Stringify(${1:e}));",
+			"}"
+		],
+		"description": "Try/catch block with error output"
+	},
+	"DataExtension Init/Retrieve": {
+		"prefix": "ssjsde",
+		"body": [
+			"Platform.Load(\"core\", \"1.1.5\");",
+			"",
+			"var ${1:de} = DataExtension.Init(\"${2:DataExtensionName}\");",
+			"var ${3:filter} = { Property: \"${4:Column}\", SimpleOperator: \"equals\", Value: ${5:filterValue} };",
+			"var ${6:rows} = ${1:de}.Rows.Retrieve(${3:filter});",
+			"",
+			"for (var ${7:i} = 0; ${7:i} < ${6:rows}.length; ${7:i}++) {",
+			"\tvar ${8:row} = ${6:rows}[${7:i}];",
+			"\t${0}",
+			"}"
+		],
+		"description": "DataExtension Init and Retrieve pattern"
+	},
+	"Platform Variable Bridge": {
+		"prefix": "ssjsvarbridge",
+		"body": [
+			"var ${1:value} = Platform.Variable.GetValue(\"@${2:variableName}\");",
+			"${0}",
+			"Platform.Variable.SetValue(\"@${3:resultVar}\", ${4:result});"
+		],
+		"description": "Bridge AMPscript variables in/out of SSJS"
+	},
+	"Request Parameter": {
+		"prefix": "ssjsrequestparam",
+		"body": "var ${1:param} = Platform.Request.GetQueryStringParameter(\"${2:paramName}\");",
+		"description": "Get a URL query string parameter"
+	},
+	"Form Data": {
+		"prefix": "ssjsformdata",
+		"body": "var ${1:value} = Platform.Request.GetFormData(\"${2:fieldName}\");",
+		"description": "Get a posted form field value"
+	},
+	"Redirect": {
+		"prefix": "ssjsredirect",
+		"body": "Platform.Response.Redirect(\"${1:https://example.com}\");",
+		"description": "Redirect to a URL"
+	},
+	"CloudPages URL": {
+		"prefix": "ssjscloudpagesurl",
+		"body": "var ${1:url} = Platform.Function.CloudPagesURL(${2:pageId}, \"${3:paramName}\", ${4:paramValue});",
+		"description": "Build an encrypted CloudPages URL with parameters"
+	},
+	"Full CloudPage Template": {
+		"prefix": "ssjstemplate",
+		"body": [
+			"<script runat=\"server\">",
+			"Platform.Load(\"core\", \"1.1.5\");",
+			"",
+			"try {",
+			"\tvar ${1:subscriberKey} = Platform.Request.GetQueryStringParameter(\"${2:sk}\");",
+			"\t",
+			"\tif (${1:subscriberKey}) {",
+			"\t\tvar ${3:data} = Platform.Function.Lookup(",
+			"\t\t\t\"${4:DataExtensionName}\",",
+			"\t\t\t\"${5:ReturnColumn}\",",
+			"\t\t\t\"${6:FilterColumn}\",",
+			"\t\t\t${1:subscriberKey}",
+			"\t\t);",
+			"\t\t",
+			"\t\t${0}",
+			"\t}",
+			"} catch (e) {",
+			"\tWrite(\"<br>Error: \" + Stringify(e));",
+			"}",
+			"</script>"
+		],
+		"description": "Full SSJS CloudPage template with error handling"
+	},
+	"DE Init + Rows.Lookup": {
+		"prefix": "ssjsdelookup",
+		"body": [
+			"var ${1:de} = DataExtension.Init(\"${2:DataExtensionName}\");",
+			"var ${3:rows} = ${1:de}.Rows.Lookup([\"${4:FilterColumn}\"], [${5:filterValue}], ${6:1});",
+			"if (${3:rows} && ${3:rows}.length) {",
+			"\tvar ${7:row} = ${3:rows}[0];",
+			"\t${0}",
+			"}"
+		],
+		"description": "DataExtension Init with Rows.Lookup and null check"
+	},
+	"Security Response Headers": {
+		"prefix": "ssjssecurityheaders",
+		"body": [
+			"Platform.Response.SetResponseHeader('X-XSS-Protection', '1; mode=block');",
+			"Platform.Response.SetResponseHeader('X-Frame-Options', 'Deny');",
+			"Platform.Response.SetResponseHeader('X-Content-Type-Options', 'nosniff');"
+		],
+		"description": "Set recommended security response headers (XSS, clickjacking, MIME sniffing)"
+	},
+	"Safe TreatAsContent (Variable.SetValue)": {
+		"prefix": "ssjstreatascontentsafe",
+		"body": [
+			"Variable.SetValue('@${1:inputVar}', ${2:value});",
+			"Platform.Function.TreatAsContent('%%[ Set @${3:result} = ${4:AMPscriptFunction}(@${1:inputVar}) ]%%');",
+			"var ${5:output} = Variable.GetValue('@${3:result}');"
+		],
+		"description": "Safe TreatAsContent pattern using Variable.SetValue to prevent AMPscript injection"
+	},
+	"ParseJSON (safe)": {
+		"prefix": "ssjsparsejson",
+		"body": "var ${1:obj} = Platform.Function.ParseJSON(${2:jsonString} + '');",
+		"description": "Parse JSON safely by concatenating empty string to prevent 500 on undefined"
+	},
+	"Get Cookie Value": {
+		"prefix": "ssjscookieget",
+		"body": "var ${1:value} = Platform.Request.GetCookieValue(\"${2:cookieName}\");",
+		"description": "Read a cookie value"
+	},
+	"Set Cookie": {
+		"prefix": "ssjscookieset",
+		"body": "Platform.Response.SetCookie(\"${1:cookieName}\", ${2:cookieValue}, \"${3:expirationDateString}\", ${4:true});",
+		"description": "Set a cookie with name, value, expiration, and HTTPS-only flag"
+	},
+	"SSJS Module Pattern": {
+		"prefix": "ssjsmodule",
+		"body": [
+			"function ${1:MyModule}(${2:config}) {",
+			"\tvar service = {",
+			"\t\t${3:methodName}: ${3:methodName}",
+			"\t};",
+			"",
+			"\t_init(${2:config});",
+			"",
+			"\treturn service;",
+			"",
+			"\tfunction _init(${2:config}) {",
+			"\t\t${0}",
+			"\t}",
+			"",
+			"\tfunction ${3:methodName}() {",
+			"\t\t// ...",
+			"\t}",
+			"}"
+		],
+		"description": "Revealing module pattern for SSJS libraries (safe to call without 'new')"
+	},
+	"PostBody Wrapper": {
+		"prefix": "ssjspostbody",
+		"body": [
+			"function PostBody() {",
+			"\tvar postBody = null;",
+			"\tvar service = {",
+			"\t\tjson: json,",
+			"\t\tform: form,",
+			"\t\ttext: text",
+			"\t};",
+			"",
+			"\t_init();",
+			"",
+			"\treturn service;",
+			"",
+			"\tfunction _init() {",
+			"\t\tpostBody = Platform.Request.GetPostData();",
+			"\t}",
+			"",
+			"\tfunction text() {",
+			"\t\treturn postBody;",
+			"\t}",
+			"",
+			"\tfunction json() {",
+			"\t\tvar temp = Platform.Function.ParseJSON(postBody + '');",
+			"\t\tif (!temp && postBody) {",
+			"\t\t\ttemp = { error: 'input was not JSON formatted' };",
+			"\t\t}",
+			"\t\treturn temp;",
+			"\t}",
+			"",
+			"\tfunction form() {",
+			"\t\tvar obj = {};",
+			"\t\tvar tempArr = postBody.split('&');",
+			"\t\tfor (var i = 0; i < tempArr.length; i++) {",
+			"\t\t\tvar temp = tempArr[i].split('=');",
+			"\t\t\tif (temp.length > 1) {",
+			"\t\t\t\tobj[temp[0]] = temp[1];",
+			"\t\t\t}",
+			"\t\t}",
+			"\t\treturn obj;",
+			"\t}",
+			"}",
+			"",
+			"var myPostBody = PostBody();",
+			"var ${1:data} = myPostBody.json();"
+		],
+		"description": "GetPostData wrapper supporting json/form/text (only callable once per request)"
+	},
+	"Subscriber Update": {
+		"prefix": "ssjssubscriberupdate",
+		"body": [
+			"var ${1:subscriberObj} = {",
+			"\tAttributes: {},",
+			"\tEmailTypePreference: 'HTML',",
+			"\tLists: {",
+			"\t\tStatus: '${2|Active,Unsubscribed|}',",
+			"\t\tID: ${3:subscriberListID},",
+			"\t\tAction: 'Update'",
+			"\t},",
+			"\tSubscriberKey: ${4:subscriberKey}",
+			"};",
+			"",
+			"var ${5:subscriber} = Subscriber.Init(${4:subscriberKey});",
+			"var ${6:status} = ${5:subscriber}.Update(${1:subscriberObj});"
+		],
+		"description": "Initialize a Subscriber and update list status"
+	},
+	"Browser Console Debug": {
+		"prefix": "ssjsconsole",
+		"body": [
+			"var console = {",
+			"\tlog: function (str) {",
+			"\t\tWrite('<script>console.log(`' + str + '`)<\\/script>');",
+			"\t},",
+			"\terror: function (str) {",
+			"\t\tWrite('<script>console.error(`' + str + '`)<\\/script>');",
+			"\t}",
+			"};"
+		],
+		"description": "Write-based console.log/error for browser dev tools debugging"
+	},
+	"AMPscript Encryption Bridge (Crypt)": {
+		"prefix": "ssjscrypt",
+		"body": [
+			"/**",
+			" * Wrapper around AMPscript DecryptSymmetric/EncryptSymmetric with AES encryption.",
+			" * Either key_* (Key Manager IDs) or value_* (raw values) parameters must be set.",
+			" *",
+			" * @param {string} [key_secret] - Key Manager id for the secret",
+			" * @param {string} [key_salt] - Key Manager id for the salt",
+			" * @param {string} [key_iv] - Key Manager id for the IV",
+			" * @param {string} [value_secret] - secret value",
+			" * @param {string} [value_salt] - salt value",
+			" * @param {string} [value_iv] - IV value",
+			" * @returns {{ decrypt: Function, encrypt: Function, urlEncode: Function }}",
+			" */",
+			"function Crypt(key_secret, key_salt, key_iv, value_secret, value_salt, value_iv) {",
+			"\tvar service = {",
+			"\t\tdecrypt: decrypt,",
+			"\t\tencrypt: encrypt,",
+			"\t\turlEncode: urlEncode",
+			"\t};",
+			"",
+			"\t_init(key_secret, key_salt, key_iv, value_secret, value_salt, value_iv);",
+			"",
+			"\treturn service;",
+			"",
+			"\tfunction _init(key_secret, key_salt, key_iv, value_secret, value_salt, value_iv) {",
+			"\t\tVariable.SetValue('@crypt_key_secret', key_secret ? key_secret : '');",
+			"\t\tVariable.SetValue('@crypt_key_salt', key_salt ? key_salt : '');",
+			"\t\tVariable.SetValue('@crypt_key_iv', key_iv ? key_iv : '');",
+			"\t\tVariable.SetValue('@crypt_secret', value_secret ? value_secret : '');",
+			"\t\tVariable.SetValue('@crypt_salt', value_salt ? value_salt : '');",
+			"\t\tVariable.SetValue('@crypt_iv', value_iv ? value_iv : '');",
+			"\t}",
+			"",
+			"\tfunction decrypt(encryptedString) {",
+			"\t\tvar decryptedString = null;",
+			"\t\tVariable.SetValue('@crypt_encryptedString', encryptedString);",
+			"\t\ttry {",
+			"\t\t\tPlatform.Function.TreatAsContent(",
+			"\t\t\t\t'%%[ Set @decryptedString = DecryptSymmetric(@crypt_encryptedString, \"AES\", @crypt_key_secret, @crypt_secret, @crypt_key_salt, @crypt_salt, @crypt_key_iv, @crypt_iv) ]%%'",
+			"\t\t\t);",
+			"\t\t\tdecryptedString = Variable.GetValue('@decryptedString');",
+			"\t\t} catch (e) {",
+			"\t\t\tdecryptedString = 'error';",
+			"\t\t}",
+			"\t\treturn decryptedString;",
+			"\t}",
+			"",
+			"\tfunction encrypt(decryptedString) {",
+			"\t\tvar encryptedString = null;",
+			"\t\tVariable.SetValue('@crypt_decryptedString', decryptedString);",
+			"\t\ttry {",
+			"\t\t\tPlatform.Function.TreatAsContent(",
+			"\t\t\t\t'%%[ Set @decryptedString = EncryptSymmetric(@crypt_decryptedString, \"AES\", @crypt_key_secret, @crypt_secret, @crypt_key_salt, @crypt_salt, @crypt_key_iv, @crypt_iv) ]%%'",
+			"\t\t\t);",
+			"\t\t\tencryptedString = Variable.GetValue('@decryptedString');",
+			"\t\t} catch (e) {",
+			"\t\t\tencryptedString = 'error';",
+			"\t\t}",
+			"\t\treturn encryptedString;",
+			"\t}",
+			"",
+			"\tfunction urlEncode(str) {",
+			"\t\tvar result = null;",
+			"\t\tVariable.SetValue('@crypt_urlEncodeString', str);",
+			"\t\ttry {",
+			"\t\t\tPlatform.Function.TreatAsContent(",
+			"\t\t\t\t'%%[ Set @crypt_urlEncodeString = URLEncode(@crypt_urlEncodeString, 1, 1) ]%%'",
+			"\t\t\t);",
+			"\t\t\tresult = Variable.GetValue('@crypt_urlEncodeString');",
+			"\t\t} catch (e) {",
+			"\t\t\tresult = 'error';",
+			"\t\t}",
+			"\t\treturn result;",
+			"\t}",
+			"}"
+		],
+		"description": "Full AMPscript encryption bridge: encrypt/decrypt/urlEncode via Key Manager or raw values"
+	},
+	"Anti-CSRF Token Library": {
+		"prefix": "ssjsanticsrf",
+		"body": [
+			"/**",
+			" * Anti-CSRF double-submit token handler.",
+			" * Generates a random form-field value and a related cookie value.",
+			" * On POST, validates that the two values still match.",
+			" *",
+			" * Usage:",
+			" *   var antiCsrf = AntiCsrf('cookieName', 15, crypt, true);",
+			" *   // GET: antiCsrf.generate('csrftoken');",
+			" *   //   -> sets cookie + AMPscript var @csrftoken for hidden input",
+			" *   // POST: antiCsrf.validate(formFieldValue);",
+			" *   //   -> returns true/false",
+			" *",
+			" * HTML: <input type=\"hidden\" name=\"csrftoken\" value=\"%%=v(@csrftoken)=%%\">",
+			" *",
+			" * @param {string} cookieName - name of the cookie",
+			" * @param {number} [timeoutInMinutes=15] - cookie expiration",
+			" * @param {Object} [crypt] - optional Crypt instance for encryption",
+			" * @param {boolean} [httpsOnly] - send cookies only via HTTPS",
+			" * @returns {{ generate: Function, validate: Function }}",
+			" */",
+			"function AntiCsrf(cookieName, timeoutInMinutes, crypt, httpsOnly) {",
+			"\tvar config = {",
+			"\t\ttimeout: 15,",
+			"\t\thttpsOnly: httpsOnly ? true : false",
+			"\t};",
+			"\tvar service = {",
+			"\t\tgenerate: generate,",
+			"\t\tvalidate: validate",
+			"\t};",
+			"",
+			"\t_init(timeoutInMinutes);",
+			"",
+			"\treturn service;",
+			"",
+			"\tfunction generate(ampVarName) {",
+			"\t\tif (!ampVarName || !cookieName) {",
+			"\t\t\treturn null;",
+			"\t\t}",
+			"\t\tvar formFieldValue = _getRandomInt();",
+			"\t\tvar cookieValue = _getRelatedInt(formFieldValue);",
+			"\t\tif (crypt) {",
+			"\t\t\tcookieValue = crypt.encrypt(cookieValue);",
+			"\t\t}",
+			"\t\tvar expirationDate = _addMinutes(new Date(), config.timeout);",
+			"\t\tvar expirationString = _getTimeString(expirationDate);",
+			"\t\tPlatform.Response.SetCookie(cookieName, cookieValue, expirationString, config.httpsOnly);",
+			"\t\tif (crypt) {",
+			"\t\t\tformFieldValue = crypt.encrypt(formFieldValue);",
+			"\t\t}",
+			"\t\tVariable.SetValue('@' + ampVarName, formFieldValue);",
+			"\t\treturn formFieldValue;",
+			"\t}",
+			"",
+			"\tfunction validate(formFieldValue) {",
+			"\t\tif (!formFieldValue) {",
+			"\t\t\treturn false;",
+			"\t\t}",
+			"\t\tif (crypt) {",
+			"\t\t\tformFieldValue = crypt.decrypt(formFieldValue);",
+			"\t\t}",
+			"\t\tformFieldValue = formFieldValue * 1;",
+			"\t\tvar cookieValue = Platform.Request.GetCookieValue(cookieName);",
+			"\t\tvar expectedCookieValue = _getRelatedInt(formFieldValue);",
+			"\t\tif (crypt) {",
+			"\t\t\texpectedCookieValue = crypt.encrypt(expectedCookieValue);",
+			"\t\t}",
+			"\t\treturn cookieValue == expectedCookieValue;",
+			"\t}",
+			"",
+			"\tfunction _init(timeoutInMinutes) {",
+			"\t\tif (timeoutInMinutes && timeoutInMinutes > 0) {",
+			"\t\t\tconfig.timeout = timeoutInMinutes;",
+			"\t\t}",
+			"\t}",
+			"",
+			"\tfunction _getRandomInt() {",
+			"\t\tvar dt = new Date();",
+			"\t\tvar timestamp = dt.now();",
+			"\t\tvar randomizer = Math.random();",
+			"\t\tvar randomInteger = Math.floor(timestamp * randomizer);",
+			"\t\tif (randomInteger === 0) {",
+			"\t\t\treturn _getRandomInt();",
+			"\t\t}",
+			"\t\treturn randomInteger;",
+			"\t}",
+			"",
+			"\tfunction _getRelatedInt(formFieldValue) {",
+			"\t\treturn formFieldValue * formFieldValue + 1;",
+			"\t}",
+			"",
+			"\tfunction _getTimeString(dt) {",
+			"\t\tvar h = dt.getHours();",
+			"\t\tvar m = dt.getMinutes();",
+			"\t\tvar s = dt.getSeconds();",
+			"\t\tif (h < 10) { h = '0' + h; }",
+			"\t\tif (m < 10) { m = '0' + m; }",
+			"\t\tif (s < 10) { s = '0' + s; }",
+			"\t\treturn (dt.getMonth() + 1) + '/' + dt.getDate() + '/' + dt.getFullYear() + ' ' + h + ':' + m + ':' + s;",
+			"\t}",
+			"",
+			"\tfunction _addMinutes(date, minutes) {",
+			"\t\treturn new Date(date.getTime() + minutes * 60000);",
+			"\t}",
+			"}"
+		],
+		"description": "Anti-CSRF double-submit token library with cookie + hidden form field pattern"
+	},
+	"UpsertData": {
+		"prefix": "ssjsupsertdataext",
+		"body": [
+			"var ${1:affectedRows} = Platform.Function.UpsertData(",
+			"\t\"${2:DataExtensionName}\",",
+			"\t[\"${3:KeyColumn}\"],",
+			"\t[${4:keyValue}],",
+			"\t[\"${5:Column1}\", \"${6:Column2}\"],",
+			"\t[${7:value1}, ${8:value2}]",
+			");"
+		],
+		"description": "Upsert a row in a Data Extension (returns number of affected rows)"
+	},
+	"UpdateData": {
+		"prefix": "ssjsupdatedata",
+		"body": [
+			"var ${1:affectedRows} = Platform.Function.UpdateData(",
+			"\t\"${2:DataExtensionName}\",",
+			"\t[\"${3:WhereColumn}\"],",
+			"\t[${4:whereValue}],",
+			"\t[\"${5:Column1}\", \"${6:Column2}\"],",
+			"\t[${7:value1}, ${8:value2}]",
+			");"
+		],
+		"description": "Update rows in a Data Extension (returns number of affected rows)"
+	},
+	"DeleteData": {
+		"prefix": "ssjsdeletedata",
+		"body": [
+			"var ${1:affectedRows} = Platform.Function.DeleteData(",
+			"\t\"${2:DataExtensionName}\",",
+			"\t[\"${3:WhereColumn}\"],",
+			"\t[${4:whereValue}]",
+			");"
+		],
+		"description": "Delete rows from a Data Extension (returns number of affected rows)"
+	},
+	"AMPscript Variable Set": {
+		"prefix": "ssjsampvarset",
+		"body": "Variable.SetValue('@${1:variableName}', ${2:value});",
+		"description": "Set an AMPscript variable from SSJS"
+	},
+	"AMPscript Variable Get": {
+		"prefix": "ssjsampvarget",
+		"body": "var ${1:value} = Variable.GetValue('@${2:variableName}');",
+		"description": "Get an AMPscript variable value in SSJS"
+	}
+}

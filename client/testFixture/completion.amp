@@ -1,0 +1,7 @@
+%%[
+  set @name = "test"
+]%%
+
+<html>
+<body>Hello</body>
+</html>

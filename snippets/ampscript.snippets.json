@@ -1,0 +1,287 @@
+{
+	"AMPscript Block": {
+		"prefix": ["ampblock", "%%["],
+		"body": [
+			"%%[",
+			"\t${0}",
+			"]%%"
+		],
+		"description": "AMPscript block delimiters"
+	},
+	"AMPscript Inline": {
+		"prefix": ["ampinline", "%%="],
+		"body": "%%=${1:expression}=%%",
+		"description": "Inline AMPscript output expression"
+	},
+	"Variable Output": {
+		"prefix": ["vout", "%%=v"],
+		"body": "%%=v(@${1:variableName})=%%",
+		"description": "Output a variable value inline"
+	},
+	"Variable Declaration": {
+		"prefix": "ampvar",
+		"body": "var @${1:variableName}",
+		"description": "Declare an AMPscript variable"
+	},
+	"Set Variable": {
+		"prefix": "ampset",
+		"body": "set @${1:variableName} = ${2:value}",
+		"description": "Assign a value to an AMPscript variable"
+	},
+	"Declare and Set": {
+		"prefix": "ampvarset",
+		"body": [
+			"var @${1:variableName}",
+			"set @${1:variableName} = ${2:value}"
+		],
+		"description": "Declare and assign an AMPscript variable"
+	},
+	"IF Block": {
+		"prefix": "ampif",
+		"body": [
+			"if ${1:condition} then",
+			"\t${0}",
+			"endif"
+		],
+		"description": "IF/THEN/ENDIF conditional block"
+	},
+	"IF/ELSE Block": {
+		"prefix": "ampifelse",
+		"body": [
+			"if ${1:condition} then",
+			"\t${2}",
+			"else",
+			"\t${0}",
+			"endif"
+		],
+		"description": "IF/THEN/ELSE/ENDIF conditional block"
+	},
+	"IF/ELSEIF/ELSE Block": {
+		"prefix": "ampifelseif",
+		"body": [
+			"if ${1:condition} then",
+			"\t${2}",
+			"elseif ${3:condition} then",
+			"\t${4}",
+			"else",
+			"\t${0}",
+			"endif"
+		],
+		"description": "IF/ELSEIF/ELSE/ENDIF conditional block"
+	},
+	"FOR Loop": {
+		"prefix": "ampfor",
+		"body": [
+			"for @${1:i} = 1 to ${2:count} do",
+			"\t${0}",
+			"next @${1:i}"
+		],
+		"description": "FOR counting loop"
+	},
+	"FOR Loop with RowSet": {
+		"prefix": "ampforrows",
+		"body": [
+			"set @${1:rows} = ${2:LookupRows(\"${3:DataExtension}\", \"${4:Column}\", ${5:@value})}",
+			"set @${6:rowCount} = RowCount(@${1:rows})",
+			"",
+			"for @${7:i} = 1 to @${6:rowCount} do",
+			"\tset @${8:row} = Row(@${1:rows}, @${7:i})",
+			"\tset @${9:field} = Field(@${8:row}, \"${10:FieldName}\")",
+			"\t${0}",
+			"next @${7:i}"
+		],
+		"description": "FOR loop iterating over a Data Extension row set"
+	},
+	"Lookup": {
+		"prefix": "amplookup",
+		"body": "set @${1:value} = Lookup(\"${2:DataExtension}\", \"${3:ReturnColumn}\", \"${4:SearchColumn}\", ${5:@searchValue})",
+		"description": "Lookup a single value from a Data Extension"
+	},
+	"LookupRows": {
+		"prefix": "amplookuprows",
+		"body": "set @${1:rows} = LookupRows(\"${2:DataExtension}\", \"${3:SearchColumn}\", ${4:@searchValue})",
+		"description": "Lookup multiple rows from a Data Extension"
+	},
+	"LookupOrderedRows": {
+		"prefix": "amplookuporderedrows",
+		"body": "set @${1:rows} = LookupOrderedRows(\"${2:DataExtension}\", ${3:maxRows}, \"${4:SortColumn} ${5|ASC,DESC|}\", \"${6:FilterColumn}\", ${7:@filterValue})",
+		"description": "Lookup ordered rows from a Data Extension"
+	},
+	"HTTPGet": {
+		"prefix": "amphttpget",
+		"body": "set @${1:response} = HTTPGet(\"${2:url}\")",
+		"description": "HTTP GET request"
+	},
+	"HTTPPost with Error Handling": {
+		"prefix": "amphttppost",
+		"body": [
+			"set @${1:statusCode} = HTTPPost2(",
+			"\t\"${2:url}\",",
+			"\t\"application/json\",",
+			"\t@${3:payload},",
+			"\ttrue,",
+			"\t@${4:response},",
+			"\t@${5:responseHeaders},",
+			"\t@${1:statusCode}",
+			")"
+		],
+		"description": "HTTP POST with error handling using HTTPPost2"
+	},
+	"CloudPagesURL": {
+		"prefix": "ampcloudpagesurl",
+		"body": "set @${1:url} = CloudPagesURL(${2:pageID}${3:, \"${4:paramName}\", ${5:@paramValue}})",
+		"description": "Build an encrypted CloudPages URL"
+	},
+	"ContentBlockByKey": {
+		"prefix": "ampcontentblock",
+		"body": "%%=ContentBlockByKey(\"${1:customerKey}\")=%%",
+		"description": "Include a Content Builder block by customer key"
+	},
+	"AttributeValue": {
+		"prefix": "ampattrval",
+		"body": "set @${1:value} = AttributeValue(\"${2:AttributeName}\")",
+		"description": "Safely retrieve an attribute value (null-safe)"
+	},
+	"RaiseError": {
+		"prefix": "ampraiseerror",
+		"body": "RaiseError(\"${1:Error message}\", true)",
+		"description": "Raise an error and skip the send for this subscriber"
+	},
+	"Empty Check": {
+		"prefix": "ampempty",
+		"body": [
+			"if Empty(@${1:variable}) then",
+			"\tset @${1:variable} = ${2:\"default\"}",
+			"endif"
+		],
+		"description": "Check if a variable is empty and provide a default"
+	},
+	"UpsertData": {
+		"prefix": "ampupsertdata",
+		"body": "set @${1:result} = UpsertData(\"${2:DataExtension}\", ${3:1}, \"${4:KeyColumn}\", ${5:@keyValue}, \"${6:Column}\", ${7:@value})",
+		"description": "Insert or update a row in a Data Extension (CloudPages)"
+	},
+	"InsertData": {
+		"prefix": "ampinsertdata",
+		"body": "InsertData(\"${1:DataExtension}\", \"${2:Column1}\", ${3:@value1}, \"${4:Column2}\", ${5:@value2})",
+		"description": "Insert a row into a Data Extension (CloudPages)"
+	},
+	"Script Tag Block": {
+		"prefix": "ampscripttag",
+		"body": [
+			"<script runat=\"server\" language=\"ampscript\">",
+			"\t${0}",
+			"</script>"
+		],
+		"description": "AMPscript script tag block"
+	},
+	"SOAP API Create Object": {
+		"prefix": "ampcreateobject",
+		"body": [
+			"set @${1:obj} = CreateObject(\"${2:ObjectType}\")",
+			"SetObjectProperty(@${1:obj}, \"${3:PropertyName}\", ${4:@value})",
+			"set @${5:status} = InvokeCreate(@${1:obj}, @${6:statusMsg}, @${7:errorCode}, @${8:requestId})"
+		],
+		"description": "SOAP API: create and invoke an API object"
+	},
+	"Format Date": {
+		"prefix": "ampformatdate",
+		"body": "set @${1:formatted} = FormatDate(${2:Now()}, \"${3|S,L,SM|}\"${4:, \"${5:yyyy-MM-dd}\"})",
+		"description": "Format a date value"
+	},
+	"Full Email Template": {
+		"prefix": "amptemplate",
+		"body": [
+			"%%[",
+			"var @firstName, @lastName, @email",
+			"set @firstName = AttributeValue(\"FirstName\")",
+			"set @lastName = AttributeValue(\"LastName\")",
+			"set @email = AttributeValue(\"EmailAddress\")",
+			"",
+			"if Empty(@firstName) then",
+			"\tset @firstName = \"Valued Customer\"",
+			"endif",
+			"]%%",
+			"",
+			"<html>",
+			"<body>",
+			"<p>Hello, %%=v(@firstName)=%% %%=v(@lastName)=%%!</p>",
+			"${0}",
+			"</body>",
+			"</html>"
+		],
+		"description": "Full AMPscript email template with safe attribute retrieval"
+	},
+	"AMPscript-in-SSJS Bridge": {
+		"prefix": "ampssjs",
+		"body": [
+			"<script runat=\"server\">",
+			"var ${1:myValue} = ${2:\"data from SSJS\"};",
+			"Variable.SetValue(\"@${3:bridgeVar}\", ${1:myValue});",
+			"</script>",
+			"",
+			"%%[",
+			"/* @${3:bridgeVar} is now available in AMPscript */",
+			"set @${4:result} = v(@${3:bridgeVar})",
+			"]%%"
+		],
+		"description": "Bridge data from SSJS to AMPscript using Variable.SetValue"
+	},
+	"TreatAsContent": {
+		"prefix": "amptreatascontent",
+		"body": [
+			"<script runat=\"server\">",
+			"var ${1:ampBlock} = '%%[${2:set @greeting = \"Hello\"}]%%';",
+			"var ${3:rendered} = TreatAsContent(${1:ampBlock});",
+			"Write(${3:rendered});",
+			"</script>"
+		],
+		"description": "Process AMPscript content from SSJS using TreatAsContent"
+	},
+	"Redirect to CloudPage": {
+		"prefix": "ampredirectto",
+		"body": [
+			"set @${1:redirectUrl} = CloudPagesURL(${2:pageId}, \"${3:param}\", ${4:@value})",
+			"Redirect(@${1:redirectUrl})"
+		],
+		"description": "Redirect to a CloudPage with encrypted parameters"
+	},
+	"Date Format Patterns": {
+		"prefix": "ampdateformat",
+		"body": [
+			"set @${1:now} = Now()",
+			"set @${2:isoDate} = FormatDate(@${1:now}, \"S\", \"yyyy-MM-dd\")",
+			"set @${3:usDate} = FormatDate(@${1:now}, \"S\", \"MM/dd/yyyy\")",
+			"set @${4:longDate} = FormatDate(@${1:now}, \"L\")",
+			"set @${5:timeOnly} = FormatDate(@${1:now}, \"S\", \"HH:mm:ss\")"
+		],
+		"description": "Common date formatting patterns"
+	},
+	"RowSet Loop with Error Check": {
+		"prefix": "amprowsetloop",
+		"body": [
+			"set @${1:rows} = LookupRows(\"${2:DataExtension}\", \"${3:FilterColumn}\", ${4:@filterValue})",
+			"set @${5:rowCount} = RowCount(@${1:rows})",
+			"",
+			"if @${5:rowCount} > 0 then",
+			"\tfor @${6:i} = 1 to @${5:rowCount} do",
+			"\t\tset @${7:row} = Row(@${1:rows}, @${6:i})",
+			"\t\tset @${8:field} = Field(@${7:row}, \"${9:ColumnName}\")",
+			"\t\t${0}",
+			"\tnext @${6:i}",
+			"else",
+			"\t/* No matching rows found */",
+			"endif"
+		],
+		"description": "RowSet loop with row count check and empty handling"
+	},
+	"SSJS Script Tag": {
+		"prefix": "ampssjtag",
+		"body": [
+			"<script runat=\"server\">",
+			"\t${0}",
+			"</script>"
+		],
+		"description": "SSJS server-side script tag"
+	}
+}

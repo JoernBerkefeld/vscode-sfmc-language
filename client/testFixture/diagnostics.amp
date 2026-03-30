@@ -1,0 +1,6 @@
+%%[
+  set @name = "test"
+
+<html>
+<body>%%=v(@name)=%%</body>
+</html>

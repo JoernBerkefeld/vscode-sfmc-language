@@ -1,0 +1,13 @@
+<script runat="server" language="ampscript">
+  set @subscriberKey = AttributeValue("_subscriberkey")
+  set @firstName = AttributeValue("FirstName")
+</script>
+<script runat="server">
+  Platform.Load("core", "1.1.5");
+  var prox = new WSProxy();
+</script>
+<html>
+<body>
+  <p>Hello %%=v(@firstName)=%%</p>
+</body>
+</html>

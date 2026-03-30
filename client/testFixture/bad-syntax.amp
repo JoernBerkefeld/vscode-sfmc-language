@@ -1,0 +1,26 @@
+%%[
+  /* valid AMPscript block comment */
+  set @name = "test"
+
+  <!--/* HTML wrapped comment - invalid */-->
+
+  // JavaScript line comment - invalid
+
+  %%[ /* nested block delimiter - invalid */
+  set @inner = "bad"
+  ]%%
+]%%
+
+<script runat="server" language="ampscript">
+  set @a = "outer"
+
+  <!--/* another HTML wrapped comment */-->
+
+  // another JS line comment
+
+  %%[ set @b = "redundant delimiter" ]%%
+
+<script runat="server" language="ampscript">
+  set @c = "nested script tag - invalid"
+</script>
+</script>
