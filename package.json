@@ -26,8 +26,12 @@
         "multi-root ready"
     ],
     "icon": "resources/images/vscode-sfmc-language-white256.png",
+    "galleryBanner": {
+        "color": "#032d60",
+        "theme": "dark"
+    },
     "engines": {
-        "vscode": "^1.100.0"
+        "vscode": "^1.90.0"
     },
     "main": "./client/out/extension",
     "contributes": {
@@ -137,8 +141,10 @@
         "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=server/out/server.js --external:vscode --format=cjs --platform=node",
         "compile": "tsc -b",
         "watch": "tsc -b -w",
-        "package": "npx @vscode/vsce package",
-		"package:test": "npx @vscode/vsce package --pre-release -o sfmc-language-BETA.vsix",
+        "package": "npx @vscode/vsce package --no-dependencies",
+        "package:test": "npx @vscode/vsce package --no-dependencies --pre-release -o sfmc-language-BETA.vsix",
+        "publish": "npx @vscode/vsce publish --no-dependencies",
+        "publish:pre-release": "npx @vscode/vsce publish --no-dependencies --pre-release",
         "lint": "eslint",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
         "test": "node ./client/out/test/runTest"

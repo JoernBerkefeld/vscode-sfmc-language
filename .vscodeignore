@@ -9,8 +9,7 @@ contributing.md
 .travis.yml
 client/src/**
 server/src/**
-client/node_modules/**
-server/node_modules/**
+**/node_modules/**
 scripts/**
 client/testFixture/**
 !client/out/extension.js
