@@ -22,6 +22,14 @@ import {
     SCRIPT_UTIL_REQUEST_METHODS,
     ECMASCRIPT_BUILTINS,
 } from 'ssjs-data';
+// Module augmentation to expose PLATFORM_RECIPIENT_METHODS which was added after
+// the local node_modules snapshot was taken — TypeScript's stale analysis doesn't
+// yet recognise this export; augmenting is the only way to add it without republishing.
+declare module 'ssjs-data' {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    export const PLATFORM_RECIPIENT_METHODS: any[];
+}
+import { PLATFORM_RECIPIENT_METHODS } from 'ssjs-data';
 
 export interface SsjsFunctionParam {
     name: string;
@@ -135,6 +143,15 @@ export const platformClientBrowserMethods: SsjsFunction[] = PLATFORM_CLIENT_BROW
     (m) => ({
         ...m,
         prefix: 'Platform.ClientBrowser',
+    }),
+);
+
+// ── Platform.Recipient methods ────────────────────────────────────────────────
+
+export const platformRecipientMethods: SsjsFunction[] = PLATFORM_RECIPIENT_METHODS.map(
+    (m: any) => ({
+        ...m,
+        prefix: 'Platform.Recipient',
     }),
 );
 

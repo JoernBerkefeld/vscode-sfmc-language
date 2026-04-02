@@ -428,7 +428,7 @@ export const ampscriptFunctions: AmpscriptFunction[] = [
             'Builds an encrypted URL to a CloudPages landing page, optionally appending name/value parameter pairs to the query string.',
         category: 'Utility',
         params: [
-            { name: 'pageID', description: 'Numeric ID of the CloudPages page', type: 'number' },
+            { name: 'pageID', description: 'ID of the CloudPages page (number or string)' },
             {
                 name: 'param1Name',
                 description: 'Name of first query parameter',
@@ -545,8 +545,7 @@ export const ampscriptFunctions: AmpscriptFunction[] = [
         params: [
             {
                 name: 'contentBlockID',
-                description: 'Numeric ID of the content block',
-                type: 'number',
+                description: 'ID of the content block (number or string)',
             },
             {
                 name: 'impressionRegion',
@@ -2433,7 +2432,7 @@ export const ampscriptFunctions: AmpscriptFunction[] = [
         params: [
             { name: 'inputString', description: 'Source string', type: 'string' },
             { name: 'startIndex', description: '1-based starting position', type: 'number' },
-            { name: 'length', description: 'Number of characters to extract', type: 'number' },
+            { name: 'length', description: 'Number of characters to extract', type: 'number', optional: true },
         ],
         returnType: 'string',
         example: '%%[\n  set @areaCode = Substring("5551234567", 1, 3)\n  /* result: "555" */\n]%%',
@@ -2589,6 +2588,18 @@ export const ampscriptFunctions: AmpscriptFunction[] = [
             { name: 'recordId', description: '18-character Salesforce record ID', type: 'string' },
             { name: 'fieldName1', description: 'First field to update', type: 'string' },
             { name: 'fieldValue1', description: 'New value for the first field', type: 'string' },
+            {
+                name: 'fieldNameN',
+                description: 'Additional field name (repeatable)',
+                type: 'string',
+                optional: true,
+            },
+            {
+                name: 'fieldValueN',
+                description: 'Value for the additional field (repeatable)',
+                type: 'string',
+                optional: true,
+            },
         ],
         returnType: 'number',
         example:

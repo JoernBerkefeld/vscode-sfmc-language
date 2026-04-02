@@ -49,6 +49,7 @@ import {
     platformResponseMethods,
     platformRequestMethods,
     platformClientBrowserMethods,
+    platformRecipientMethods,
     coreLibraryObjects,
     wsproxyMethods,
     httpMethods,
@@ -214,6 +215,26 @@ for (const function_ of platformFunctions) {
         filterText: `Function.${function_.name} ${function_.name}`,
         data: { type: 'ssjs-platform-function', name: function_.name },
     });
+    ssjsCompletionItems.push({
+        label: `Platform.DateTime.${function_.name}`,
+        kind: CompletionItemKind.Method,
+        detail: `Platform.DateTime.${function_.name}`,
+        documentation: doc,
+        insertText: buildSsjsFunctionSnippet(function_),
+        insertTextFormat: InsertTextFormat.Snippet,
+        filterText: `Platform.DateTime.${function_.name} ${function_.name}`,
+        data: { type: 'ssjs-platform-function', name: function_.name },
+    });
+    ssjsCompletionItems.push({
+        label: `DateTime.${function_.name}`,
+        kind: CompletionItemKind.Method,
+        detail: `(shorthand) Platform.DateTime.${function_.name}`,
+        documentation: doc,
+        insertText: buildSsjsFunctionSnippet({ ...function_, prefix: 'DateTime' }),
+        insertTextFormat: InsertTextFormat.Snippet,
+        filterText: `DateTime.${function_.name} ${function_.name}`,
+        data: { type: 'ssjs-platform-function', name: function_.name },
+    });
 }
 
 for (const function_ of platformVariableMethods) {
@@ -346,6 +367,30 @@ for (const function_ of platformClientBrowserMethods) {
         insertTextFormat: InsertTextFormat.Snippet,
         filterText: `ClientBrowser.${function_.name} ${function_.name}`,
         data: { type: 'ssjs-platform-client-browser', name: function_.name },
+    });
+}
+
+for (const function_ of platformRecipientMethods) {
+    const doc = { kind: MarkupKind.Markdown, value: buildSsjsFunctionMarkdown(function_) };
+    ssjsCompletionItems.push({
+        label: `Platform.Recipient.${function_.name}`,
+        kind: CompletionItemKind.Method,
+        detail: `Platform.Recipient.${function_.name}`,
+        documentation: doc,
+        insertText: buildSsjsFunctionSnippet(function_),
+        insertTextFormat: InsertTextFormat.Snippet,
+        filterText: `Platform.Recipient.${function_.name} ${function_.name}`,
+        data: { type: 'ssjs-platform-recipient', name: function_.name },
+    });
+    ssjsCompletionItems.push({
+        label: `Recipient.${function_.name}`,
+        kind: CompletionItemKind.Method,
+        detail: `(shorthand) Platform.Recipient.${function_.name}`,
+        documentation: doc,
+        insertText: buildSsjsFunctionSnippet({ ...function_, prefix: 'Recipient' }),
+        insertTextFormat: InsertTextFormat.Snippet,
+        filterText: `Recipient.${function_.name} ${function_.name}`,
+        data: { type: 'ssjs-platform-recipient', name: function_.name },
     });
 }
 
@@ -1203,6 +1248,70 @@ function findLastMatchingOpen(stack: { tag: string; offset: number }[], closeTag
     return -1;
 }
 
+/**
+ * Scans JS/SSJS source text and returns the [start, end) character ranges of
+ * every comment (both line comments and block comments).
+ * String literals (single- and double-quoted) are skipped so their content
+ * is never misidentified as a comment opener.
+ */
+function buildCommentRanges(source: string): Array<[number, number]> {
+    const ranges: Array<[number, number]> = [];
+    let i = 0;
+    const len = source.length;
+
+    while (i < len) {
+        const ch = source[i];
+        if (ch === '"' || ch === "'") {
+            const quote = ch;
+            i++;
+            while (i < len) {
+                if (source[i] === '\\') {
+                    i += 2;
+                } else if (source[i] === quote) {
+                    i++;
+                    break;
+                } else {
+                    i++;
+                }
+            }
+        } else if (ch === '/' && i + 1 < len) {
+            if (source[i + 1] === '/') {
+                const start = i;
+                while (i < len && source[i] !== '\n') {
+                    i++;
+                }
+                ranges.push([start, i]);
+            } else if (source[i + 1] === '*') {
+                const start = i;
+                i += 2;
+                while (i < len) {
+                    if (source[i] === '*' && i + 1 < len && source[i + 1] === '/') {
+                        i += 2;
+                        break;
+                    }
+                    i++;
+                }
+                ranges.push([start, i]);
+            } else {
+                i++;
+            }
+        } else {
+            i++;
+        }
+    }
+
+    return ranges;
+}
+
+/** Returns true if `index` falls within any of the given comment ranges. */
+function isInCommentRange(index: number, ranges: Array<[number, number]>): boolean {
+    for (const [start, end] of ranges) {
+        if (start > index) break;
+        if (index < end) return true;
+    }
+    return false;
+}
+
 async function validateSsjsDocument(textDocument: TextDocument): Promise<Diagnostic[]> {
     const settings = await getDocumentSettings(textDocument.uri);
     const text = textDocument.getText();
@@ -1283,9 +1392,12 @@ async function validateSsjsDocument(textDocument: TextDocument): Promise<Diagnos
         { pattern: /\bawait\s+/g, message: 'Await expressions are not supported in SFMC SSJS.' },
     ];
 
+    const commentRanges = buildCommentRanges(text);
+
     for (const { pattern, message } of es6Patterns) {
         let match: RegExpExecArray | null;
         while ((match = pattern.exec(text)) !== null && problems < settings.maxNumberOfProblems) {
+            if (isInCommentRange(match.index, commentRanges)) continue;
             problems++;
             diagnostics.push({
                 severity: DiagnosticSeverity.Warning,
@@ -1309,6 +1421,7 @@ async function validateSsjsDocument(textDocument: TextDocument): Promise<Diagnos
         ...platformResponseMethods,
         ...platformRequestMethods,
         ...platformClientBrowserMethods,
+        ...platformRecipientMethods,
         ...wsproxyMethods,
         ...httpMethods,
     ]) {
@@ -1470,7 +1583,7 @@ const variadicFunctionNames = new Set([
     'replacelist',
     'regexmatch',
     'createsalesforceobject',
-    'updatesinglesfobject',
+    'updatesinglesalesforceobject',
     'retrievesalesforceobjects',
     'httppost',
     'httppost2',
@@ -2145,7 +2258,13 @@ function buildSsjsFunctionMarkdown(function_: SsjsFunction): string {
             lines.push(`*@return* \`${function_.returnType}\``);
         }
     } else {
-        lines.push(`**${prefix}${function_.name}**\n\n${function_.description}`);
+        // Zero-param callable functions still get a proper TypeScript signature
+        const returnType = function_.returnType || 'void';
+        const sig = `(function) ${prefix}${function_.name}(): ${returnType}`;
+        lines.push('```typescript', sig, '```', '', function_.description);
+        if (function_.returnType && function_.returnType !== 'void') {
+            lines.push('', `*@return* \`${function_.returnType}\``);
+        }
     }
 
     if (function_.example) {
@@ -2347,6 +2466,7 @@ function buildSsjsSignatureHelp(
         ...platformResponseMethods,
         ...platformRequestMethods,
         ...platformClientBrowserMethods,
+        ...platformRecipientMethods,
         ...wsproxyMethods,
         ...httpMethods,
     ];
@@ -2540,6 +2660,38 @@ function handleSsjsHover(
                     };
                 }
             }
+            if (qMatch[1] === 'Platform' && qMatch[2] === 'DateTime') {
+                const function_ = platformFunctionLookup.get(qMatch[3].toLowerCase());
+                if (function_) {
+                    return {
+                        contents: {
+                            kind: MarkupKind.Markdown,
+                            value: buildSsjsFunctionMarkdown(function_),
+                        },
+                        range: {
+                            start: { line: position.line, character: qMatch.index },
+                            end: { line: position.line, character: qMatch.index + fullName.length },
+                        },
+                    };
+                }
+            }
+            if (qMatch[1] === 'Platform' && qMatch[2] === 'Recipient') {
+                const function_ = platformRecipientMethods.find(
+                    (m) => m.name.toLowerCase() === qMatch![3].toLowerCase(),
+                );
+                if (function_) {
+                    return {
+                        contents: {
+                            kind: MarkupKind.Markdown,
+                            value: buildSsjsFunctionMarkdown(function_),
+                        },
+                        range: {
+                            start: { line: position.line, character: qMatch.index },
+                            end: { line: position.line, character: qMatch.index + fullName.length },
+                        },
+                    };
+                }
+            }
             // Script.Util.HttpRequest / HttpGet / HttpPost constructors
             if (qMatch[1] === 'Script' && qMatch[2] === 'Util') {
                 const constructor = scriptUtilConstructors.find(
@@ -2586,7 +2738,7 @@ function handleSsjsHover(
                     };
                 }
             }
-            if (tpgMatch[1] === 'Function') {
+            if (tpgMatch[1] === 'Function' || tpgMatch[1] === 'DateTime') {
                 const function_ = platformFunctionLookup.get(tpgMatch[2].toLowerCase());
                 if (function_) {
                     return {
@@ -2628,6 +2780,20 @@ function handleSsjsHover(
             }
             if (tpgMatch[1] === 'ClientBrowser') {
                 const method = platformClientBrowserMethods.find(
+                    (m) => m.name.toLowerCase() === tpgMatch![2].toLowerCase(),
+                );
+                if (method) {
+                    return {
+                        contents: { kind: MarkupKind.Markdown, value: buildSsjsFunctionMarkdown(method) },
+                        range: {
+                            start: { line: position.line, character: tpgMatch.index },
+                            end: { line: position.line, character: tpgMatch.index + fullName.length },
+                        },
+                    };
+                }
+            }
+            if (tpgMatch[1] === 'Recipient') {
+                const method = platformRecipientMethods.find(
                     (m) => m.name.toLowerCase() === tpgMatch![2].toLowerCase(),
                 );
                 if (method) {
@@ -2738,6 +2904,21 @@ function handleSsjsHover(
             contents: {
                 kind: MarkupKind.Markdown,
                 value: buildSsjsFunctionMarkdown(globalFunction),
+            },
+            range: {
+                start: { line: position.line, character: ssjsWordRange.start },
+                end: { line: position.line, character: ssjsWordRange.end },
+            },
+        };
+    }
+
+    // Plain unprefixed calls to Platform functions (e.g. Now(), SystemDateToLocalDate())
+    const platformFnByWord = platformFunctionLookup.get(word.toLowerCase());
+    if (platformFnByWord) {
+        return {
+            contents: {
+                kind: MarkupKind.Markdown,
+                value: buildSsjsFunctionMarkdown(platformFnByWord),
             },
             range: {
                 start: { line: position.line, character: ssjsWordRange.start },

@@ -12,5 +12,6 @@ server/src/**
 **/node_modules/**
 scripts/**
 client/testFixture/**
+../**
 !client/out/extension.js
 !server/out/server.js
