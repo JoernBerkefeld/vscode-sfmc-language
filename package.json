@@ -4,7 +4,7 @@
     "description": "Language support for Salesforce Marketing Cloud — AMPscript, SSJS (Server-Side JavaScript), and GTL (Guide Template Language). Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, and snippets.",
     "author": "Jörn Berkefeld",
     "license": "MIT",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/JoernBerkefeld/vscode-sfmc-language.git"
