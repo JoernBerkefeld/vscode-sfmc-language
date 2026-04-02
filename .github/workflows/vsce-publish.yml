@@ -7,7 +7,9 @@ on:
         types: [published]
 
 permissions:
-    contents: write
+    id-token: write # Required for OIDC
+    contents: write # Required for uploading release assets
+    issues: write # Required for closing milestones
 
 jobs:
     build:
@@ -105,14 +107,14 @@ jobs:
                   gh api -X PATCH "repos/${owner}/${repo}/milestones/${milestone_number}" -f state="closed" >/dev/null
                   echo "Milestone #${milestone_number} closed."
     publish-openvsx:
-      needs: publish-vsce
-      runs-on: ubuntu-latest
-      steps:
-          - name: Download vsix artifact
-            uses: actions/download-artifact@v4
-            with:
-                name: vsix-package
-          - name: Publish to Open VSX Registry
-            run: npx ovsx publish *.vsix
-            env:
-                OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        needs: publish-vsce
+        runs-on: ubuntu-latest
+        steps:
+            - name: Download vsix artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: vsix-package
+            - name: Publish to Open VSX Registry
+              run: npx ovsx publish *.vsix
+              env:
+                  OVSX_PAT: ${{ secrets.OVSX_PAT }}
