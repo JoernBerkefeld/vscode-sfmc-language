@@ -2,6 +2,12 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.2.1] — 2026-04-02
+
+### Fixed
+
+- SSJS IntelliSense (hover, completions, signature help) now works correctly in unsaved files when the language is manually set to SSJS
+
 ## [1.0.0] — 2026-03-31
 
 ### Added

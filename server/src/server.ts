@@ -170,8 +170,13 @@ documents.onDidClose((e) => {
 // ---------------------------------------------------------------------------
 // Language Detection
 // ---------------------------------------------------------------------------
-function getDocumentLanguage(uri: string): 'ampscript' | 'ssjs' {
-    const lower = uri.toLowerCase();
+function getDocumentLanguage(document: TextDocument): 'ampscript' | 'ssjs' {
+    // Use the languageId set by VS Code (handles unsaved files correctly)
+    if (document.languageId === 'ssjs') return 'ssjs';
+    if (document.languageId === 'ampscript') return 'ampscript';
+
+    // Fallback to file extension for backwards compatibility
+    const lower = document.uri.toLowerCase();
     if (lower.endsWith('.ssjs')) return 'ssjs';
     return 'ampscript';
 }
@@ -476,7 +481,7 @@ connection.languages.diagnostics.on(async (parameters) => {
             items: [],
         } satisfies DocumentDiagnosticReport;
     } else {
-        const lang = getDocumentLanguage(document.uri);
+        const lang = getDocumentLanguage(document);
         if (lang === 'ssjs') {
             return {
                 kind: DocumentDiagnosticReportKind.Full,
@@ -1644,7 +1649,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
         return [];
     }
 
-    const lang = getDocumentLanguage(document.uri);
+    const lang = getDocumentLanguage(document);
 
     if (lang === 'ssjs') {
         const text = document.getText();
@@ -1729,7 +1734,7 @@ connection.onHover((parameters: TextDocumentPositionParams): Hover | null => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return null;
 
-    const lang = getDocumentLanguage(document.uri);
+    const lang = getDocumentLanguage(document);
     const position = parameters.position;
     const line = document.getText({
         start: { line: position.line, character: 0 },
@@ -1819,7 +1824,7 @@ connection.onSignatureHelp((parameters: TextDocumentPositionParams): SignatureHe
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return null;
 
-    const lang = getDocumentLanguage(document.uri);
+    const lang = getDocumentLanguage(document);
     const position = parameters.position;
     const textUpToCursor = document.getText({
         start: { line: 0, character: 0 },
@@ -1895,7 +1900,7 @@ connection.onSignatureHelp((parameters: TextDocumentPositionParams): SignatureHe
 connection.onDefinition((parameters: DefinitionParams): Location | null => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return null;
-    if (getDocumentLanguage(document.uri) !== 'ssjs') return null;
+    if (getDocumentLanguage(document) !== 'ssjs') return null;
 
     const line = document.getText({
         start: { line: parameters.position.line, character: 0 },
