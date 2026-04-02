@@ -13,7 +13,7 @@
     },
     "dependencies": {
         "ampscript-data": "*",
-        "ssjs-data": "^0.2.0",
+        "ssjs-data": "^0.2.1",
         "vscode-languageserver": "^9.0.1",
         "vscode-languageserver-textdocument": "^1.0.11"
     },
