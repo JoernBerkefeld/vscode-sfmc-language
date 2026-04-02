@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mixed SSJS + AMPscript Test File</title>
+</head>
+<body>
+
+<!-- =============================================================================
+     Mixed Content Test File for Extension Development
+     Tests language detection for embedded AMPscript and SSJS in HTML
+     ============================================================================= -->
+
+<!-- -----------------------------------------------------------------------------
+     AMPscript Block - test syntax highlighting and completions in HTML context
+     ----------------------------------------------------------------------------- -->
+%%[
+SET @subscriberKey = _subscriberkey
+SET @email = EmailAddress
+SET @firstName = Lookup("Subscribers", "FirstName", "SubscriberKey", @subscriberKey)
+SET @lastName = Lookup("Subscribers", "LastName", "SubscriberKey", @subscriberKey)
+SET @fullName = Concat(@firstName, " ", @lastName)
+
+/* Data Extension lookup */
+SET @preferences = LookupRows("Preferences", "SubscriberKey", @subscriberKey)
+SET @prefCount = RowCount(@preferences)
+]%%
+
+<h1>Welcome, %%=v(@fullName)=%%!</h1>
+
+<!-- -----------------------------------------------------------------------------
+     SSJS Script Block - test syntax highlighting and completions in HTML context
+     ----------------------------------------------------------------------------- -->
+<script runat="server">
+    Platform.Load("core", "1.1.5");
+    
+    // WSProxy for SOAP API calls
+    var prox = new Script.Util.WSProxy();
+    
+    // Retrieve Data Extension rows
+    var cols = ["Email", "FirstName", "LastName", "Status"];
+    var filter = {
+        Property: "Status",
+        SimpleOperator: "equals",
+        Value: "Active"
+    };
+    var result = prox.retrieve("DataExtensionObject[MyDataExtension]", cols, filter);
+    
+    // Process results
+    if (result && result.Results) {
+        for (var i = 0; i < result.Results.length; i++) {
+            var row = result.Results[i];
+            Write("<p>Email: " + row.Properties[0].Value + "</p>");
+        }
+    }
+    
+    // HTTP call example
+    var response = HTTP.Get("https://api.example.com/data");
+    var responseData = Platform.Function.ParseJSON(response.Content);
+</script>
+
+<!-- -----------------------------------------------------------------------------
+     More AMPscript inline expressions
+     ----------------------------------------------------------------------------- -->
+<div class="content">
+    <p>Email: %%=v(@email)=%%</p>
+    <p>Date: %%=Format(Now(), "yyyy-MM-dd")=%%</p>
+    
+    %%[ IF @prefCount > 0 THEN ]%%
+        <h2>Your Preferences</h2>
+        <ul>
+        %%[ FOR @i = 1 TO @prefCount DO 
+            SET @pref = Row(@preferences, @i)
+            SET @prefName = Field(@pref, "PreferenceName")
+        ]%%
+            <li>%%=v(@prefName)=%%</li>
+        %%[ NEXT @i ]%%
+        </ul>
+    %%[ ELSE ]%%
+        <p>No preferences set.</p>
+    %%[ ENDIF ]%%
+</div>
+
+<!-- -----------------------------------------------------------------------------
+     SSJS with language attribute - test detection
+     ----------------------------------------------------------------------------- -->
+<script runat="server" language="javascript">
+    // Alternative SSJS declaration style
+    var timestamp = Platform.Function.Now();
+    var guid = Platform.Function.GUID();
+    
+    Write("<p>Generated at: " + timestamp + "</p>");
+    Write("<p>Request ID: " + guid + "</p>");
+</script>
+
+<!-- -----------------------------------------------------------------------------
+     Client-side JavaScript (should NOT get SSJS completions)
+     ----------------------------------------------------------------------------- -->
+<script>
+    // This is client-side JS - Platform.Function should NOT appear in completions
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Page loaded');
+    });
+</script>
+
+</body>
+</html>

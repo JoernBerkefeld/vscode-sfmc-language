@@ -1,0 +1,130 @@
+%%[
+/* =============================================================================
+   AMPscript Test File for Extension Development
+   Use this file to test completions, hover, and diagnostics
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   Variable Declarations - test SET keyword and @ variables
+   ----------------------------------------------------------------------------- */
+
+/* Completions: type "SET" and verify keyword appears */
+SET @firstName = "John"
+SET @lastName = "Doe"
+SET @email = "john.doe@example.com"
+SET @today = Now()
+SET @counter = 0
+
+/* -----------------------------------------------------------------------------
+   Data Extension Functions - test completions and hover
+   ----------------------------------------------------------------------------- */
+
+/* Hover: hover over Lookup to see signature */
+SET @value = Lookup("MyDataExtension", "ReturnField", "LookupField", @email)
+
+/* Hover: verify LookupRows shows correct signature */
+SET @rows = LookupRows("MyDataExtension", "Status", "Active")
+
+/* Hover: verify LookupOrderedRows shows correct signature */
+SET @orderedRows = LookupOrderedRows("MyDataExtension", 10, "CreatedDate DESC", "Status", "Active")
+
+/* Hover: verify Row and Field functions */
+SET @rowCount = RowCount(@rows)
+IF @rowCount > 0 THEN
+    SET @row = Row(@rows, 1)
+    SET @fieldValue = Field(@row, "FieldName")
+ENDIF
+
+/* Hover: verify InsertData shows correct signature */
+SET @insertResult = InsertData("MyDataExtension", "Email", @email, "FirstName", @firstName)
+
+/* Hover: verify UpdateData shows correct signature */
+SET @updateResult = UpdateData("MyDataExtension", 1, "Email", @email, "FirstName", "Updated")
+
+/* Hover: verify UpsertData shows correct signature */
+SET @upsertResult = UpsertData("MyDataExtension", 1, "Email", @email, "FirstName", @firstName, "LastName", @lastName)
+
+/* Hover: verify DeleteData shows correct signature */
+SET @deleteResult = DeleteData("MyDataExtension", "Email", @email)
+
+/* -----------------------------------------------------------------------------
+   String Functions - test completions and hover
+   ----------------------------------------------------------------------------- */
+
+/* Hover: verify Concat shows correct signature */
+SET @fullName = Concat(@firstName, " ", @lastName)
+
+/* Hover: verify Substring shows correct signature */
+SET @sub = Substring(@firstName, 1, 3)
+
+/* Hover: verify Length shows correct signature */
+SET @len = Length(@firstName)
+
+/* Hover: verify Uppercase/Lowercase shows correct signature */
+SET @upper = Uppercase(@firstName)
+SET @lower = Lowercase(@lastName)
+
+/* Hover: verify Replace shows correct signature */
+SET @replaced = Replace(@fullName, " ", "_")
+
+/* Hover: verify Trim shows correct signature */
+SET @trimmed = Trim("  spaces  ")
+
+/* -----------------------------------------------------------------------------
+   Date/Time Functions - test completions and hover
+   ----------------------------------------------------------------------------- */
+
+/* Hover: verify Now shows correct signature */
+SET @currentDate = Now()
+
+/* Hover: verify Format shows correct signature */
+SET @formattedDate = Format(@currentDate, "MMMM d, yyyy")
+SET @formattedTime = Format(@currentDate, "HH:mm:ss")
+
+/* Hover: verify DateAdd shows correct signature */
+SET @futureDate = DateAdd(@currentDate, 7, "D")
+SET @pastDate = DateAdd(@currentDate, -1, "M")
+
+/* Hover: verify DateDiff shows correct signature */
+SET @daysDiff = DateDiff(@currentDate, @futureDate, "D")
+
+/* Hover: verify DatePart shows correct signature */
+SET @year = DatePart(@currentDate, "Y")
+SET @month = DatePart(@currentDate, "M")
+SET @day = DatePart(@currentDate, "D")
+
+/* -----------------------------------------------------------------------------
+   Control Flow - test IF/ELSEIF/ELSE/ENDIF and FOR
+   ----------------------------------------------------------------------------- */
+
+/* Completions: type "IF" and verify keyword appears */
+IF @counter == 0 THEN
+    SET @message = "Counter is zero"
+ELSEIF @counter > 0 THEN
+    SET @message = "Counter is positive"
+ELSE
+    SET @message = "Counter is negative"
+ENDIF
+
+/* Completions: type "FOR" and verify keyword appears */
+FOR @i = 1 TO @rowCount DO
+    SET @currentRow = Row(@rows, @i)
+    SET @currentEmail = Field(@currentRow, "Email")
+NEXT @i
+
+]%%
+
+<!-- Inline AMPscript expressions -->
+<html>
+<body>
+    <h1>Hello, %%=v(@firstName)=%%!</h1>
+    
+    <!-- Hover: verify inline function calls -->
+    <p>Your email is: %%=v(@email)=%%</p>
+    <p>Today's date: %%=Format(Now(), "MMMM d, yyyy")=%%</p>
+    <p>Full name: %%=Concat(@firstName, " ", @lastName)=%%</p>
+    
+    <!-- Inline Lookup -->
+    <p>Status: %%=Lookup("MyDE", "Status", "Email", @email)=%%</p>
+</body>
+</html>

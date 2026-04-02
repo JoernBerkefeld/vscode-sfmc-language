@@ -141,6 +141,7 @@
         "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=server/out/server.js --external:vscode --format=cjs --platform=node",
         "compile": "tsc -b",
         "watch": "tsc -b -w",
+        "dev": "npm run compile && code --extensionDevelopmentPath=. ./client/testFixture",
         "package": "npx @vscode/vsce package --no-dependencies",
         "package:test": "npx @vscode/vsce package --no-dependencies --pre-release -o sfmc-language-BETA.vsix",
         "publish": "npx @vscode/vsce publish --no-dependencies",
