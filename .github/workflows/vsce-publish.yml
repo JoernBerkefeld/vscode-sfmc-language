@@ -20,7 +20,10 @@ jobs:
 
             - run: npm ci
             - run: npm run compile
-            - run: npm test
+            - name: Install Xvfb for headless VS Code test runner
+              run: sudo apt-get install -y xvfb
+            - name: Run tests (headless)
+              run: xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" npm test
 
     publish-vsce:
         needs: build
