@@ -7,7 +7,7 @@ export let documentEol: string;
 export let platformEol: string;
 
 export async function activate(documentUri: vscode.Uri) {
-    const extension = vscode.extensions.getExtension('joernberkefeld.sfmc-ampscript-language')!;
+    const extension = vscode.extensions.getExtension('joernberkefeld.sfmc-language')!;
     await extension.activate();
     try {
         doc = await vscode.workspace.openTextDocument(documentUri);
