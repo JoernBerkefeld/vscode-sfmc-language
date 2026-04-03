@@ -34,6 +34,12 @@
         "vscode": "^1.90.0"
     },
     "main": "./client/out/extension",
+    "extensionPack": [
+        "Accenture-oss.sfmc-devtools-vscode",
+        "dbaeumer.vscode-eslint",
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode"
+    ],
     "contributes": {
         "languages": [
             {
@@ -130,6 +136,12 @@
                     ],
                     "default": "off",
                     "description": "Traces the communication between VS Code and the language server."
+                },
+                "sfmcLanguageServer.suppressConflictWarning": {
+                    "scope": "application",
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Suppress warnings about conflicting AMPscript extensions (xnerd.ampscript-language, FiB.beautyAmp)."
                 }
             }
         }

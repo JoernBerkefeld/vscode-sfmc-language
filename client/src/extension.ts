@@ -4,7 +4,7 @@
  */
 
 import * as path from 'node:path';
-import { workspace, languages, ExtensionContext, TextDocument } from 'vscode';
+import { workspace, languages, commands, extensions, window, ExtensionContext, TextDocument } from 'vscode';
 
 import {
     LanguageClient,
@@ -14,6 +14,42 @@ import {
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
+
+export const CONFLICTING_EXTENSIONS = [
+    { id: 'xnerd.ampscript-language', name: 'AMPscript (xnerd)' },
+    { id: 'FiB.beautyAmp', name: 'beautyAmp' },
+];
+
+export const SUPPRESS_KEY = 'suppressConflictWarning';
+
+function checkConflictingExtensions(context: ExtensionContext): void {
+    const settingSuppressed = workspace
+        .getConfiguration('sfmcLanguageServer')
+        .get<boolean>('suppressConflictWarning', false);
+    if (settingSuppressed || context.globalState.get<boolean>(SUPPRESS_KEY)) {
+        return;
+    }
+
+    const active = CONFLICTING_EXTENSIONS
+        .filter(ext => extensions.getExtension(ext.id)?.isActive)
+        .map(ext => ext.name);
+
+    if (active.length === 0) return;
+
+    const message =
+        `SFMC Language Service: conflicting extension(s) detected — ${active.join(', ')}. ` +
+        'These can cause unpredictable formatting, syntax highlighting, and IntelliSense in AMPscript/HTML files. ' +
+        'Consider disabling them.';
+
+    window.showWarningMessage(message, 'Open Extensions', "Don't Show Again")
+        .then(selection => {
+            if (selection === 'Open Extensions') {
+                commands.executeCommand('workbench.extensions.action.showInstalledExtensions');
+            } else if (selection === "Don't Show Again") {
+                context.globalState.update(SUPPRESS_KEY, true);
+            }
+        });
+}
 
 const AMPSCRIPT_MARKERS: (string | RegExp)[] = [
     '%%[',
@@ -85,6 +121,8 @@ export function activate(context: ExtensionContext) {
 
     // Detect AMPscript in HTML documents opened after activation
     context.subscriptions.push(workspace.onDidOpenTextDocument(detectAndSwitchLanguage));
+
+    checkConflictingExtensions(context);
 }
 
 export function deactivate(): Thenable<void> | undefined {
