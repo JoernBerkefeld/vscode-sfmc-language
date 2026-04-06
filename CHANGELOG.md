@@ -2,6 +2,12 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.2.3] — 2026-04-06
+
+### Dependencies
+
+- Bundle `sfmc-language-lsp` v0.1.2 (ampscript-data ^0.1.3, ssjs-data ^0.2.2 via language service).
+
 ## [1.2.2] — 2026-04-02
 
 ### Fixed
