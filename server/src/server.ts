@@ -13,8 +13,6 @@ import {
     TextDocumentPositionParams,
     TextDocumentSyncKind,
     InitializeResult,
-    DocumentDiagnosticReportKind,
-    type DocumentDiagnosticReport,
     DefinitionParams,
     Location,
     CodeAction,
@@ -53,10 +51,6 @@ connection.onInitialize((parameters: InitializeParams) => {
             signatureHelpProvider: {
                 triggerCharacters: ['(', ','],
             },
-            diagnosticProvider: {
-                interFileDependencies: false,
-                workspaceDiagnostics: false,
-            },
             codeActionProvider: true,
             definitionProvider: true,
         },
@@ -93,7 +87,9 @@ connection.onDidChangeConfiguration((change) => {
     } else {
         globalSettings = (change.settings.sfmcLanguageServer as SfmcSettings | null) ?? defaultSettings;
     }
-    connection.languages.diagnostics.refresh();
+    for (const doc of documents.all()) {
+        void sendDiagnosticsForDocument(doc.uri);
+    }
 });
 
 function getDocumentSettings(resource: string): Thenable<SfmcSettings> {
@@ -113,10 +109,6 @@ function getDocumentSettings(resource: string): Thenable<SfmcSettings> {
     return result;
 }
 
-documents.onDidClose((e) => {
-    documentSettings.delete(e.document.uri);
-});
-
 // ---------------------------------------------------------------------------
 // Language Detection
 // ---------------------------------------------------------------------------
@@ -128,12 +120,15 @@ function getDocumentLanguage(document: TextDocument): 'ampscript' | 'ssjs' {
 }
 
 // ---------------------------------------------------------------------------
-// Diagnostics
+// Diagnostics (push via textDocument/publishDiagnostics — not pull)
+// Pull diagnostics are skipped by vscode-languageclient when the document is not
+// in a visible tab, which breaks extension tests and some editor scenarios.
 // ---------------------------------------------------------------------------
-connection.languages.diagnostics.on(async (parameters) => {
-    const document = documents.get(parameters.textDocument.uri);
+async function sendDiagnosticsForDocument(uri: string): Promise<void> {
+    const document = documents.get(uri);
     if (!document) {
-        return { kind: DocumentDiagnosticReportKind.Full, items: [] } satisfies DocumentDiagnosticReport;
+        connection.sendDiagnostics({ uri, diagnostics: [] });
+        return;
     }
     const settings = await getDocumentSettings(document.uri);
     const doc = {
@@ -141,14 +136,20 @@ connection.languages.diagnostics.on(async (parameters) => {
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
-    return {
-        kind: DocumentDiagnosticReportKind.Full,
-        items: sfmcLanguageService.validate(doc, settings),
-    } satisfies DocumentDiagnosticReport;
+    connection.sendDiagnostics({ uri, diagnostics: sfmcLanguageService.validate(doc, settings) });
+}
+
+documents.onDidOpen((e) => {
+    void sendDiagnosticsForDocument(e.document.uri);
 });
 
-documents.onDidChangeContent(() => {
-    connection.languages.diagnostics.refresh();
+documents.onDidChangeContent((e) => {
+    void sendDiagnosticsForDocument(e.document.uri);
+});
+
+documents.onDidClose((e) => {
+    documentSettings.delete(e.document.uri);
+    connection.sendDiagnostics({ uri: e.document.uri, diagnostics: [] });
 });
 
 // ---------------------------------------------------------------------------

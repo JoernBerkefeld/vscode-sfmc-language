@@ -8,7 +8,8 @@ suite('AMPscript Completions', () => {
     test('Provides function completions inside a block', async () => {
         await activate(documentUri);
 
-        const position = new vscode.Position(1, 6);
+        // On the `set @name` line at `@` — function list is not filtered by `@` prefix.
+        const position = new vscode.Position(2, 6);
         const actualCompletionList = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
@@ -30,7 +31,8 @@ suite('AMPscript Completions', () => {
     test('Provides keyword completions inside a block', async () => {
         await activate(documentUri);
 
-        const position = new vscode.Position(1, 6);
+        // Blank line inside %%[ ... ]%% — neutral prefix so VS Code does not hide keywords (e.g. `if`).
+        const position = new vscode.Position(1, 0);
         const actualCompletionList = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
@@ -50,17 +52,23 @@ suite('AMPscript Completions', () => {
     test('Does not provide completions outside AMPscript context', async () => {
         await activate(documentUri);
 
-        const position = new vscode.Position(4, 5);
+        const position = new vscode.Position(5, 5);
         const actualCompletionList = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
             position,
         )) as vscode.CompletionList;
 
-        const ampFunctions = actualCompletionList.items.filter(
-            (index) =>
-                (typeof index.label === 'string' ? index.label : index.label.label) === 'Lookup',
-        );
+        // Ignore word-based suggestions from other fixtures; only count our Function items.
+        const ampFunctions = actualCompletionList.items.filter((index) => {
+            const label = typeof index.label === 'string' ? index.label : index.label.label;
+            const detail = typeof index.detail === 'string' ? index.detail : '';
+            return (
+                label === 'Lookup' &&
+                index.kind === vscode.CompletionItemKind.Function &&
+                /^\([^)]+\)/.test(detail)
+            );
+        });
         assert.strictEqual(
             ampFunctions.length,
             0,
