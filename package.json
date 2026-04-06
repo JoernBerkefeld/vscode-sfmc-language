@@ -23,7 +23,9 @@
         "salesforce",
         "marketing cloud",
         "server-side javascript",
-        "multi-root ready"
+        "multi-root ready",
+        "mcp",
+        "model context protocol"
     ],
     "icon": "resources/images/vscode-sfmc-language-white256.png",
     "galleryBanner": {
