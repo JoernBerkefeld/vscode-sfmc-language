@@ -31,7 +31,7 @@
         "theme": "dark"
     },
     "engines": {
-        "vscode": "^1.90.0"
+        "vscode": "^1.101.0"
     },
     "main": "./client/out/extension",
     "extensionPack": [
@@ -144,7 +144,13 @@
                     "description": "Suppress warnings about conflicting AMPscript extensions (xnerd.ampscript-language, FiB.beautyAmp)."
                 }
             }
-        }
+        },
+        "mcpServerDefinitionProviders": [
+            {
+                "id": "sfmcLanguageMcp",
+                "label": "Salesforce Marketing Cloud"
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "npm run esbuild-base -- --minify",

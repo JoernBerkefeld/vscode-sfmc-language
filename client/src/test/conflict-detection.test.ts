@@ -94,4 +94,16 @@ suite('Conflict detection — VS Code integration', () => {
             );
         }
     });
+
+    test('mcpServerDefinitionProviders includes sfmcLanguageMcp', () => {
+        const ext = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
+        assert.ok(ext, 'sfmc-language extension must be present');
+        const providers = ext.packageJSON?.contributes?.mcpServerDefinitionProviders;
+        assert.ok(Array.isArray(providers), 'mcpServerDefinitionProviders must be an array');
+        const ids = providers.map((p: { id?: string }) => p.id);
+        assert.ok(
+            ids.includes('sfmcLanguageMcp'),
+            'mcpServerDefinitionProviders must include id "sfmcLanguageMcp"',
+        );
+    });
 });

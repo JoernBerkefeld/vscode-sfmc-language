@@ -2,7 +2,15 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
-## [1.2.5] — 2026-04-06
+## [1.3.0] — 2026-04-06
+
+### Added
+
+- **MCP discovery**: the extension contributes a built-in Model Context Protocol server definition so VS Code can discover **mcp-server-sfmc** (validation, lookup, diff review, prompts, resources) for Copilot agent mode without hand-editing `.vscode/mcp.json`. For other editors and advanced configuration, see the [mcp-server-sfmc README](https://github.com/JoernBerkefeld/mcp-server-sfmc/blob/main/README.md).
+
+### Changed
+
+- Minimum supported VS Code version is now **1.101.0** (required for `vscode.lm.registerMcpServerDefinitionProvider`).
 
 ### Fixed
 

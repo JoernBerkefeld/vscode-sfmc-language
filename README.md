@@ -55,6 +55,12 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 - **Context-aware completions** inside `{{ }}` expressions — AMPscript functions, variables, and personalization strings
 - **GTL snippets** for common patterns
 
+### Model Context Protocol (MCP) for AI assistants
+
+This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/mcp-server-sfmc)** MCP server with VS Code so **GitHub Copilot agent mode** (and other MCP-aware chat flows) can discover SFMC tooling automatically — validation and lookups for AMPscript and SSJS, diff-aware review, fix suggestions, catalogs as resources, and guided prompts. You do **not** need a separate npm install or a manual `.vscode/mcp.json` entry for that discovery; the server is still loaded via `npx` when the tool runs.
+
+**Requirements:** VS Code **1.101 or newer** (see `engines` in this extension’s `package.json`). Older versions can add the server manually as described in the [mcp-server-sfmc README](https://github.com/JoernBerkefeld/mcp-server-sfmc/blob/main/README.md) (also covers Cursor, Claude Desktop, Windsurf, and global or local installs).
+
 ### Snippets
 
 **AMPscript snippets** (36 built-in):

@@ -4,7 +4,17 @@
  */
 
 import * as path from 'node:path';
-import { workspace, languages, commands, extensions, window, ExtensionContext, TextDocument } from 'vscode';
+import {
+    workspace,
+    languages,
+    commands,
+    extensions,
+    window,
+    ExtensionContext,
+    TextDocument,
+    lm,
+    McpStdioServerDefinition,
+} from 'vscode';
 
 import {
     LanguageClient,
@@ -123,6 +133,20 @@ export function activate(context: ExtensionContext) {
     context.subscriptions.push(workspace.onDidOpenTextDocument(detectAndSwitchLanguage));
 
     checkConflictingExtensions(context);
+
+    context.subscriptions.push(
+        lm.registerMcpServerDefinitionProvider('sfmcLanguageMcp', {
+            provideMcpServerDefinitions: () => [
+                new McpStdioServerDefinition(
+                    'Salesforce Marketing Cloud (mcp-server-sfmc)',
+                    'npx',
+                    ['-y', 'mcp-server-sfmc@latest'],
+                    {},
+                    'mcp-server-sfmc@latest',
+                ),
+            ],
+        }),
+    );
 }
 
 export function deactivate(): Thenable<void> | undefined {
