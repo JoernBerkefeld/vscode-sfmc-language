@@ -2,6 +2,12 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.2.4] — 2026-04-06
+
+### Dependencies
+
+- Bundle `sfmc-language-lsp` v0.1.3 (npm publish via GitHub Actions; includes TypeScript build tooling and lockfile fixes for CI).
+
 ## [1.2.3] — 2026-04-06
 
 ### Dependencies
