@@ -2,6 +2,12 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.2.5] — 2026-04-06
+
+### Fixed
+
+- Language server dependency is resolved from the npm package `sfmc-language-lsp` (^0.1.3) instead of a `file:` path, so `npm ci` / GitHub Actions builds succeed on a standalone clone.
+
 ## [1.2.4] — 2026-04-06
 
 ### Dependencies
