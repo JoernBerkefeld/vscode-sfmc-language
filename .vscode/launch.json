@@ -8,6 +8,7 @@
             "name": "Launch Client",
             "runtimeExecutable": "${execPath}",
             "args": [
+                "--disable-extensions",
                 "--extensionDevelopmentPath=${workspaceRoot}",
                 "${workspaceRoot}/client/testFixture"
             ],
@@ -18,7 +19,7 @@
             "autoAttachChildProcesses": true,
             "preLaunchTask": {
                 "type": "npm",
-                "script": "watch"
+                "script": "compile"
             }
         },
         {
