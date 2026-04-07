@@ -22,6 +22,7 @@ import {
     ServerOptions,
     TransportKind,
 } from 'vscode-languageclient/node';
+import { SfmcStatusBar } from './statusBar';
 
 let client: LanguageClient;
 
@@ -123,6 +124,8 @@ export function activate(context: ExtensionContext) {
     );
 
     client.start();
+
+    new SfmcStatusBar(context, client);
 
     // Detect AMPscript in already-open HTML documents
     for (const doc of workspace.textDocuments) {

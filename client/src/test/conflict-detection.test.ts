@@ -106,4 +106,26 @@ suite('Conflict detection — VS Code integration', () => {
             'mcpServerDefinitionProviders must include id "sfmcLanguageMcp"',
         );
     });
+
+    test('sfmc-language.showOutput command is contributed in the manifest', () => {
+        const ext = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
+        assert.ok(ext, 'sfmc-language extension must be present');
+        const contributed: { command: string }[] = ext.packageJSON?.contributes?.commands ?? [];
+        assert.ok(Array.isArray(contributed), 'contributes.commands must be an array');
+        const ids = contributed.map((c) => c.command);
+        assert.ok(
+            ids.includes('sfmc-language.showOutput'),
+            'contributes.commands must include "sfmc-language.showOutput"',
+        );
+    });
+
+    test('sfmc-language.showOutput command is registered at runtime', async () => {
+        const { activate, getDocUri } = await import('./helper');
+        await activate(getDocUri('test-ampscript.amp'));
+        const allCommands = await vscode.commands.getCommands(true);
+        assert.ok(
+            allCommands.includes('sfmc-language.showOutput'),
+            '"sfmc-language.showOutput" must be registered after activation',
+        );
+    });
 });

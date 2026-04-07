@@ -55,6 +55,16 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 - **Context-aware completions** inside `{{ }}` expressions — AMPscript functions, variables, and personalization strings
 - **GTL snippets** for common patterns
 
+### Status Bar
+
+A compact `sfmc` entry appears in the VS Code status bar (bottom-right) as soon as the extension activates:
+
+- **Spinner** while the language server is starting up.
+- **Check mark** once the server is running and ready.
+- **Error icon** if the server stops or fails.
+- **Click** to open the language server output channel.
+- **Hover** for a tooltip with a **Show Output** link, live server status, active trace level (if enabled), and a quick **Settings** link to jump directly to the extension settings.
+
 ### Model Context Protocol (MCP) for AI assistants
 
 This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/mcp-server-sfmc)** MCP server with VS Code so **GitHub Copilot agent mode** (and other MCP-aware chat flows) can discover SFMC tooling automatically — validation and lookups for AMPscript and SSJS, diff-aware review, fix suggestions, catalogs as resources, and guided prompts. You do **not** need a separate npm install or a manual `.vscode/mcp.json` entry for that discovery; the server is still loaded via `npx` when the tool runs.

@@ -147,6 +147,13 @@
                 }
             }
         },
+        "commands": [
+            {
+                "command": "sfmc-language.showOutput",
+                "title": "Show SFMC Language Server Output",
+                "category": "SFMC"
+            }
+        ],
         "mcpServerDefinitionProviders": [
             {
                 "id": "sfmcLanguageMcp",
