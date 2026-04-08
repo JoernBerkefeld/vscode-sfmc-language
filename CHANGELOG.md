@@ -2,6 +2,16 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.4.0] — 2026-04-08
+
+### Added
+
+- **What's New**: after an update, a notification offers to open release notes in a webview, parsed from this changelog for the current version. Use command **SFMC: Show What's New** anytime.
+
+### Changed
+
+- **Extension Pack**: includes **SFMC Data Loader** (`joernberkefeld.sfmc-data`) as a recommended companion extension.
+
 ## [1.3.1] — 2026-04-06
 
 ### Added
