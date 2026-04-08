@@ -152,6 +152,11 @@
                 "command": "sfmc-language.showOutput",
                 "title": "Show SFMC Language Server Output",
                 "category": "SFMC"
+            },
+            {
+                "command": "sfmc-language.showWhatsNew",
+                "title": "Show What's New",
+                "category": "SFMC"
             }
         ],
         "mcpServerDefinitionProviders": [

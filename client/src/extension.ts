@@ -23,8 +23,11 @@ import {
     TransportKind,
 } from 'vscode-languageclient/node';
 import { SfmcStatusBar } from './statusBar';
+import { checkAndShowWhatsNew, showWhatsNewPanel } from './whatsNew';
 
 let client: LanguageClient;
+
+const EXTENSION_DISPLAY_NAME = 'SFMC Language Service';
 
 export const CONFLICTING_EXTENSIONS = [
     { id: 'xnerd.ampscript-language', name: 'AMPscript (xnerd)' },
@@ -136,6 +139,14 @@ export function activate(context: ExtensionContext) {
     context.subscriptions.push(workspace.onDidOpenTextDocument(detectAndSwitchLanguage));
 
     checkConflictingExtensions(context);
+
+    context.subscriptions.push(
+        commands.registerCommand('sfmc-language.showWhatsNew', () =>
+            showWhatsNewPanel(context, EXTENSION_DISPLAY_NAME),
+        ),
+    );
+
+    void checkAndShowWhatsNew(context, EXTENSION_DISPLAY_NAME);
 
     context.subscriptions.push(
         lm.registerMcpServerDefinitionProvider('sfmcLanguageMcp', {

@@ -31,18 +31,15 @@ export class SfmcStatusBar {
         this.item = window.createStatusBarItem(StatusBarAlignment.Right, 109);
         this.item.name = 'SFMC Language Service';
         this.item.command = CMD_SHOW_OUTPUT;
-        context.subscriptions.push(this.item);
-
-        context.subscriptions.push(
-            commands.registerCommand(CMD_SHOW_OUTPUT, () => {
-                client.outputChannel.show(true);
-            }),
-        );
 
         this.refresh();
         this.item.show();
 
         context.subscriptions.push(
+            this.item,
+            commands.registerCommand(CMD_SHOW_OUTPUT, () => {
+                client.outputChannel.show(true);
+            }),
             client.onDidChangeState(({ newState }) => {
                 if (newState === State.Running) {
                     this.setState('ready');
