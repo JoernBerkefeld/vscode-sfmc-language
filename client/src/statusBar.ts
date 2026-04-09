@@ -19,15 +19,18 @@ const LABEL = 'sfmc';
 /** VS Code codicons used for each lifecycle state. */
 const ICONS = {
     loading: '$(loading~spin)',
-    ready:   '$(check)',
-    error:   '$(error)',
+    ready: '$(check)',
+    error: '$(error)',
 } as const;
 
 export class SfmcStatusBar {
     private readonly item: StatusBarItem;
     private state: 'loading' | 'ready' | 'error' = 'loading';
 
-    constructor(context: ExtensionContext, private readonly client: LanguageClient) {
+    constructor(
+        context: ExtensionContext,
+        private readonly client: LanguageClient
+    ) {
         this.item = window.createStatusBarItem(StatusBarAlignment.Right, 109);
         this.item.name = 'SFMC Language Service';
         this.item.command = CMD_SHOW_OUTPUT;
@@ -48,7 +51,7 @@ export class SfmcStatusBar {
                 } else {
                     this.setState('loading');
                 }
-            }),
+            })
         );
     }
 
@@ -69,7 +72,7 @@ export class SfmcStatusBar {
         md.supportThemeIcons = true;
 
         md.appendMarkdown(
-            `[$(terminal) Show Output](command:${CMD_SHOW_OUTPUT} "Show SFMC language server output")\n\n`,
+            `[$(terminal) Show Output](command:${CMD_SHOW_OUTPUT} "Show SFMC language server output")\n\n`
         );
 
         md.appendMarkdown('---\n\n');
@@ -97,7 +100,7 @@ export class SfmcStatusBar {
             encodeURIComponent(JSON.stringify(`@ext:${PUBLISHER}.${EXT_ID}`));
         md.appendMarkdown(
             `[**Settings**](${settingsUri} "Open SFMC Language Service settings") ` +
-            `&nbsp;[$(gear)](${settingsUri} "Open SFMC Language Service settings")\n\n`,
+                `&nbsp;[$(gear)](${settingsUri} "Open SFMC Language Service settings")\n\n`
         );
 
         return md;

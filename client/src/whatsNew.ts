@@ -3,15 +3,10 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import path from 'node:path';
 import { ExtensionContext, Uri, ViewColumn, WebviewPanel, window } from 'vscode';
 
-import {
-    compareSemver,
-    escapeHtml,
-    markdownToHtml,
-    parseChangelogEntry,
-} from './whatsNewCore';
+import { compareSemver, escapeHtml, markdownToHtml, parseChangelogEntry } from './whatsNewCore';
 
 export { compareSemver, markdownToHtml, parseChangelogEntry } from './whatsNewCore';
 
@@ -31,7 +26,12 @@ function getNonce(): string {
     return t;
 }
 
-function buildWhatsNewHtml(bodyHtml: string, title: string, nonce: string, cspSource: string): string {
+function buildWhatsNewHtml(
+    bodyHtml: string,
+    title: string,
+    nonce: string,
+    cspSource: string
+): string {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,9 +77,12 @@ function buildWhatsNewHtml(bodyHtml: string, title: string, nonce: string, cspSo
 </html>`;
 }
 
-export async function showWhatsNewPanel(context: ExtensionContext, extensionDisplayName: string): Promise<void> {
+export async function showWhatsNewPanel(
+    context: ExtensionContext,
+    extensionDisplayName: string
+): Promise<void> {
     const version = context.extension.packageJSON.version as string;
-    const changelogPath = join(context.extensionPath, 'CHANGELOG.md');
+    const changelogPath = path.join(context.extensionPath, 'CHANGELOG.md');
     let bodyHtml: string;
     try {
         const raw = await readFile(changelogPath, 'utf8');
@@ -101,16 +104,11 @@ export async function showWhatsNewPanel(context: ExtensionContext, extensionDisp
         return;
     }
 
-    panel = window.createWebviewPanel(
-        PANEL_VIEW_TYPE,
-        title,
-        ViewColumn.Active,
-        {
-            enableScripts: false,
-            retainContextWhenHidden: true,
-            localResourceRoots: [Uri.file(context.extensionPath)],
-        },
-    );
+    panel = window.createWebviewPanel(PANEL_VIEW_TYPE, title, ViewColumn.Active, {
+        enableScripts: false,
+        retainContextWhenHidden: true,
+        localResourceRoots: [Uri.file(context.extensionPath)],
+    });
     panel.webview.html = buildWhatsNewHtml(bodyHtml, title, nonce, panel.webview.cspSource);
     panel.onDidDispose(() => {
         panel = undefined;
@@ -119,8 +117,13 @@ export async function showWhatsNewPanel(context: ExtensionContext, extensionDisp
 
 /**
  * After an upgrade, prompt once; opening the panel or choosing Later records the version.
+ * @param context
+ * @param extensionDisplayName
  */
-export async function checkAndShowWhatsNew(context: ExtensionContext, extensionDisplayName: string): Promise<void> {
+export async function checkAndShowWhatsNew(
+    context: ExtensionContext,
+    extensionDisplayName: string
+): Promise<void> {
     context.globalState.setKeysForSync([WHATS_NEW_VERSION_KEY]);
     const current = context.extension.packageJSON.version as string;
     const last = context.globalState.get<string>(WHATS_NEW_VERSION_KEY);

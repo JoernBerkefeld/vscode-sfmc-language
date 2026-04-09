@@ -5,22 +5,25 @@ import { getDocUri as getDocumentUri, activate } from './helper';
 /**
  * Helper that waits until `doc.languageId` transitions to the expected value,
  * polling every 200 ms up to `timeoutMs`.  Returns the final language id.
+ * @param documentUri
+ * @param expectedLanguage
+ * @param timeoutMs
  */
 async function waitForLanguage(
     documentUri: vscode.Uri,
     expectedLanguage: string,
-    timeoutMs = 5000,
+    timeoutMs = 5000
 ): Promise<string> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
         const doc = vscode.workspace.textDocuments.find(
-            (d) => d.uri.toString() === documentUri.toString(),
+            (d) => d.uri.toString() === documentUri.toString()
         );
         if (doc?.languageId === expectedLanguage) return expectedLanguage;
         await sleep(200);
     }
     const doc = vscode.workspace.textDocuments.find(
-        (d) => d.uri.toString() === documentUri.toString(),
+        (d) => d.uri.toString() === documentUri.toString()
     );
     return doc?.languageId ?? 'unknown';
 }
@@ -48,14 +51,22 @@ suite('AMPscript HTML auto-detection — individual marker variants', () => {
         const documentUri = getDocumentUri('marker-script-language.html');
         await activate(documentUri);
         const lang = await waitForLanguage(documentUri, 'ampscript');
-        assert.strictEqual(lang, 'ampscript', 'marker-script-language.html should be detected as ampscript');
+        assert.strictEqual(
+            lang,
+            'ampscript',
+            'marker-script-language.html should be detected as ampscript'
+        );
     });
 
     test('<script language="ampscript" runat="server"> → ampscript', async () => {
         const documentUri = getDocumentUri('marker-script-language-runat.html');
         await activate(documentUri);
         const lang = await waitForLanguage(documentUri, 'ampscript');
-        assert.strictEqual(lang, 'ampscript', 'marker-script-language-runat.html should be detected as ampscript');
+        assert.strictEqual(
+            lang,
+            'ampscript',
+            'marker-script-language-runat.html should be detected as ampscript'
+        );
     });
 
     test('<script runat="server"> → ssjs', async () => {
@@ -74,7 +85,7 @@ suite('AMPscript HTML auto-detection', () => {
         assert.strictEqual(
             lang,
             'ampscript',
-            'Expected language to be switched to ampscript for a file containing %%[ ... ]%%',
+            'Expected language to be switched to ampscript for a file containing %%[ ... ]%%'
         );
     });
 
@@ -85,7 +96,7 @@ suite('AMPscript HTML auto-detection', () => {
         assert.strictEqual(
             lang,
             'ampscript',
-            'Expected language to be switched to ampscript for a file containing a <script language="ampscript"> tag',
+            'Expected language to be switched to ampscript for a file containing a <script language="ampscript"> tag'
         );
     });
 
@@ -96,7 +107,7 @@ suite('AMPscript HTML auto-detection', () => {
         assert.strictEqual(
             lang,
             'ssjs',
-            'Expected language to be switched to ssjs for a file containing only <script runat="server">',
+            'Expected language to be switched to ssjs for a file containing only <script runat="server">'
         );
     });
 
@@ -107,7 +118,7 @@ suite('AMPscript HTML auto-detection', () => {
         assert.strictEqual(
             lang,
             'ampscript',
-            'Expected language to be ampscript when both AMPscript and SSJS markers are present',
+            'Expected language to be ampscript when both AMPscript and SSJS markers are present'
         );
     });
 
@@ -117,11 +128,11 @@ suite('AMPscript HTML auto-detection', () => {
         // Give the extension time to process the document; language must NOT change.
         await sleep(3000);
         const doc = vscode.workspace.textDocuments.find(
-            (d) => d.uri.toString() === documentUri.toString(),
+            (d) => d.uri.toString() === documentUri.toString()
         );
         assert.ok(
             doc?.languageId !== 'ampscript' && doc?.languageId !== 'ssjs',
-            `Expected plain HTML file to stay as html, got '${doc?.languageId}'`,
+            `Expected plain HTML file to stay as html, got '${doc?.languageId}'`
         );
     });
 });

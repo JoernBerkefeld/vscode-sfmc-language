@@ -3,7 +3,7 @@
  * Activates the language server for AMPscript, SSJS, and GTL files.
  */
 
-import * as path from 'node:path';
+import path from 'node:path';
 import {
     workspace,
     languages,
@@ -44,9 +44,9 @@ function checkConflictingExtensions(context: ExtensionContext): void {
         return;
     }
 
-    const active = CONFLICTING_EXTENSIONS
-        .filter(ext => extensions.getExtension(ext.id)?.isActive)
-        .map(ext => ext.name);
+    const active = CONFLICTING_EXTENSIONS.filter(
+        (ext) => extensions.getExtension(ext.id)?.isActive
+    ).map((ext) => ext.name);
 
     if (active.length === 0) return;
 
@@ -55,14 +55,13 @@ function checkConflictingExtensions(context: ExtensionContext): void {
         'These can cause unpredictable formatting, syntax highlighting, and IntelliSense in AMPscript/HTML files. ' +
         'Consider disabling them.';
 
-    window.showWarningMessage(message, 'Open Extensions', "Don't Show Again")
-        .then(selection => {
-            if (selection === 'Open Extensions') {
-                commands.executeCommand('workbench.extensions.action.showInstalledExtensions');
-            } else if (selection === "Don't Show Again") {
-                context.globalState.update(SUPPRESS_KEY, true);
-            }
-        });
+    window.showWarningMessage(message, 'Open Extensions', "Don't Show Again").then((selection) => {
+        if (selection === 'Open Extensions') {
+            commands.executeCommand('workbench.extensions.action.showInstalledExtensions');
+        } else if (selection === "Don't Show Again") {
+            context.globalState.update(SUPPRESS_KEY, true);
+        }
+    });
 }
 
 const AMPSCRIPT_MARKERS: (string | RegExp)[] = [
@@ -76,7 +75,7 @@ const SSJS_MARKER = /<script\s[^>]*runat\s*=\s*["']server["']/i;
 
 function matchesAny(text: string, markers: (string | RegExp)[]): boolean {
     return markers.some((marker) =>
-        typeof marker === 'string' ? text.includes(marker) : marker.test(text),
+        typeof marker === 'string' ? text.includes(marker) : marker.test(text)
     );
 }
 
@@ -123,7 +122,7 @@ export function activate(context: ExtensionContext) {
         'sfmcLanguageServer',
         'SFMC Language Server',
         serverOptions,
-        clientOptions,
+        clientOptions
     );
 
     client.start();
@@ -142,8 +141,8 @@ export function activate(context: ExtensionContext) {
 
     context.subscriptions.push(
         commands.registerCommand('sfmc-language.showWhatsNew', () =>
-            showWhatsNewPanel(context, EXTENSION_DISPLAY_NAME),
-        ),
+            showWhatsNewPanel(context, EXTENSION_DISPLAY_NAME)
+        )
     );
 
     void checkAndShowWhatsNew(context, EXTENSION_DISPLAY_NAME);
@@ -156,10 +155,10 @@ export function activate(context: ExtensionContext) {
                     'npx',
                     ['-y', 'mcp-server-sfmc@latest'],
                     {},
-                    'mcp-server-sfmc@latest',
+                    'mcp-server-sfmc@latest'
                 ),
             ],
-        }),
+        })
     );
 }
 

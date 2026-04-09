@@ -2,7 +2,11 @@
  * Changelog parsing and minimal markdown HTML (no vscode dependency — safe for Node unit tests).
  */
 
-/** Compare semver strings (numeric segments only). Returns positive if a > b. */
+/**
+ * Compare semver strings (numeric segments only). Returns positive if a > b.
+ * @param a
+ * @param b
+ */
 export function compareSemver(a: string, b: string): number {
     const pa = a.split('.').map((p) => Number.parseInt(p, 10) || 0);
     const pb = b.split('.').map((p) => Number.parseInt(p, 10) || 0);
@@ -18,6 +22,8 @@ export function compareSemver(a: string, b: string): number {
 
 /**
  * Extract the changelog body for a given version (Keep a Changelog style: ## [x.y.z]).
+ * @param changelog
+ * @param version
  */
 export function parseChangelogEntry(changelog: string, version: string): string | null {
     const escaped = version.replaceAll(/[.*+?^${}()|[\]\\]/g, (ch) => `\\${ch}`);
@@ -88,7 +94,10 @@ function renderMarkdownChunk(chunk: string): string {
     return out.join('');
 }
 
-/** Minimal markdown → HTML for changelog sections (headings, lists, bold, code). */
+/**
+ * Minimal markdown → HTML for changelog sections (headings, lists, bold, code).
+ * @param md
+ */
 export function markdownToHtml(md: string): string {
     const parts: string[] = [];
     const fence = /^```(\w*)\r?\n([\s\S]*?)^```$/gm;

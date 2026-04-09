@@ -37,8 +37,8 @@ let hasWorkspaceFolderCapability = false;
 connection.onInitialize((parameters: InitializeParams) => {
     const capabilities = parameters.capabilities;
 
-    hasConfigurationCapability = !!(capabilities.workspace?.configuration);
-    hasWorkspaceFolderCapability = !!(capabilities.workspace?.workspaceFolders);
+    hasConfigurationCapability = !!capabilities.workspace?.configuration;
+    hasWorkspaceFolderCapability = !!capabilities.workspace?.workspaceFolders;
 
     const result: InitializeResult = {
         capabilities: {
@@ -85,7 +85,8 @@ connection.onDidChangeConfiguration((change) => {
     if (hasConfigurationCapability) {
         documentSettings.clear();
     } else {
-        globalSettings = (change.settings.sfmcLanguageServer as SfmcSettings | null) ?? defaultSettings;
+        globalSettings =
+            (change.settings.sfmcLanguageServer as SfmcSettings | null) ?? defaultSettings;
     }
     for (const doc of documents.all()) {
         void sendDiagnosticsForDocument(doc.uri);

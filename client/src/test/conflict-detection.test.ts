@@ -8,7 +8,7 @@ suite('Conflict detection — static data', () => {
         const ids = CONFLICTING_EXTENSIONS.map((e) => e.id);
         assert.ok(
             ids.includes('xnerd.ampscript-language'),
-            'xnerd.ampscript-language must be listed as a conflicting extension',
+            'xnerd.ampscript-language must be listed as a conflicting extension'
         );
     });
 
@@ -16,14 +16,17 @@ suite('Conflict detection — static data', () => {
         const ids = CONFLICTING_EXTENSIONS.map((e) => e.id);
         assert.ok(
             ids.includes('FiB.beautyAmp'),
-            'FiB.beautyAmp must be listed as a conflicting extension',
+            'FiB.beautyAmp must be listed as a conflicting extension'
         );
     });
 
     test('every entry has a non-empty id and name', () => {
         for (const entry of CONFLICTING_EXTENSIONS) {
             assert.ok(entry.id.length > 0, `id must not be empty (got: ${JSON.stringify(entry)})`);
-            assert.ok(entry.name.length > 0, `name must not be empty (got: ${JSON.stringify(entry)})`);
+            assert.ok(
+                entry.name.length > 0,
+                `name must not be empty (got: ${JSON.stringify(entry)})`
+            );
         }
     });
 
@@ -32,7 +35,7 @@ suite('Conflict detection — static data', () => {
         for (const entry of CONFLICTING_EXTENSIONS) {
             assert.ok(
                 validId.test(entry.id),
-                `"${entry.id}" does not match publisher.extensionName format`,
+                `"${entry.id}" does not match publisher.extensionName format`
             );
         }
     });
@@ -59,11 +62,7 @@ suite('Conflict detection — VS Code integration', () => {
 
         const config = vscode.workspace.getConfiguration('sfmcLanguageServer');
         const value = config.get<boolean>('suppressConflictWarning');
-        assert.strictEqual(
-            value,
-            false,
-            'suppressConflictWarning should default to false',
-        );
+        assert.strictEqual(value, false, 'suppressConflictWarning should default to false');
     });
 
     test('conflicting extensions are not active in the test host', () => {
@@ -71,7 +70,7 @@ suite('Conflict detection — VS Code integration', () => {
             const ext = vscode.extensions.getExtension(entry.id);
             assert.ok(
                 !ext || !ext.isActive,
-                `Conflicting extension "${entry.id}" must not be active in the test environment`,
+                `Conflicting extension "${entry.id}" must not be active in the test environment`
             );
         }
     });
@@ -88,10 +87,7 @@ suite('Conflict detection — VS Code integration', () => {
             'esbenp.prettier-vscode',
         ];
         for (const id of expected) {
-            assert.ok(
-                pack.includes(id),
-                `extensionPack should include "${id}"`,
-            );
+            assert.ok(pack.includes(id), `extensionPack should include "${id}"`);
         }
     });
 
@@ -103,7 +99,7 @@ suite('Conflict detection — VS Code integration', () => {
         const ids = providers.map((p: { id?: string }) => p.id);
         assert.ok(
             ids.includes('sfmcLanguageMcp'),
-            'mcpServerDefinitionProviders must include id "sfmcLanguageMcp"',
+            'mcpServerDefinitionProviders must include id "sfmcLanguageMcp"'
         );
     });
 
@@ -115,7 +111,7 @@ suite('Conflict detection — VS Code integration', () => {
         const ids = contributed.map((c) => c.command);
         assert.ok(
             ids.includes('sfmc-language.showOutput'),
-            'contributes.commands must include "sfmc-language.showOutput"',
+            'contributes.commands must include "sfmc-language.showOutput"'
         );
     });
 
@@ -125,7 +121,7 @@ suite('Conflict detection — VS Code integration', () => {
         const allCommands = await vscode.commands.getCommands(true);
         assert.ok(
             allCommands.includes('sfmc-language.showOutput'),
-            '"sfmc-language.showOutput" must be registered after activation',
+            '"sfmc-language.showOutput" must be registered after activation'
         );
     });
 
@@ -136,7 +132,7 @@ suite('Conflict detection — VS Code integration', () => {
         const ids = contributed.map((c) => c.command);
         assert.ok(
             ids.includes('sfmc-language.showWhatsNew'),
-            'contributes.commands must include "sfmc-language.showWhatsNew"',
+            'contributes.commands must include "sfmc-language.showWhatsNew"'
         );
     });
 
@@ -146,7 +142,7 @@ suite('Conflict detection — VS Code integration', () => {
         const allCommands = await vscode.commands.getCommands(true);
         assert.ok(
             allCommands.includes('sfmc-language.showWhatsNew'),
-            '"sfmc-language.showWhatsNew" must be registered after activation',
+            '"sfmc-language.showWhatsNew" must be registered after activation'
         );
     });
 });

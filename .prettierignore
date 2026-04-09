@@ -1,0 +1,8 @@
+node_modules
+client/out
+server/out
+coverage
+*.vsix
+package-lock.json
+client/package-lock.json
+server/package-lock.json

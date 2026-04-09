@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'node:path';
+import path from 'node:path';
 
 export let doc: vscode.TextDocument;
 export let editor: vscode.TextEditor;
@@ -13,8 +13,8 @@ export async function activate(documentUri: vscode.Uri) {
         doc = await vscode.workspace.openTextDocument(documentUri);
         editor = await vscode.window.showTextDocument(doc);
         await sleep(4000);
-    } catch (error) {
-        console.error(error);
+    } catch (ex) {
+        console.error(ex);
     }
 }
 

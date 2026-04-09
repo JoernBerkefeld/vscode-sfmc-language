@@ -1,5 +1,5 @@
-import * as path from 'node:path';
-import * as Mocha from 'mocha';
+import path from 'node:path';
+import Mocha from 'mocha';
 import { glob } from 'glob';
 
 export function run(): Promise<void> {
@@ -16,7 +16,7 @@ export function run(): Promise<void> {
 
         try {
             await new Promise<void>((resolve, reject) => {
-                mocha.run((failures) => {
+                mocha.run((failures: number) => {
                     if (failures > 0) {
                         reject(`${failures} tests failed.`);
                     } else {
@@ -24,9 +24,9 @@ export function run(): Promise<void> {
                     }
                 });
             });
-        } catch (error) {
-            console.error(error);
-            throw error;
+        } catch (ex) {
+            console.error(ex);
+            throw ex;
         }
     });
 }

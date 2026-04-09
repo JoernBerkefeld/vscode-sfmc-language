@@ -16,9 +16,9 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 ### Auto-Completion
 
-- **147 AMPscript functions** with snippet-style parameter placeholders, organized across 15 categories (Data Extension, HTTP, Content, Encryption, Math, String, Date/Time, Utility, SOAP API, Salesforce, Dynamics CRM, MobileConnect, Social, Einstein, and more)
-- **16 keywords** with contextual snippets (var, set, if/then/elseif/else/endif, for/to/downto/do/next, and/or/not, true/false)
-- **80+ system personalization strings** with descriptions (subscriber identity, email/job metadata, dates, sender info, URLs, MobileConnect demographics, GroupConnect, execution context)
+- **152 AMPscript functions** with snippet-style parameter placeholders, organized across 14 categories (Content, Data Extension, HTTP, String, Math, and more — see `ampscript-data`)
+- **17 keywords** with contextual snippets (var, set, if/then/elseif/else/endif, for/to/downto/do/next, and/or/not, true/false)
+- **74 system personalization strings** with descriptions (subscriber identity, email/job metadata, dates, sender info, URLs, MobileConnect demographics, GroupConnect, execution context)
 - **File-scoped variable** suggestions extracted from the current document
 - Context-aware — completions only appear inside AMPscript regions
 

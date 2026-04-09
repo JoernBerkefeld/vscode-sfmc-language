@@ -13,15 +13,15 @@ suite('AMPscript Completions', () => {
         const actualCompletionList = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            position,
+            position
         )) as vscode.CompletionList;
 
         assert.ok(actualCompletionList.items.length > 0, 'Should return completions');
 
         const functionNames = new Set(
             actualCompletionList.items.map((index) =>
-                typeof index.label === 'string' ? index.label : index.label.label,
-            ),
+                typeof index.label === 'string' ? index.label : index.label.label
+            )
         );
         assert.ok(functionNames.has('Lookup'), 'Should include Lookup function');
         assert.ok(functionNames.has('LookupRows'), 'Should include LookupRows function');
@@ -36,13 +36,13 @@ suite('AMPscript Completions', () => {
         const actualCompletionList = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            position,
+            position
         )) as vscode.CompletionList;
 
         const labels = new Set(
             actualCompletionList.items.map((index) =>
-                typeof index.label === 'string' ? index.label : index.label.label,
-            ),
+                typeof index.label === 'string' ? index.label : index.label.label
+            )
         );
         assert.ok(labels.has('var'), 'Should include var keyword');
         assert.ok(labels.has('set'), 'Should include set keyword');
@@ -56,7 +56,7 @@ suite('AMPscript Completions', () => {
         const actualCompletionList = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            position,
+            position
         )) as vscode.CompletionList;
 
         // Ignore word-based suggestions from other fixtures; only count our Function items.
@@ -72,7 +72,7 @@ suite('AMPscript Completions', () => {
         assert.strictEqual(
             ampFunctions.length,
             0,
-            'Should not offer AMPscript completions outside blocks',
+            'Should not offer AMPscript completions outside blocks'
         );
     });
 });
