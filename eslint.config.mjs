@@ -13,6 +13,7 @@ export default tseslint.config(
             'server/out/**',
             '**/*.vsix',
             '**/coverage/**',
+            '.vscode-test/**',
         ],
     },
     eslint.configs.recommended,
