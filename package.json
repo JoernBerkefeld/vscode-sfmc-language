@@ -1,7 +1,7 @@
 {
     "name": "sfmc-language",
     "displayName": "SFMC Language Service",
-    "description": "Language support for Salesforce Marketing Cloud — AMPscript, SSJS (Server-Side JavaScript), and GTL (Guide Template Language). Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, and snippets.",
+    "description": "Language support for Salesforce Marketing Cloud Engagement — AMPscript, SSJS (Server-Side JavaScript), and GTL (Guide Template Language). Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, and snippets.",
     "author": "Jörn Berkefeld",
     "license": "MIT",
     "version": "1.4.0",
@@ -180,6 +180,7 @@
         "publish": "npx @vscode/vsce publish --no-dependencies",
         "publish:pre-release": "npx @vscode/vsce publish --no-dependencies --pre-release",
         "lint": "eslint server/src client/src eslint.config.mjs",
+        "lint:fix": "eslint --fix server/src client/src eslint.config.mjs",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
