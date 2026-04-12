@@ -186,7 +186,7 @@
         "test": "node ./client/out/test/runTest"
     },
     "devDependencies": {
-        "@eslint/js": "^9.31.0",
+        "@eslint/js": "^10.0.1",
         "@stylistic/eslint-plugin": "^2.9.0",
         "@types/mocha": "^10.0.6",
         "@types/node": "^22",
