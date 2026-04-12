@@ -202,6 +202,6 @@
         "prettier": "^3.8.1",
         "typescript": "^5.9.2",
         "typescript-eslint": "^8.39.0",
-        "undici-types": "^7.24.6"
+        "undici-types": "^8.0.2"
     }
 }
