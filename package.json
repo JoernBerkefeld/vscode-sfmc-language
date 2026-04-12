@@ -192,7 +192,7 @@
         "@types/node": "^22",
         "@vscode/vsce": "^3.7.1",
         "esbuild": "^0.28.0",
-        "eslint": "^9.31.0",
+        "eslint": "^10.2.0",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-jsdoc": "^62.0.0",
         "eslint-plugin-prettier": "^5.5.0",
