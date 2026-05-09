@@ -188,23 +188,23 @@
         "test": "node ./client/out/test/runTest"
     },
     "devDependencies": {
-        "@eslint/js": "^9.31.0",
+        "@eslint/js": "^10.0.1",
         "@stylistic/eslint-plugin": "^2.9.0",
         "@types/mocha": "^10.0.6",
         "@types/node": "^22",
-        "@vscode/vsce": "^3.7.1",
-        "esbuild": "^0.25.0",
-        "eslint": "^9.31.0",
+        "@vscode/vsce": "^3.9.1",
+        "esbuild": "^0.28.0",
+        "eslint": "^10.2.1",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-jsdoc": "^62.0.0",
         "eslint-plugin-prettier": "^5.5.0",
         "eslint-plugin-unicorn": "^64.0.0",
-        "globals": "^17.4.0",
+        "globals": "^17.5.0",
         "husky": "^9.1.7",
-        "mocha": "^10.3.0",
-        "prettier": "^3.8.1",
-        "typescript": "^5.9.2",
-        "typescript-eslint": "^8.39.0",
-        "undici-types": "^7.24.6"
+        "mocha": "^11.7.5",
+        "prettier": "^3.8.3",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.59.0",
+        "undici-types": "^8.1.0"
     }
 }
