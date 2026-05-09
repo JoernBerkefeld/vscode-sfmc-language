@@ -1,6 +1,6 @@
 # SFMC Language Service for VS Code
 
-A Visual Studio Code extension providing comprehensive language support for **Salesforce Marketing Cloud** — **AMPscript**, **SSJS** (Server-Side JavaScript), and **GTL** (Guide Template Language).
+A Visual Studio Code extension providing comprehensive language support for **Salesforce Marketing Cloud Engagement** — **AMPscript**, **SSJS** (Server-Side JavaScript), and **GTL** (Guide Template Language).
 
 ## Features
 
@@ -204,15 +204,6 @@ npm run package      # Package as .vsix
 ```
 
 The extension uses **esbuild** for production bundling (`vscode:prepublish`), reducing load time and VSIX size.
-
-## Troubleshooting
-
-### `Cannot find module 'undici-types'`
-
-```bash
-npm install
-npm run compile
-```
 
 ## Notes
 
