@@ -21,6 +21,13 @@ import {
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import { sfmcLanguageService, type SfmcSettings } from 'sfmc-language-lsp';
+import {
+    updateSsjsDocument,
+    removeSsjsDocument,
+    getSsjsCompletions,
+    getSsjsDiagnostics,
+    getSsjsHover,
+} from './tsService';
 
 // ---------------------------------------------------------------------------
 // Connection & Document Manager
@@ -137,19 +144,30 @@ async function sendDiagnosticsForDocument(uri: string): Promise<void> {
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
-    connection.sendDiagnostics({ uri, diagnostics: sfmcLanguageService.validate(doc, settings) });
+    const sfmcDiags = sfmcLanguageService.validate(doc, settings);
+    const tsDiags = doc.languageId === 'ssjs' ? getSsjsDiagnostics(uri) : [];
+    connection.sendDiagnostics({ uri, diagnostics: [...sfmcDiags, ...tsDiags] });
 }
 
 documents.onDidOpen((e) => {
+    if (getDocumentLanguage(e.document) === 'ssjs') {
+        updateSsjsDocument(e.document.uri, e.document.getText());
+    }
     void sendDiagnosticsForDocument(e.document.uri);
 });
 
 documents.onDidChangeContent((e) => {
+    if (getDocumentLanguage(e.document) === 'ssjs') {
+        updateSsjsDocument(e.document.uri, e.document.getText());
+    }
     void sendDiagnosticsForDocument(e.document.uri);
 });
 
 documents.onDidClose((e) => {
     documentSettings.delete(e.document.uri);
+    if (getDocumentLanguage(e.document) === 'ssjs') {
+        removeSsjsDocument(e.document.uri);
+    }
     connection.sendDiagnostics({ uri: e.document.uri, diagnostics: [] });
 });
 
@@ -178,7 +196,14 @@ connection.onCompletion((parameters: TextDocumentPositionParams) => {
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
-    return sfmcLanguageService.getCompletions(doc, parameters.position);
+    const sfmcItems = sfmcLanguageService.getCompletions(doc, parameters.position) as import('vscode-languageserver').CompletionItem[];
+    if (doc.languageId !== 'ssjs') return sfmcItems;
+    const tsItems = getSsjsCompletions(document.uri, parameters.position);
+    // Merge: TS items go first so member completions appear at the top;
+    // de-duplicate by label (sfmc-language-lsp wins on conflict).
+    const sfmcLabels = new Set(sfmcItems.map((i) => i.label));
+    const merged = [...sfmcItems, ...tsItems.filter((i) => !sfmcLabels.has(i.label))];
+    return merged;
 });
 
 connection.onCompletionResolve((item) => {
@@ -200,7 +225,11 @@ connection.onHover((parameters) => {
         start: { line: parameters.position.line, character: 0 },
         end: { line: parameters.position.line + 1, character: 0 },
     });
-    return sfmcLanguageService.getHover(doc, line, parameters.position);
+    const sfmcHover = sfmcLanguageService.getHover(doc, line, parameters.position);
+    if (doc.languageId !== 'ssjs') return sfmcHover;
+    // For SSJS: prefer TS hover (richer type info), fall back to sfmc-language-lsp
+    const tsHover = getSsjsHover(document.uri, parameters.position);
+    return tsHover ?? sfmcHover;
 });
 
 // ---------------------------------------------------------------------------
