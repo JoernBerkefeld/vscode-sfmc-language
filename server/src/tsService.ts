@@ -58,7 +58,9 @@ function loadGlobalsContent(): string {
     return '// sfmc-globals.d.ts not found — SFMC type checking disabled';
 }
 
-const GLOBALS_CONTENT = loadGlobalsContent();
+const GLOBALS_CONTENT =
+    loadGlobalsContent() +
+    '\n// SFMC global shorthands\ndeclare var WSProxy: typeof Script.Util.WSProxy;\n';
 
 // ---------------------------------------------------------------------------
 // Virtual file system
@@ -296,8 +298,49 @@ export function getSsjsCompletions(uri: string, position: Position): CompletionI
 }
 
 /**
- * Return LSP Diagnostics from the embedded TypeScript language service for
- * the given SSJS document URI.
+ * Same as getSsjsCompletions, but also returns whether the completion was
+ * triggered for member access (e.g. `de.` or `Platform.Function.`).
+ * Use this in server.ts to decide whether to suppress SFMC global completions
+ * that would pollute member-completion lists.
+ */
+export function getSsjsCompletionInfo(
+    uri: string,
+    position: Position,
+): { items: CompletionItem[]; isMemberCompletion: boolean } {
+    const name = uriToVirtualName.get(uri);
+    if (!name) return { items: [], isMemberCompletion: false };
+    const file = virtualFiles.get(name);
+    if (!file) return { items: [], isMemberCompletion: false };
+
+    const offset = positionToOffset(file.content, position);
+    let info: ts.CompletionInfo | undefined;
+    try {
+        info = languageService.getCompletionsAtPosition(name, offset, {
+            includeCompletionsWithInsertText: true,
+            includeCompletionsForModuleExports: false,
+        });
+    } catch {
+        return { items: [], isMemberCompletion: false };
+    }
+    if (!info) return { items: [], isMemberCompletion: false };
+
+    const items = info.entries.map((entry) => {
+        const item: CompletionItem = {
+            label: entry.name,
+            kind: tsKindToLsp(entry.kind),
+            sortText: entry.sortText,
+        };
+        if (entry.kindModifiers?.includes('deprecated')) {
+            item.tags = [1 /* CompletionItemTag.Deprecated */];
+        }
+        return item;
+    });
+
+    return { items, isMemberCompletion: info.isMemberCompletion };
+}
+
+/**
+ * Return LSP Diagnostics from the embedded TypeScript language service for * the given SSJS document URI.
  */
 export function getSsjsDiagnostics(uri: string): Diagnostic[] {
     const name = uriToVirtualName.get(uri);
@@ -360,6 +403,20 @@ export function getSsjsHover(uri: string, position: Position): Hover | null {
     const parts: string[] = [];
     if (sig) parts.push('```typescript\n' + sig + '\n```');
     if (docs) parts.push(docs);
+
+    // Include JSDoc tags: @deprecated, @remarks, etc.
+    const tags = info.tags ?? [];
+    const tagLines: string[] = [];
+    for (const tag of tags) {
+        const tagText = tag.text?.map((p) => p.text).join('') ?? '';
+        if (tag.name === 'deprecated') {
+            tagLines.push(tagText ? `*Deprecated:* ${tagText}` : '*Deprecated*');
+        } else if (tagText) {
+            tagLines.push(`*${tag.name}:* ${tagText}`);
+        }
+    }
+    if (tagLines.length > 0) parts.push(tagLines.join('\n\n'));
+
     if (parts.length === 0) return null;
 
     const content: MarkupContent = { kind: 'markdown', value: parts.join('\n\n') };

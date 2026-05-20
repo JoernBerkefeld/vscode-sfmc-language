@@ -70,6 +70,23 @@ var postResponse = HTTP.Post(
 );
 
 // -----------------------------------------------------------------------------
+// Deprecated functions — expect @deprecated indicator in hover
+// -----------------------------------------------------------------------------
+
+// Deprecated: hover over ContentArea — should show @deprecated warning
+// New: ContentArea - deprecated, use ContentBlockByID or ContentBlockByName
+var legacyContent = ContentArea(123);
+
+// Deprecated: hover over ContentAreaByName — should show @deprecated warning
+// New: ContentAreaByName - deprecated, use ContentBlockByName
+var legacyContentByName = ContentAreaByName("MyContentArea");
+
+// requiresCoreLoad: hover over HTTP.Get — should show @remarks about Platform.Load
+// Note: requires Platform.Load("Core", "1") to be called first
+// New: HTTP.Get - requiresCoreLoad annotation in hover
+var httpGetResult = HTTP.Get("https://example.com/api");
+
+// -----------------------------------------------------------------------------
 // Core Library Objects - test completions
 // -----------------------------------------------------------------------------
 

@@ -44,11 +44,14 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 ### SSJS (Server-Side JavaScript)
 
+- **TypeScript-powered IntelliSense**: completions, hover, and diagnostics for `.ssjs` files backed by an embedded TypeScript language service — accurate type-aware suggestions for all SFMC globals
 - **Auto-completions** for `Platform.Function.*`, `Platform.Variable.*`, `Platform.Response.*`, `Platform.Request.*` methods
 - **Core library objects** with method listings (DataExtension, Subscriber, TriggeredSend, etc.)
-- **WSProxy** method completions
-- **Hover documentation** for SSJS globals, Platform functions, and Core library objects
-- **Diagnostics**: Missing `Platform.Load("core", "1")` detection, ES6+ syntax warnings
+- **WSProxy** method completions — both `new Script.Util.WSProxy()` and the `new WSProxy()` shorthand are supported
+- **Context-aware member completions**: after a `.` only the relevant members are shown — the full global list is not injected into member-access completions
+- **Merged hover**: hover shows the TypeScript type signature *and* the SFMC description together
+- **Hover documentation** for SSJS globals, Platform functions, and Core library objects — including `@deprecated` notices and `@remarks requiresCoreLoad` hints
+- **Diagnostics**: Missing `Platform.Load("core", "1")` detection, ES6+ syntax **errors** (`let`/`const`, arrow functions, `for...of`, generator functions, spread `...`, destructuring)
 
 ### GTL (Guide Template Language)
 

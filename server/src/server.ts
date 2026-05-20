@@ -24,7 +24,7 @@ import { sfmcLanguageService, type SfmcSettings } from 'sfmc-language-lsp';
 import {
     updateSsjsDocument,
     removeSsjsDocument,
-    getSsjsCompletions,
+    getSsjsCompletionInfo,
     getSsjsDiagnostics,
     getSsjsHover,
 } from './tsService';
@@ -198,9 +198,11 @@ connection.onCompletion((parameters: TextDocumentPositionParams) => {
     };
     const sfmcItems = sfmcLanguageService.getCompletions(doc, parameters.position) as import('vscode-languageserver').CompletionItem[];
     if (doc.languageId !== 'ssjs') return sfmcItems;
-    const tsItems = getSsjsCompletions(document.uri, parameters.position);
-    // Merge: TS items go first so member completions appear at the top;
-    // de-duplicate by label (sfmc-language-lsp wins on conflict).
+    const { items: tsItems, isMemberCompletion } = getSsjsCompletionInfo(document.uri, parameters.position);
+    // When the cursor is after a `.` (member completion), only TS items are
+    // relevant — merging in all ~100 SFMC globals would pollute the list.
+    if (isMemberCompletion) return tsItems;
+    // Top-level: TS items first, then SFMC globals (de-dup by label, SFMC wins).
     const sfmcLabels = new Set(sfmcItems.map((i) => i.label));
     const merged = [...sfmcItems, ...tsItems.filter((i) => !sfmcLabels.has(i.label))];
     return merged;
@@ -227,9 +229,16 @@ connection.onHover((parameters) => {
     });
     const sfmcHover = sfmcLanguageService.getHover(doc, line, parameters.position);
     if (doc.languageId !== 'ssjs') return sfmcHover;
-    // For SSJS: prefer TS hover (richer type info), fall back to sfmc-language-lsp
     const tsHover = getSsjsHover(document.uri, parameters.position);
-    return tsHover ?? sfmcHover;
+    // Merge: TS provides accurate type signatures; SFMC provides human-readable
+    // descriptions (parameter docs, deprecation notes, etc.).
+    if (!tsHover && !sfmcHover) return null;
+    if (!tsHover) return sfmcHover;
+    if (!sfmcHover) return tsHover;
+    const tsText = extractHoverText(tsHover);
+    const sfmcText = extractHoverText(sfmcHover);
+    const mergedValue = sfmcText ? `${tsText}\n\n${sfmcText}` : tsText;
+    return { contents: { kind: 'markdown', value: mergedValue }, range: tsHover.range };
 });
 
 // ---------------------------------------------------------------------------
@@ -285,6 +294,29 @@ connection.onDefinition((parameters: DefinitionParams): Location | null => {
 connection.onDidChangeWatchedFiles(() => {
     connection.console.log('File change event received.');
 });
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract plain markdown text from an LSP Hover's `contents` field, which
+ * may be a MarkupContent, a MarkedString, or an array of MarkedStrings.
+ */
+function extractHoverText(hover: import('vscode-languageserver').Hover): string {
+    const c = hover.contents;
+    if (typeof c === 'string') return c;
+    if ('kind' in c) return (c as import('vscode-languageserver').MarkupContent).value;
+    if (Array.isArray(c)) {
+        return c
+            .map((m) => (typeof m === 'string' ? m : m.value))
+            .filter(Boolean)
+            .join('\n\n');
+    }
+    return typeof (c as { value?: string }).value === 'string'
+        ? (c as { value: string }).value
+        : '';
+}
 
 // ---------------------------------------------------------------------------
 // Start

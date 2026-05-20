@@ -70,9 +70,6 @@ const AMPSCRIPT_MARKERS: (string | RegExp)[] = [
     /<script\s[^>]*language\s*=\s*["']ampscript["']/i,
 ];
 
-/** Matches any <script runat="server"> tag, regardless of language attribute. */
-const SSJS_MARKER = /<script\s[^>]*runat\s*=\s*["']server["']/i;
-
 function matchesAny(text: string, markers: (string | RegExp)[]): boolean {
     return markers.some((marker) =>
         typeof marker === 'string' ? text.includes(marker) : marker.test(text)
@@ -80,6 +77,13 @@ function matchesAny(text: string, markers: (string | RegExp)[]): boolean {
 }
 
 function detectAndSwitchLanguage(doc: TextDocument): void {
+    // Force .ssjs files to use the ssjs language ID even when VS Code or user settings
+    // have mapped *.ssjs to javascript (configurationDefaults can be overridden by user settings).
+    if (doc.uri.path.endsWith('.ssjs') && doc.languageId !== 'ssjs') {
+        languages.setTextDocumentLanguage(doc, 'ssjs');
+        return;
+    }
+
     if (doc.languageId !== 'html') return;
     const text = doc.getText();
 
@@ -89,10 +93,6 @@ function detectAndSwitchLanguage(doc: TextDocument): void {
         return;
     }
 
-    // Fall back to SSJS when only server-side script blocks are present.
-    if (SSJS_MARKER.test(text)) {
-        languages.setTextDocumentLanguage(doc, 'ssjs');
-    }
 }
 
 export function activate(context: ExtensionContext) {

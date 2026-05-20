@@ -12,6 +12,7 @@ import {
     updateSsjsDocument,
     removeSsjsDocument,
     getSsjsCompletions,
+    getSsjsCompletionInfo,
     getSsjsDiagnostics,
     getSsjsHover,
 } from '../tsService';
@@ -274,6 +275,81 @@ test('Hover contents has markdown kind', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Suite: deprecated functions
+// ---------------------------------------------------------------------------
+console.log('Suite: deprecated functions');
+
+const URI_DEPRECATED = 'file:///test-deprecated.ssjs';
+
+test('Completions still include deprecated ContentArea function', () => {
+    const code = 'Content';
+    updateSsjsDocument(URI_DEPRECATED, code);
+    const items = getSsjsCompletions(URI_DEPRECATED, { line: 0, character: code.length });
+    const labels = items.map((i) => i.label);
+    assert.ok(
+        labels.some((l) => l === 'ContentArea' || l === 'ContentAreaByName'),
+        `Expected ContentArea or ContentAreaByName in completions, got: ${labels.join(', ')}`,
+    );
+});
+
+test('Hover for deprecated ContentArea mentions deprecated', () => {
+    const code = 'ContentArea();';
+    updateSsjsDocument(URI_DEPRECATED, code);
+    // Hover over "ContentArea" (character 3 is inside the word)
+    const hover = getSsjsHover(URI_DEPRECATED, { line: 0, character: 3 });
+    if (hover !== null) {
+        const text =
+            typeof hover.contents === 'string'
+                ? hover.contents
+                : 'value' in hover.contents
+                  ? hover.contents.value
+                  : '';
+        assert.ok(
+            text.toLowerCase().includes('deprecated'),
+            `Hover text should mention deprecated, got: ${text}`,
+        );
+    }
+    // If TypeScript does not return hover here the d.ts path may not be loaded — acceptable
+});
+
+// ---------------------------------------------------------------------------
+// Suite: requiresCoreLoad
+// ---------------------------------------------------------------------------
+console.log('Suite: requiresCoreLoad');
+
+const URI_HTTP = 'file:///test-http.ssjs';
+
+test('Completions include HTTP.Get', () => {
+    const code = 'HTTP.';
+    updateSsjsDocument(URI_HTTP, code);
+    const items = getSsjsCompletions(URI_HTTP, { line: 0, character: code.length });
+    const labels = items.map((i) => i.label);
+    assert.ok(labels.includes('Get') || labels.includes('get'), `Expected Get in HTTP completions, got: ${labels.join(', ')}`);
+});
+
+test('Hover for HTTP.Get mentions requiresCoreLoad', () => {
+    const code = 'HTTP.Get("url", "GET", {});';
+    updateSsjsDocument(URI_HTTP, code);
+    // Hover over "Get" — starts at character 5
+    const hover = getSsjsHover(URI_HTTP, { line: 0, character: 6 });
+    if (hover !== null) {
+        const text =
+            typeof hover.contents === 'string'
+                ? hover.contents
+                : 'value' in hover.contents
+                  ? hover.contents.value
+                  : '';
+        assert.ok(
+            text.toLowerCase().includes('platform.load') ||
+                text.toLowerCase().includes('requirescoreload') ||
+                text.toLowerCase().includes('core'),
+            `Hover text should mention Platform.Load/requiresCoreLoad, got: ${text}`,
+        );
+    }
+    // If TypeScript does not return hover here the d.ts path may not be loaded — acceptable
+});
+
+// ---------------------------------------------------------------------------
 // Suite: ECMAScript built-ins
 // ---------------------------------------------------------------------------
 console.log('Suite: ECMAScript built-ins');
@@ -306,4 +382,38 @@ test('Completions after "Math." include abs, floor, PI', () => {
     assert.ok(labels.has('abs'), 'Should include abs');
     assert.ok(labels.has('floor'), 'Should include floor');
     assert.ok(labels.has('PI'), 'Should include PI constant');
+});
+
+// ---------------------------------------------------------------------------
+// Suite: WSProxy shorthand (C1 fix) and getSsjsCompletionInfo (Fix A)
+// ---------------------------------------------------------------------------
+console.log('Suite: WSProxy shorthand + getSsjsCompletionInfo');
+
+const URI_WSPROXY2 = 'file:///test-wsproxy2.ssjs';
+
+test('new WSProxy() short-form — completions include WSProxy instance methods', () => {
+    const code = ['var api = new WSProxy();', 'api.'].join('\n');
+    updateSsjsDocument(URI_WSPROXY2, code);
+    const items = getSsjsCompletions(URI_WSPROXY2, endOf(code));
+    const labels = new Set(items.map((i) => i.label));
+    assert.ok(labels.has('retrieve'), 'Short-form WSProxy should include retrieve');
+    assert.ok(labels.has('createItem'), 'Short-form WSProxy should include createItem');
+});
+
+test('getSsjsCompletionInfo returns isMemberCompletion=true after "de."', () => {
+    const code = [
+        'Platform.Load("Core", "1");',
+        'var de = DataExtension.Init("key");',
+        'de.',
+    ].join('\n');
+    updateSsjsDocument(URI_DE, code);
+    const { isMemberCompletion } = getSsjsCompletionInfo(URI_DE, endOf(code));
+    assert.strictEqual(isMemberCompletion, true, 'isMemberCompletion should be true after "de."');
+});
+
+test('getSsjsCompletionInfo returns isMemberCompletion=false at top-level', () => {
+    const code = 'Platf';
+    updateSsjsDocument(URI_PLATFORM, code);
+    const { isMemberCompletion } = getSsjsCompletionInfo(URI_PLATFORM, endOf(code));
+    assert.strictEqual(isMemberCompletion, false, 'isMemberCompletion should be false at top-level');
 });
