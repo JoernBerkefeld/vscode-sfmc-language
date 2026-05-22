@@ -36,7 +36,7 @@ suite('SSJS TypeScript Service — Completions', () => {
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(18, 25), // inside "Platform.Function"
+            new vscode.Position(18, 25) // inside "Platform.Function"
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -52,7 +52,7 @@ suite('SSJS TypeScript Service — Completions', () => {
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(18, 29), // after "Platform.Function."
+            new vscode.Position(18, 29) // after "Platform.Function."
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -66,7 +66,7 @@ suite('SSJS TypeScript Service — Completions', () => {
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(9, 15), // after "de."
+            new vscode.Position(9, 15) // after "de."
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -79,7 +79,7 @@ suite('SSJS TypeScript Service — Completions', () => {
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(15, 19), // after "api."
+            new vscode.Position(15, 19) // after "api."
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -93,7 +93,7 @@ suite('SSJS TypeScript Service — Completions', () => {
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(24, 19), // inside "round", after "Math."
+            new vscode.Position(24, 19) // inside "round", after "Math."
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -107,7 +107,7 @@ suite('SSJS TypeScript Service — Completions', () => {
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(27, 20), // after "guid."
+            new vscode.Position(27, 20) // after "guid."
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -147,14 +147,12 @@ suite('SSJS TypeScript Service — Diagnostics', () => {
             (d) =>
                 d.source === 'sfmc-ts' &&
                 d.severity === vscode.DiagnosticSeverity.Error &&
-                (d.range.start.line === 6 ||
-                    d.range.start.line === 9 ||
-                    d.range.start.line === 15),
+                (d.range.start.line === 6 || d.range.start.line === 9 || d.range.start.line === 15)
         );
         assert.strictEqual(
             tsDiagErrors.length,
             0,
-            `Unexpected TS errors on valid lines: ${JSON.stringify(tsDiagErrors)}`,
+            `Unexpected TS errors on valid lines: ${JSON.stringify(tsDiagErrors)}`
         );
     });
 });
@@ -173,15 +171,15 @@ suite('SSJS TypeScript Service — Hover', () => {
         const hovers = (await vscode.commands.executeCommand(
             'vscode.executeHoverProvider',
             documentUri,
-            new vscode.Position(18, 30),
+            new vscode.Position(18, 30)
         )) as vscode.Hover[];
 
         assert.ok(hovers.length > 0, 'Should return at least one hover');
         const text = hovers
             .flatMap((h) =>
                 h.contents.map((c) =>
-                    typeof c === 'string' ? c : (c as vscode.MarkdownString).value,
-                ),
+                    typeof c === 'string' ? c : (c as vscode.MarkdownString).value
+                )
             )
             .join('');
         assert.ok(text.length > 0, 'Hover content should not be empty');
@@ -203,7 +201,7 @@ suite('SSJS TypeScript Service — Signature Help (Bug J)', () => {
             'vscode.executeSignatureHelpProvider',
             documentUri,
             new vscode.Position(22, 34),
-            '(',
+            '('
         )) as vscode.SignatureHelp | undefined;
 
         if (!sigHelp || sigHelp.signatures.length === 0) {
@@ -216,7 +214,7 @@ suite('SSJS TypeScript Service — Signature Help (Bug J)', () => {
         const text = typeof doc === 'string' ? doc : (doc as vscode.MarkdownString).value;
         assert.ok(
             text.includes('ssjs.guide'),
-            `Signature documentation should include ssjs.guide reference, got: ${text}`,
+            `Signature documentation should include ssjs.guide reference, got: ${text}`
         );
     });
 
@@ -226,7 +224,7 @@ suite('SSJS TypeScript Service — Signature Help (Bug J)', () => {
             'vscode.executeSignatureHelpProvider',
             documentUri,
             new vscode.Position(22, 34),
-            '(',
+            '('
         )) as vscode.SignatureHelp | undefined;
 
         if (!sigHelp || sigHelp.signatures.length === 0) {
@@ -240,7 +238,7 @@ suite('SSJS TypeScript Service — Signature Help (Bug J)', () => {
         // which the VS Code client converts to a MarkdownString instance.
         assert.ok(
             doc instanceof vscode.MarkdownString,
-            `Signature documentation should be a MarkdownString (rendered markdown), got: ${typeof doc}`,
+            `Signature documentation should be a MarkdownString (rendered markdown), got: ${typeof doc}`
         );
     });
 });

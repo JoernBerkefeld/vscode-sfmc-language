@@ -68,7 +68,6 @@ suite('AMPscript HTML auto-detection — individual marker variants', () => {
             'marker-script-language-runat.html should be detected as ampscript'
         );
     });
-
 });
 
 suite('AMPscript HTML auto-detection', () => {

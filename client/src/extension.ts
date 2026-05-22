@@ -92,7 +92,6 @@ function detectAndSwitchLanguage(doc: TextDocument): void {
         languages.setTextDocumentLanguage(doc, 'ampscript');
         return;
     }
-
 }
 
 export function activate(context: ExtensionContext) {

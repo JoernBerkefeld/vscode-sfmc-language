@@ -197,9 +197,15 @@ connection.onCompletion((parameters: TextDocumentPositionParams) => {
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
-    const sfmcItems = sfmcLanguageService.getCompletions(doc, parameters.position) as import('vscode-languageserver').CompletionItem[];
+    const sfmcItems = sfmcLanguageService.getCompletions(
+        doc,
+        parameters.position
+    ) as import('vscode-languageserver').CompletionItem[];
     if (doc.languageId !== 'ssjs') return sfmcItems;
-    const { items: tsItems, isMemberCompletion } = getSsjsCompletionInfo(document.uri, parameters.position);
+    const { items: tsItems, isMemberCompletion } = getSsjsCompletionInfo(
+        document.uri,
+        parameters.position
+    );
     // Text-based dot-access detection — catches edge cases where TypeScript's
     // isMemberCompletion is false despite a trailing dot.
     const textBefore = document.getText({
@@ -315,6 +321,7 @@ connection.onDidChangeWatchedFiles(() => {
 /**
  * Extract plain markdown text from an LSP Hover's `contents` field, which
  * may be a MarkupContent, a MarkedString, or an array of MarkedStrings.
+ * @param hover
  */
 function extractHoverText(hover: import('vscode-languageserver').Hover): string {
     const c = hover.contents;

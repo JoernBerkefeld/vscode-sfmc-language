@@ -31,36 +31,28 @@ suite('SSJS Diagnostics — requiresCoreLoad globals (Bug K)', () => {
     });
 
     test('Stringify() without Platform.Load is flagged', () => {
-        const match = diags.find(
-            (d) => d.source === 'ssjs' && d.message.includes('Stringify'),
-        );
+        const match = diags.find((d) => d.source === 'ssjs' && d.message.includes('Stringify'));
         assert.ok(match, 'Should flag Stringify() when Platform.Load is absent');
     });
 
     test('Stringify() diagnostic is Error severity', () => {
-        const match = diags.find(
-            (d) => d.source === 'ssjs' && d.message.includes('Stringify'),
-        );
+        const match = diags.find((d) => d.source === 'ssjs' && d.message.includes('Stringify'));
         if (match) {
             assert.strictEqual(
                 match.severity,
                 vscode.DiagnosticSeverity.Error,
-                'Stringify() without Platform.Load should be DiagnosticSeverity.Error',
+                'Stringify() without Platform.Load should be DiagnosticSeverity.Error'
             );
         }
     });
 
     test('Now() without Platform.Load is flagged', () => {
-        const match = diags.find(
-            (d) => d.source === 'ssjs' && d.message.includes('Now'),
-        );
+        const match = diags.find((d) => d.source === 'ssjs' && d.message.includes('Now'));
         assert.ok(match, 'Should flag Now() when Platform.Load is absent');
     });
 
     test('GUID() without Platform.Load is flagged', () => {
-        const match = diags.find(
-            (d) => d.source === 'ssjs' && d.message.includes('GUID'),
-        );
+        const match = diags.find((d) => d.source === 'ssjs' && d.message.includes('GUID'));
         assert.ok(match, 'Should flag GUID() when Platform.Load is absent');
     });
 
@@ -68,11 +60,11 @@ suite('SSJS Diagnostics — requiresCoreLoad globals (Bug K)', () => {
         // Section B of the fixture has a bare Stringify() BEFORE Platform.Load.
         // The load appearing later must not suppress the earlier error.
         const stringify2Diags = diags.filter(
-            (d) => d.source === 'ssjs' && d.message.includes('Stringify'),
+            (d) => d.source === 'ssjs' && d.message.includes('Stringify')
         );
         assert.ok(
             stringify2Diags.length >= 2,
-            'Should flag both Stringify() calls (before the load and in section A)',
+            'Should flag both Stringify() calls (before the load and in section A)'
         );
     });
 });

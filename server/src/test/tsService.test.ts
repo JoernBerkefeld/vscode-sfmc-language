@@ -35,9 +35,9 @@ function test(name: string, fn: () => void | Promise<void>): void {
             passCount++;
             console.log(`  ✓ [${idx}] ${name}`);
         })
-        .catch((err: unknown) => {
+        .catch((ex: unknown) => {
             failCount++;
-            const msg = err instanceof Error ? err.message : String(err);
+            const msg = ex instanceof Error ? ex.message : String(ex);
             console.error(`  ✗ [${idx}] ${name}\n      ${msg}`);
         });
 }
@@ -60,7 +60,7 @@ const URI_PLATFORM = 'file:///test-platform.ssjs';
 // Coordinate helper: column 0 of the last line of a code string
 function endOf(code: string) {
     const lines = code.split('\n');
-    return { line: lines.length - 1, character: lines[lines.length - 1].length };
+    return { line: lines.length - 1, character: lines.at(-1).length };
 }
 
 // ---------------------------------------------------------------------------
@@ -99,7 +99,7 @@ test('Produces diagnostic for reference to undeclared variable', () => {
     assert.ok(diags.length > 0, 'Expected at least one diagnostic for undeclared variable');
     assert.ok(
         diags.some((d) => d.source === 'sfmc-ts'),
-        'Diagnostic should have source sfmc-ts',
+        'Diagnostic should have source sfmc-ts'
     );
 });
 
@@ -112,7 +112,7 @@ test('Diagnostic has correct range shape', () => {
     assert.ok(typeof d.range.start.line === 'number', 'range.start.line should be a number');
     assert.ok(
         typeof d.range.start.character === 'number',
-        'range.start.character should be a number',
+        'range.start.character should be a number'
     );
 });
 
@@ -169,11 +169,9 @@ test('Completions after "Platform.Request." include GetPostData and Method', () 
 console.log('Suite: DataExtension instance type flow');
 
 test('Completions after "de." include Rows and Fields', () => {
-    const code = [
-        'Platform.Load("Core", "1");',
-        'var de = DataExtension.Init("key");',
-        'de.',
-    ].join('\n');
+    const code = ['Platform.Load("Core", "1");', 'var de = DataExtension.Init("key");', 'de.'].join(
+        '\n'
+    );
     updateSsjsDocument(URI_DE, code);
     const items = getSsjsCompletions(URI_DE, endOf(code));
     const labels = new Set(items.map((i) => i.label));
@@ -236,10 +234,9 @@ test('Completions after "api." include WSProxy instance methods', () => {
 });
 
 test('Completions after "req." include HttpRequest instance methods', () => {
-    const code = [
-        'var req = new Script.Util.HttpRequest("https://example.com");',
-        'req.',
-    ].join('\n');
+    const code = ['var req = new Script.Util.HttpRequest("https://example.com");', 'req.'].join(
+        '\n'
+    );
     updateSsjsDocument(URI_WSPROXY, code);
     const items = getSsjsCompletions(URI_WSPROXY, endOf(code));
     const labels = new Set(items.map((i) => i.label));
@@ -289,7 +286,7 @@ test('Completions still include deprecated ContentArea function', () => {
     const labels = items.map((i) => i.label);
     assert.ok(
         labels.some((l) => l === 'ContentArea' || l === 'ContentAreaByName'),
-        `Expected ContentArea or ContentAreaByName in completions, got: ${labels.join(', ')}`,
+        `Expected ContentArea or ContentAreaByName in completions, got: ${labels.join(', ')}`
     );
 });
 
@@ -307,7 +304,7 @@ test('Hover for deprecated ContentArea mentions deprecated', () => {
                   : '';
         assert.ok(
             text.toLowerCase().includes('deprecated'),
-            `Hover text should mention deprecated, got: ${text}`,
+            `Hover text should mention deprecated, got: ${text}`
         );
     }
     // If TypeScript does not return hover here the d.ts path may not be loaded — acceptable
@@ -327,7 +324,7 @@ test('@remarks tag renders without "remarks:" label prefix (Bug #2b)', () => {
                   : '';
         assert.ok(
             !text.includes('*remarks:*'),
-            `Hover text should not include "*remarks:*" label prefix, got: ${text}`,
+            `Hover text should not include "*remarks:*" label prefix, got: ${text}`
         );
     }
     // If no hover that is acceptable — d.ts may not be loaded in CI
@@ -345,7 +342,10 @@ test('Completions include HTTP.Get', () => {
     updateSsjsDocument(URI_HTTP, code);
     const items = getSsjsCompletions(URI_HTTP, { line: 0, character: code.length });
     const labels = items.map((i) => i.label);
-    assert.ok(labels.includes('Get') || labels.includes('get'), `Expected Get in HTTP completions, got: ${labels.join(', ')}`);
+    assert.ok(
+        labels.includes('Get') || labels.includes('get'),
+        `Expected Get in HTTP completions, got: ${labels.join(', ')}`
+    );
 });
 
 test('Hover for HTTP.Get mentions requiresCoreLoad', () => {
@@ -364,7 +364,7 @@ test('Hover for HTTP.Get mentions requiresCoreLoad', () => {
             text.toLowerCase().includes('platform.load') ||
                 text.toLowerCase().includes('requirescoreload') ||
                 text.toLowerCase().includes('core'),
-            `Hover text should mention Platform.Load/requiresCoreLoad, got: ${text}`,
+            `Hover text should mention Platform.Load/requiresCoreLoad, got: ${text}`
         );
     }
     // If TypeScript does not return hover here the d.ts path may not be loaded — acceptable
@@ -422,11 +422,9 @@ test('new WSProxy() short-form — completions include WSProxy instance methods'
 });
 
 test('getSsjsCompletionInfo returns isMemberCompletion=true after "de."', () => {
-    const code = [
-        'Platform.Load("Core", "1");',
-        'var de = DataExtension.Init("key");',
-        'de.',
-    ].join('\n');
+    const code = ['Platform.Load("Core", "1");', 'var de = DataExtension.Init("key");', 'de.'].join(
+        '\n'
+    );
     updateSsjsDocument(URI_DE, code);
     const { isMemberCompletion } = getSsjsCompletionInfo(URI_DE, endOf(code));
     assert.strictEqual(isMemberCompletion, true, 'isMemberCompletion should be true after "de."');
@@ -436,7 +434,11 @@ test('getSsjsCompletionInfo returns isMemberCompletion=false at top-level', () =
     const code = 'Platf';
     updateSsjsDocument(URI_PLATFORM, code);
     const { isMemberCompletion } = getSsjsCompletionInfo(URI_PLATFORM, endOf(code));
-    assert.strictEqual(isMemberCompletion, false, 'isMemberCompletion should be false at top-level');
+    assert.strictEqual(
+        isMemberCompletion,
+        false,
+        'isMemberCompletion should be false at top-level'
+    );
 });
 
 // ---------------------------------------------------------------------------
@@ -462,12 +464,12 @@ test('@param tags render in native TypeScript style "@param `name` — desc"', (
         // Should use "@param `name` — desc" format, not the "*param:*" fallback
         assert.ok(
             !text.includes('*param:*'),
-            `Hover text should not use "*param:*" fallback, got: ${text}`,
+            `Hover text should not use "*param:*" fallback, got: ${text}`
         );
         if (text.includes('@param')) {
             assert.ok(
                 text.includes('@param `deName`') || text.includes('@param'),
-                `Hover text should use native @param format, got: ${text}`,
+                `Hover text should use native @param format, got: ${text}`
             );
         }
     }
@@ -486,7 +488,7 @@ test('ssjs.guide reference link present in hover for Platform.Function.Lookup', 
                   : '';
         assert.ok(
             text.includes('ssjs.guide') || text.includes('ssjs.guide reference'),
-            `Hover text should include ssjs.guide reference link, got: ${text}`,
+            `Hover text should include ssjs.guide reference link, got: ${text}`
         );
     }
 });
@@ -505,7 +507,7 @@ test('@example tag renders as "@example" header + fenced javascript code block',
         if (text.includes('@example')) {
             assert.ok(
                 text.includes('```javascript') || text.includes('```'),
-                `@example should render as fenced code block, got: ${text}`,
+                `@example should render as fenced code block, got: ${text}`
             );
         }
     }
@@ -541,7 +543,11 @@ test('getSsjsSignatureHelp activeParameter advances on comma', () => {
     updateSsjsDocument(URI_SIG, code);
     const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: code.length });
     if (result !== null) {
-        assert.strictEqual(result.activeParameter, 1, 'activeParameter should be 1 after first comma');
+        assert.strictEqual(
+            result.activeParameter,
+            1,
+            'activeParameter should be 1 after first comma'
+        );
     }
 });
 
@@ -555,7 +561,7 @@ test('getSsjsSignatureHelp parameter labels are numeric spans inside sig label',
             const label = sig.parameters[0].label;
             assert.ok(
                 Array.isArray(label),
-                `Parameter label should be a [start,end] tuple for VS Code highlighting, got: ${JSON.stringify(label)}`,
+                `Parameter label should be a [start,end] tuple for VS Code highlighting, got: ${JSON.stringify(label)}`
             );
             if (Array.isArray(label)) {
                 const [start, end] = label as [number, number];

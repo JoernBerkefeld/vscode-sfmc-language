@@ -37,7 +37,7 @@ function loadGlobalsContent(): string {
 
     // 1. Direct sibling install — server/node_modules/ssjs-data (most reliable in CI)
     candidates.push(
-        path.resolve(__dirname, '..', 'node_modules', 'ssjs-data', 'dist', 'sfmc-globals.d.ts'),
+        path.resolve(__dirname, '..', 'node_modules', 'ssjs-data', 'dist', 'sfmc-globals.d.ts')
     );
 
     // 2. Module-resolution lookup (handles hoisted or alternate install locations)
@@ -50,13 +50,13 @@ function loadGlobalsContent(): string {
 
     // 3. Workspace sibling — __dirname is server/out at runtime
     candidates.push(
-        path.resolve(__dirname, '..', '..', '..', 'ssjs-data', 'dist', 'sfmc-globals.d.ts'),
+        path.resolve(__dirname, '..', '..', '..', 'ssjs-data', 'dist', 'sfmc-globals.d.ts')
     );
 
     for (const p of candidates) {
         try {
             if (fs.existsSync(p)) {
-                return fs.readFileSync(p, 'utf-8');
+                return fs.readFileSync(p, 'utf8');
             }
         } catch {
             // try next
@@ -194,7 +194,7 @@ function offsetToPosition(text: string, offset: number): Position {
     const lines = slice.split('\n');
     return {
         line: lines.length - 1,
-        character: lines[lines.length - 1].length,
+        character: lines.at(-1).length,
     };
 }
 
@@ -234,14 +234,18 @@ function tsKindToLsp(kind: string): CompletionItemKind {
 
 function tsCategoryToSeverity(category: ts.DiagnosticCategory): DiagnosticSeverity {
     switch (category) {
-        case ts.DiagnosticCategory.Error:
+        case ts.DiagnosticCategory.Error: {
             return DiagnosticSeverity.Error;
-        case ts.DiagnosticCategory.Warning:
+        }
+        case ts.DiagnosticCategory.Warning: {
             return DiagnosticSeverity.Warning;
-        case ts.DiagnosticCategory.Suggestion:
+        }
+        case ts.DiagnosticCategory.Suggestion: {
             return DiagnosticSeverity.Hint;
-        default:
+        }
+        default: {
             return DiagnosticSeverity.Information;
+        }
     }
 }
 
@@ -252,6 +256,8 @@ function tsCategoryToSeverity(category: ts.DiagnosticCategory): DiagnosticSeveri
 /**
  * Notify the service that a SSJS document's content has changed.
  * Must be called before any completions / diagnostics / hover for that URI.
+ * @param uri
+ * @param text
  */
 export function updateSsjsDocument(uri: string, text: string): void {
     setVirtualFile(virtualNameForUri(uri), text);
@@ -259,6 +265,7 @@ export function updateSsjsDocument(uri: string, text: string): void {
 
 /**
  * Remove a SSJS document from the virtual FS (e.g. on close).
+ * @param uri
  */
 export function removeSsjsDocument(uri: string): void {
     const name = uriToVirtualName.get(uri);
@@ -272,6 +279,8 @@ export function removeSsjsDocument(uri: string): void {
  * Return LSP CompletionItems from the embedded TypeScript language service
  * at the given cursor position.  Returns an empty array when the service has
  * no results or the document is not known.
+ * @param uri
+ * @param position
  */
 export function getSsjsCompletions(uri: string, position: Position): CompletionItem[] {
     const name = uriToVirtualName.get(uri);
@@ -310,10 +319,12 @@ export function getSsjsCompletions(uri: string, position: Position): CompletionI
  * triggered for member access (e.g. `de.` or `Platform.Function.`).
  * Use this in server.ts to decide whether to suppress SFMC global completions
  * that would pollute member-completion lists.
+ * @param uri
+ * @param position
  */
 export function getSsjsCompletionInfo(
     uri: string,
-    position: Position,
+    position: Position
 ): { items: CompletionItem[]; isMemberCompletion: boolean } {
     const name = uriToVirtualName.get(uri);
     if (!name) return { items: [], isMemberCompletion: false };
@@ -349,6 +360,7 @@ export function getSsjsCompletionInfo(
 
 /**
  * Return LSP Diagnostics from the embedded TypeScript language service for * the given SSJS document URI.
+ * @param uri
  */
 export function getSsjsDiagnostics(uri: string): Diagnostic[] {
     const name = uriToVirtualName.get(uri);
@@ -389,6 +401,8 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
 /**
  * Return an LSP Hover from the embedded TypeScript language service at the
  * given cursor position.  Returns null when there is nothing to show.
+ * @param uri
+ * @param position
  */
 export function getSsjsHover(uri: string, position: Position): Hover | null {
     const name = uriToVirtualName.get(uri);
@@ -425,9 +439,9 @@ export function getSsjsHover(uri: string, position: Position): Hover | null {
             // TS returns tag text as "paramName - description"; match native TS format:
             // @param `name` — description
             const spaceIdx = tagText.indexOf(' ');
-            const pName = spaceIdx > -1 ? tagText.slice(0, spaceIdx) : tagText;
+            const pName = spaceIdx === -1 ? tagText : tagText.slice(0, spaceIdx);
             const pDesc =
-                spaceIdx > -1 ? tagText.slice(spaceIdx + 1).replace(/^[-–]\s*/, '') : '';
+                spaceIdx === -1 ? '' : tagText.slice(spaceIdx + 1).replace(/^[-–]\s*/, '');
             tagLines.push(pDesc ? `@param \`${pName}\` — ${pDesc}` : `@param \`${pName}\``);
         } else if ((tag.name === 'returns' || tag.name === 'return') && tagText) {
             tagLines.push(`@returns ${tagText}`);
@@ -461,6 +475,8 @@ export function getSsjsHover(uri: string, position: Position): Hover | null {
  * Uses TypeScript's native display-part machinery to build the label and
  * numeric `[startOffset, endOffset]` parameter spans so VS Code highlights
  * the active parameter correctly.
+ * @param uri
+ * @param position
  */
 export function getSsjsSignatureHelp(uri: string, position: Position): SignatureHelp | null {
     const name = uriToVirtualName.get(uri);
