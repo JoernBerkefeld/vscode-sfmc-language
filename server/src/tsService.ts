@@ -10,7 +10,8 @@
  */
 import * as ts from 'typescript';
 import * as fs from 'node:fs';
-import path from 'node:path';
+// eslint-disable-next-line unicorn/import-style
+import * as path from 'node:path';
 
 import {
     CompletionItem,
@@ -195,7 +196,7 @@ function offsetToPosition(text: string, offset: number): Position {
     const lines = slice.split('\n');
     return {
         line: lines.length - 1,
-        character: lines.at(-1).length,
+        character: lines.at(-1)!.length,
     };
 }
 

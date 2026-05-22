@@ -61,7 +61,7 @@ const URI_PLATFORM = 'file:///test-platform.ssjs';
 // Coordinate helper: column 0 of the last line of a code string
 function endOf(code: string) {
     const lines = code.split('\n');
-    return { line: lines.length - 1, character: lines.at(-1).length };
+    return { line: lines.length - 1, character: lines.at(-1)!.length };
 }
 
 // ---------------------------------------------------------------------------
