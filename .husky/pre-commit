@@ -1,0 +1,18 @@
+if [[ $SKIP_HOOKS -gt 0 ]]; then
+  echo "[PRE-COMMIT] skipping hooks (SKIP_HOOKS=$SKIP_HOOKS)"
+  exit 0
+fi
+
+echo "[PRE-COMMIT] Running lint..."
+npm run lint --no-workspaces || {
+  echo "[PRE-COMMIT] Lint failed. Fix the errors above and try again."
+  exit 1
+}
+
+echo "[PRE-COMMIT] Running TypeScript compile..."
+npm run compile --no-workspaces || {
+  echo "[PRE-COMMIT] Compile failed. Fix the errors above and try again."
+  exit 1
+}
+
+echo "[PRE-COMMIT] All checks passed."
