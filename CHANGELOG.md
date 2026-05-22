@@ -2,6 +2,18 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.5.1] — 2026-05-22
+
+### Fixed
+
+- **SSJS comment-aware validation**: validators now skip code inside comments, preventing false-positive diagnostics for `Platform.Load`, `let`/`const`, and bare globals when those appear in comments
+- **Bare-global diagnostics**: `Stringify()`, `Now()`, `GUID()` and other bare aliases that require `Platform.Load("Core","1")` are now flagged with an error when the load call is missing
+- **`ssjs.guide` links for bare aliases**: hover and IntelliSense now show clickable `ssjs.guide` reference links for bare-name globals (`Now()`, `GUID()`, `Stringify()`, etc.) — previously only their `Platform.Function.*` equivalents had links
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from 0.2.3 to 0.2.4 (which bundles `ssjs-data` 0.3.3)
+
 ## [1.5.0] — 2026-05-20
 
 ### Added
