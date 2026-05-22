@@ -10,7 +10,7 @@
  */
 import * as ts from 'typescript';
 import * as fs from 'node:fs';
-import * as path from 'node:path';
+import path from 'node:path';
 
 import {
     CompletionItem,
@@ -33,12 +33,10 @@ import {
 const GLOBALS_FILENAME = '__sfmc_globals.d.ts';
 
 function loadGlobalsContent(): string {
-    const candidates: string[] = [];
-
     // 1. Direct sibling install — server/node_modules/ssjs-data (most reliable in CI)
-    candidates.push(
-        path.resolve(__dirname, '..', 'node_modules', 'ssjs-data', 'dist', 'sfmc-globals.d.ts')
-    );
+    const candidates: string[] = [
+        path.resolve(__dirname, '..', 'node_modules', 'ssjs-data', 'dist', 'sfmc-globals.d.ts'),
+    ];
 
     // 2. Module-resolution lookup (handles hoisted or alternate install locations)
     try {
@@ -80,13 +78,16 @@ interface VirtualFile {
     snapshot: ts.IScriptSnapshot;
 }
 
-const virtualFiles = new Map<string, VirtualFile>();
-
-virtualFiles.set(GLOBALS_FILENAME, {
-    content: GLOBALS_CONTENT,
-    version: 1,
-    snapshot: ts.ScriptSnapshot.fromString(GLOBALS_CONTENT),
-});
+const virtualFiles = new Map<string, VirtualFile>([
+    [
+        GLOBALS_FILENAME,
+        {
+            content: GLOBALS_CONTENT,
+            version: 1,
+            snapshot: ts.ScriptSnapshot.fromString(GLOBALS_CONTENT),
+        },
+    ],
+]);
 
 function setVirtualFile(name: string, content: string): void {
     const existing = virtualFiles.get(name);
@@ -256,8 +257,8 @@ function tsCategoryToSeverity(category: ts.DiagnosticCategory): DiagnosticSeveri
 /**
  * Notify the service that a SSJS document's content has changed.
  * Must be called before any completions / diagnostics / hover for that URI.
- * @param uri
- * @param text
+ * @param uri - LSP document URI
+ * @param text - full document text
  */
 export function updateSsjsDocument(uri: string, text: string): void {
     setVirtualFile(virtualNameForUri(uri), text);
@@ -265,7 +266,7 @@ export function updateSsjsDocument(uri: string, text: string): void {
 
 /**
  * Remove a SSJS document from the virtual FS (e.g. on close).
- * @param uri
+ * @param uri - LSP document URI
  */
 export function removeSsjsDocument(uri: string): void {
     const name = uriToVirtualName.get(uri);
@@ -279,8 +280,9 @@ export function removeSsjsDocument(uri: string): void {
  * Return LSP CompletionItems from the embedded TypeScript language service
  * at the given cursor position.  Returns an empty array when the service has
  * no results or the document is not known.
- * @param uri
- * @param position
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns LSP completion items, or an empty array if none are available
  */
 export function getSsjsCompletions(uri: string, position: Position): CompletionItem[] {
     const name = uriToVirtualName.get(uri);
@@ -319,8 +321,9 @@ export function getSsjsCompletions(uri: string, position: Position): CompletionI
  * triggered for member access (e.g. `de.` or `Platform.Function.`).
  * Use this in server.ts to decide whether to suppress SFMC global completions
  * that would pollute member-completion lists.
- * @param uri
- * @param position
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns completion items and a flag indicating whether this is a member-access completion
  */
 export function getSsjsCompletionInfo(
     uri: string,
@@ -359,8 +362,9 @@ export function getSsjsCompletionInfo(
 }
 
 /**
- * Return LSP Diagnostics from the embedded TypeScript language service for * the given SSJS document URI.
- * @param uri
+ * Return LSP Diagnostics from the embedded TypeScript language service for the given SSJS document URI.
+ * @param uri - LSP document URI
+ * @returns LSP diagnostics, or an empty array if none are found
  */
 export function getSsjsDiagnostics(uri: string): Diagnostic[] {
     const name = uriToVirtualName.get(uri);
@@ -368,7 +372,7 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
     const file = virtualFiles.get(name);
     if (!file) return [];
 
-    let tsDiags: ts.Diagnostic[] = [];
+    let tsDiags: ts.Diagnostic[];
     try {
         tsDiags = [
             ...languageService.getSyntacticDiagnostics(name),
@@ -401,8 +405,9 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
 /**
  * Return an LSP Hover from the embedded TypeScript language service at the
  * given cursor position.  Returns null when there is nothing to show.
- * @param uri
- * @param position
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns LSP Hover with markdown content, or null if nothing to show
  */
 export function getSsjsHover(uri: string, position: Position): Hover | null {
     const name = uriToVirtualName.get(uri);
@@ -475,8 +480,9 @@ export function getSsjsHover(uri: string, position: Position): Hover | null {
  * Uses TypeScript's native display-part machinery to build the label and
  * numeric `[startOffset, endOffset]` parameter spans so VS Code highlights
  * the active parameter correctly.
- * @param uri
- * @param position
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns LSP SignatureHelp, or null if the cursor is not inside a function call
  */
 export function getSsjsSignatureHelp(uri: string, position: Position): SignatureHelp | null {
     const name = uriToVirtualName.get(uri);

@@ -4,8 +4,9 @@
 
 /**
  * Compare semver strings (numeric segments only). Returns positive if a > b.
- * @param a
- * @param b
+ * @param a - first version string
+ * @param b - second version string
+ * @returns positive if a > b, negative if a < b, 0 if equal
  */
 export function compareSemver(a: string, b: string): number {
     const pa = a.split('.').map((p) => Number.parseInt(p, 10) || 0);
@@ -22,8 +23,9 @@ export function compareSemver(a: string, b: string): number {
 
 /**
  * Extract the changelog body for a given version (Keep a Changelog style: ## [x.y.z]).
- * @param changelog
- * @param version
+ * @param changelog - full CHANGELOG.md content
+ * @param version - semver version string to look up
+ * @returns the changelog body for that version, or null if not found
  */
 export function parseChangelogEntry(changelog: string, version: string): string | null {
     const escaped = version.replaceAll(/[.*+?^${}()|[\]\\]/g, (ch) => `\\${ch}`);
@@ -96,7 +98,8 @@ function renderMarkdownChunk(chunk: string): string {
 
 /**
  * Minimal markdown → HTML for changelog sections (headings, lists, bold, code).
- * @param md
+ * @param md - markdown string to convert
+ * @returns HTML string
  */
 export function markdownToHtml(md: string): string {
     const parts: string[] = [];

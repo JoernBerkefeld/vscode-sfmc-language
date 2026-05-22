@@ -117,8 +117,8 @@ export async function showWhatsNewPanel(
 
 /**
  * After an upgrade, prompt once; opening the panel or choosing Later records the version.
- * @param context
- * @param extensionDisplayName
+ * @param context - VS Code extension context for global state persistence
+ * @param extensionDisplayName - human-readable name shown in the notification
  */
 export async function checkAndShowWhatsNew(
     context: ExtensionContext,

@@ -56,6 +56,7 @@ export default tseslint.config(
             'unicorn/prevent-abbreviations': 'off',
             'jsdoc/require-jsdoc': 'off',
             'jsdoc/require-param-type': 'off',
+            'jsdoc/require-returns-type': 'off',
         },
     },
     {

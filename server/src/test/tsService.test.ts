@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * tsService.test.ts — standalone Node.js unit tests for the embedded
  * TypeScript language service.

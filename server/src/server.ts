@@ -318,26 +318,6 @@ connection.onDidChangeWatchedFiles(() => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Extract plain markdown text from an LSP Hover's `contents` field, which
- * may be a MarkupContent, a MarkedString, or an array of MarkedStrings.
- * @param hover
- */
-function extractHoverText(hover: import('vscode-languageserver').Hover): string {
-    const c = hover.contents;
-    if (typeof c === 'string') return c;
-    if ('kind' in c) return (c as import('vscode-languageserver').MarkupContent).value;
-    if (Array.isArray(c)) {
-        return c
-            .map((m) => (typeof m === 'string' ? m : m.value))
-            .filter(Boolean)
-            .join('\n\n');
-    }
-    return typeof (c as { value?: string }).value === 'string'
-        ? (c as { value: string }).value
-        : '';
-}
-
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------

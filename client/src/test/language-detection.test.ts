@@ -5,9 +5,10 @@ import { getDocUri as getDocumentUri, activate } from './helper';
 /**
  * Helper that waits until `doc.languageId` transitions to the expected value,
  * polling every 200 ms up to `timeoutMs`.  Returns the final language id.
- * @param documentUri
- * @param expectedLanguage
- * @param timeoutMs
+ * @param documentUri - VS Code URI of the document to watch
+ * @param expectedLanguage - language identifier to wait for
+ * @param timeoutMs - maximum wait time in milliseconds
+ * @returns the final language id of the document
  */
 async function waitForLanguage(
     documentUri: vscode.Uri,
