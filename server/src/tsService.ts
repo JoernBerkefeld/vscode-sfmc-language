@@ -21,6 +21,9 @@ import {
     MarkupContent,
     Position,
     Range,
+    SignatureHelp,
+    SignatureInformation,
+    ParameterInformation,
 } from 'vscode-languageserver/node';
 
 // ---------------------------------------------------------------------------
@@ -404,13 +407,27 @@ export function getSsjsHover(uri: string, position: Position): Hover | null {
     if (sig) parts.push('```typescript\n' + sig + '\n```');
     if (docs) parts.push(docs);
 
-    // Include JSDoc tags: @deprecated, @remarks, etc.
+    // Render JSDoc tags to match native TypeScript hover style.
     const tags = info.tags ?? [];
     const tagLines: string[] = [];
     for (const tag of tags) {
         const tagText = tag.text?.map((p) => p.text).join('') ?? '';
         if (tag.name === 'deprecated') {
             tagLines.push(tagText ? `*Deprecated:* ${tagText}` : '*Deprecated*');
+        } else if (tag.name === 'remarks') {
+            if (tagText) tagLines.push(tagText);
+        } else if (tag.name === 'param' && tagText) {
+            // TS returns tag text as "paramName - description"; match native TS format:
+            // @param `name` — description
+            const spaceIdx = tagText.indexOf(' ');
+            const pName = spaceIdx > -1 ? tagText.slice(0, spaceIdx) : tagText;
+            const pDesc =
+                spaceIdx > -1 ? tagText.slice(spaceIdx + 1).replace(/^[-–]\s*/, '') : '';
+            tagLines.push(pDesc ? `@param \`${pName}\` — ${pDesc}` : `@param \`${pName}\``);
+        } else if ((tag.name === 'returns' || tag.name === 'return') && tagText) {
+            tagLines.push(`@returns ${tagText}`);
+        } else if (tag.name === 'example' && tagText) {
+            tagLines.push(`@example\n\`\`\`javascript\n${tagText.trim()}\n\`\`\``);
         } else if (tagText) {
             tagLines.push(`*${tag.name}:* ${tagText}`);
         }
@@ -429,6 +446,69 @@ export function getSsjsHover(uri: string, position: Position): Hover | null {
     }
 
     return range ? { contents: content, range } : { contents: content };
+}
+
+/**
+ * Return an LSP SignatureHelp from the embedded TypeScript language service at
+ * the given cursor position.  Returns null when the cursor is not inside a
+ * function call or TypeScript has no type information for it.
+ *
+ * Uses TypeScript's native display-part machinery to build the label and
+ * numeric `[startOffset, endOffset]` parameter spans so VS Code highlights
+ * the active parameter correctly.
+ */
+export function getSsjsSignatureHelp(uri: string, position: Position): SignatureHelp | null {
+    const name = uriToVirtualName.get(uri);
+    const file = name ? virtualFiles.get(name) : undefined;
+    if (!name || !file) return null;
+
+    const offset = positionToOffset(file.content, position);
+    let info: ts.SignatureHelpItems | undefined;
+    try {
+        info = languageService.getSignatureHelpItems(name, offset, {});
+    } catch {
+        return null;
+    }
+    if (!info || info.items.length === 0) return null;
+
+    const signatures: SignatureInformation[] = info.items.map((item) => {
+        const prefixText = item.prefixDisplayParts.map((p) => p.text).join('');
+        const suffixText = item.suffixDisplayParts.map((p) => p.text).join('');
+        const sepText = item.separatorDisplayParts.map((p) => p.text).join('');
+
+        // Build label and compute exact [start, end] byte-offsets for each parameter.
+        // Note: span is computed independently from docText — changing documentation
+        // to MarkupContent does not affect active-parameter highlighting.
+        let cursor = prefixText.length;
+        const parameters: ParameterInformation[] = item.parameters.map((p, i) => {
+            if (i > 0) cursor += sepText.length;
+            const paramText = p.displayParts.map((d) => d.text).join('');
+            const span: [number, number] = [cursor, cursor + paramText.length];
+            cursor += paramText.length;
+            const rawDoc = p.documentation?.map((d) => d.text).join('');
+            const documentation: MarkupContent | undefined = rawDoc
+                ? { kind: 'markdown', value: rawDoc }
+                : undefined;
+            return { label: span, documentation };
+        });
+
+        const paramParts = item.parameters
+            .map((p) => p.displayParts.map((d) => d.text).join(''))
+            .join(sepText);
+        const label = prefixText + paramParts + suffixText;
+
+        const rawDoc = item.documentation?.map((d) => d.text).join('');
+        const documentation: MarkupContent | undefined = rawDoc
+            ? { kind: 'markdown', value: rawDoc }
+            : undefined;
+        return { label, documentation, parameters };
+    });
+
+    return {
+        signatures,
+        activeSignature: info.selectedItemIndex,
+        activeParameter: info.argumentIndex,
+    };
 }
 
 // ---------------------------------------------------------------------------

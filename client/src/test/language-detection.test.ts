@@ -69,12 +69,6 @@ suite('AMPscript HTML auto-detection — individual marker variants', () => {
         );
     });
 
-    test('<script runat="server"> → ssjs', async () => {
-        const documentUri = getDocumentUri('marker-script-runat.html');
-        await activate(documentUri);
-        const lang = await waitForLanguage(documentUri, 'ssjs');
-        assert.strictEqual(lang, 'ssjs', 'marker-script-runat.html should be detected as ssjs');
-    });
 });
 
 suite('AMPscript HTML auto-detection', () => {
@@ -97,17 +91,6 @@ suite('AMPscript HTML auto-detection', () => {
             lang,
             'ampscript',
             'Expected language to be switched to ampscript for a file containing a <script language="ampscript"> tag'
-        );
-    });
-
-    test('HTML file with only a <script runat="server"> block is switched to ssjs', async () => {
-        const documentUri = getDocumentUri('ssjs-only.html');
-        await activate(documentUri);
-        const lang = await waitForLanguage(documentUri, 'ssjs');
-        assert.strictEqual(
-            lang,
-            'ssjs',
-            'Expected language to be switched to ssjs for a file containing only <script runat="server">'
         );
     });
 

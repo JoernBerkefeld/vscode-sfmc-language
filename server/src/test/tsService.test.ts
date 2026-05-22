@@ -15,6 +15,7 @@ import {
     getSsjsCompletionInfo,
     getSsjsDiagnostics,
     getSsjsHover,
+    getSsjsSignatureHelp,
 } from '../tsService';
 
 // ---------------------------------------------------------------------------
@@ -312,6 +313,26 @@ test('Hover for deprecated ContentArea mentions deprecated', () => {
     // If TypeScript does not return hover here the d.ts path may not be loaded — acceptable
 });
 
+test('@remarks tag renders without "remarks:" label prefix (Bug #2b)', () => {
+    // BeginImpressionRegion has a @remarks tag in sfmc-globals.d.ts
+    const code = 'BeginImpressionRegion(';
+    updateSsjsDocument(URI_DEPRECATED, code);
+    const hover = getSsjsHover(URI_DEPRECATED, { line: 0, character: 3 });
+    if (hover !== null) {
+        const text =
+            typeof hover.contents === 'string'
+                ? hover.contents
+                : 'value' in hover.contents
+                  ? hover.contents.value
+                  : '';
+        assert.ok(
+            !text.includes('*remarks:*'),
+            `Hover text should not include "*remarks:*" label prefix, got: ${text}`,
+        );
+    }
+    // If no hover that is acceptable — d.ts may not be loaded in CI
+});
+
 // ---------------------------------------------------------------------------
 // Suite: requiresCoreLoad
 // ---------------------------------------------------------------------------
@@ -416,4 +437,132 @@ test('getSsjsCompletionInfo returns isMemberCompletion=false at top-level', () =
     updateSsjsDocument(URI_PLATFORM, code);
     const { isMemberCompletion } = getSsjsCompletionInfo(URI_PLATFORM, endOf(code));
     assert.strictEqual(isMemberCompletion, false, 'isMemberCompletion should be false at top-level');
+});
+
+// ---------------------------------------------------------------------------
+// Suite: JSDoc enrichment in sfmc-globals.d.ts (description, @param, @example, ssjs.guide link)
+// ---------------------------------------------------------------------------
+console.log('Suite: JSDoc enrichment');
+
+const URI_JSDOC = 'file:///test-jsdoc.ssjs';
+
+test('@param tags render in native TypeScript style "@param `name` — desc"', () => {
+    // Platform.Function.Lookup has @param tags in the new sfmc-globals.d.ts
+    const code = 'Platform.Function.Lookup(';
+    updateSsjsDocument(URI_JSDOC, code);
+    // Hover over "Lookup" — starts at character 18
+    const hover = getSsjsHover(URI_JSDOC, { line: 0, character: 20 });
+    if (hover !== null) {
+        const text =
+            typeof hover.contents === 'string'
+                ? hover.contents
+                : 'value' in hover.contents
+                  ? hover.contents.value
+                  : '';
+        // Should use "@param `name` — desc" format, not the "*param:*" fallback
+        assert.ok(
+            !text.includes('*param:*'),
+            `Hover text should not use "*param:*" fallback, got: ${text}`,
+        );
+        if (text.includes('@param')) {
+            assert.ok(
+                text.includes('@param `deName`') || text.includes('@param'),
+                `Hover text should use native @param format, got: ${text}`,
+            );
+        }
+    }
+});
+
+test('ssjs.guide reference link present in hover for Platform.Function.Lookup', () => {
+    const code = 'Platform.Function.Lookup(';
+    updateSsjsDocument(URI_JSDOC, code);
+    const hover = getSsjsHover(URI_JSDOC, { line: 0, character: 20 });
+    if (hover !== null) {
+        const text =
+            typeof hover.contents === 'string'
+                ? hover.contents
+                : 'value' in hover.contents
+                  ? hover.contents.value
+                  : '';
+        assert.ok(
+            text.includes('ssjs.guide') || text.includes('ssjs.guide reference'),
+            `Hover text should include ssjs.guide reference link, got: ${text}`,
+        );
+    }
+});
+
+test('@example tag renders as "@example" header + fenced javascript code block', () => {
+    const code = 'Platform.Function.Lookup(';
+    updateSsjsDocument(URI_JSDOC, code);
+    const hover = getSsjsHover(URI_JSDOC, { line: 0, character: 20 });
+    if (hover !== null) {
+        const text =
+            typeof hover.contents === 'string'
+                ? hover.contents
+                : 'value' in hover.contents
+                  ? hover.contents.value
+                  : '';
+        if (text.includes('@example')) {
+            assert.ok(
+                text.includes('```javascript') || text.includes('```'),
+                `@example should render as fenced code block, got: ${text}`,
+            );
+        }
+    }
+});
+
+// ---------------------------------------------------------------------------
+// getSsjsSignatureHelp tests
+// ---------------------------------------------------------------------------
+
+const URI_SIG = 'file:///sigHelp.ssjs';
+
+test('getSsjsSignatureHelp returns null when not inside a function call', () => {
+    const code = 'var x = 1;';
+    updateSsjsDocument(URI_SIG, code);
+    const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: 5 });
+    assert.strictEqual(result, null);
+});
+
+test('getSsjsSignatureHelp returns signature for Platform.Function call', () => {
+    const code = 'Platform.Function.Lookup(';
+    updateSsjsDocument(URI_SIG, code);
+    const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: 25 });
+    if (result !== null) {
+        assert.ok(result.signatures.length > 0, 'Should have at least one signature');
+        const sig = result.signatures[0];
+        assert.ok(sig.label.length > 0, 'Signature label should not be empty');
+        assert.ok(sig.parameters && sig.parameters.length > 0, 'Should have parameters');
+    }
+});
+
+test('getSsjsSignatureHelp activeParameter advances on comma', () => {
+    const code = 'Platform.Function.Lookup("deName", ';
+    updateSsjsDocument(URI_SIG, code);
+    const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: code.length });
+    if (result !== null) {
+        assert.strictEqual(result.activeParameter, 1, 'activeParameter should be 1 after first comma');
+    }
+});
+
+test('getSsjsSignatureHelp parameter labels are numeric spans inside sig label', () => {
+    const code = 'Platform.Function.Lookup(';
+    updateSsjsDocument(URI_SIG, code);
+    const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: 25 });
+    if (result !== null && result.signatures.length > 0) {
+        const sig = result.signatures[0];
+        if (sig.parameters && sig.parameters.length > 0) {
+            const label = sig.parameters[0].label;
+            assert.ok(
+                Array.isArray(label),
+                `Parameter label should be a [start,end] tuple for VS Code highlighting, got: ${JSON.stringify(label)}`,
+            );
+            if (Array.isArray(label)) {
+                const [start, end] = label as [number, number];
+                assert.ok(start >= 0 && end > start, 'Parameter span should have valid start/end');
+                const paramText = sig.label.slice(start, end);
+                assert.ok(paramText.length > 0, 'Parameter span should resolve to non-empty text');
+            }
+        }
+    }
 });

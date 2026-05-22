@@ -28,12 +28,12 @@ suite('SSJS TypeScript Service — Completions', () => {
     });
 
     test('Platform. → includes Function, Variable, Response, Request namespaces', async () => {
-        // Line 15: `var guid = Platform.Function.GUID();`
-        // Position after "Platform." on that line (col 9)
+        // File line 18 (0-indexed): `var guid = Platform.Function.GUID();`
+        // Col 25 is inside "Function" — triggers Platform.* member completions
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(15, 25), // inside "Platform.Function"
+            new vscode.Position(18, 25), // inside "Platform.Function"
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -44,11 +44,12 @@ suite('SSJS TypeScript Service — Completions', () => {
     });
 
     test('Platform.Function. → includes GUID, ParseJSON, Lookup', async () => {
-        // Trigger completions at the end of "Platform.Function." on line 15
+        // File line 18 (0-indexed): `var guid = Platform.Function.GUID();`
+        // Col 29 is at 'G' of 'GUID', right after the second '.' — triggers Platform.Function.* completions
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(15, 34), // after "Platform.Function."
+            new vscode.Position(18, 29), // after "Platform.Function."
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -71,11 +72,11 @@ suite('SSJS TypeScript Service — Completions', () => {
     });
 
     test('api. → includes WSProxy instance methods (retrieve, createItem)', async () => {
-        // Line 12: `var result = api.retrieve(...)` — trigger after "api."
+        // File line 15 (0-indexed): `var result = api.retrieve(...)` — trigger after "api."
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(12, 19), // after "api."
+            new vscode.Position(15, 19), // after "api."
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -85,11 +86,11 @@ suite('SSJS TypeScript Service — Completions', () => {
     });
 
     test('Math. → includes abs, floor, PI', async () => {
-        // Line 21: `var rounded = Math.round(3.7);`
+        // File line 24 (0-indexed): `var rounded = Math.round(3.7);`
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(21, 18), // after "Math."
+            new vscode.Position(24, 19), // inside "round", after "Math."
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -99,11 +100,11 @@ suite('SSJS TypeScript Service — Completions', () => {
     });
 
     test('guid. → includes String built-in methods (toUpperCase, indexOf)', async () => {
-        // Line 24: `var upper = guid.toUpperCase();`
+        // File line 27 (0-indexed): `var upper = guid.toUpperCase();`
         const list = (await vscode.commands.executeCommand(
             'vscode.executeCompletionItemProvider',
             documentUri,
-            new vscode.Position(24, 20), // after "guid."
+            new vscode.Position(27, 20), // after "guid."
         )) as vscode.CompletionList;
 
         const labels = new Set(list.items.map(labelOf));
@@ -129,22 +130,23 @@ suite('SSJS TypeScript Service — Diagnostics', () => {
         assert.ok(tsDiags.length > 0, 'Should have at least one sfmc-ts diagnostic');
     });
 
-    test('sfmc-ts diagnostic points at the undefined variable on line 27', () => {
+    test('sfmc-ts diagnostic points at the undefined variable on line 30', () => {
         const tsDiags = diags.filter((d) => d.source === 'sfmc-ts');
-        const onLine27 = tsDiags.find((d) => d.range.start.line === 27);
-        assert.ok(onLine27, 'Should have a diagnostic on line 27 (totallyUndefinedVariable)');
+        // File line 30 (0-indexed): `var broken = totallyUndefinedVariable.toString();`
+        const onLine30 = tsDiags.find((d) => d.range.start.line === 30);
+        assert.ok(onLine30, 'Should have a diagnostic on line 30 (totallyUndefinedVariable)');
     });
 
     test('Valid lines produce no sfmc-ts errors', () => {
-        // Line 3 (DataExtension.Init), 9 (de.Rows.Lookup), 12 (api.retrieve)
+        // File lines 6 (DataExtension.Init), 9 (de.Rows.Lookup), 15 (api.retrieve) — all 0-indexed
         // should not produce TS errors
         const tsDiagErrors = diags.filter(
             (d) =>
                 d.source === 'sfmc-ts' &&
                 d.severity === vscode.DiagnosticSeverity.Error &&
-                (d.range.start.line === 3 ||
+                (d.range.start.line === 6 ||
                     d.range.start.line === 9 ||
-                    d.range.start.line === 12),
+                    d.range.start.line === 15),
         );
         assert.strictEqual(
             tsDiagErrors.length,
@@ -163,12 +165,12 @@ suite('SSJS TypeScript Service — Hover', () => {
     });
 
     test('Hover over Platform.Function.GUID shows type info', async () => {
-        // Line 15: `var guid = Platform.Function.GUID();`
-        // Hover at "GUID" (col ~29)
+        // File line 18 (0-indexed): `var guid = Platform.Function.GUID();`
+        // Hover at "GUID" (col ~30)
         const hovers = (await vscode.commands.executeCommand(
             'vscode.executeHoverProvider',
             documentUri,
-            new vscode.Position(15, 30),
+            new vscode.Position(18, 30),
         )) as vscode.Hover[];
 
         assert.ok(hovers.length > 0, 'Should return at least one hover');
@@ -180,5 +182,62 @@ suite('SSJS TypeScript Service — Hover', () => {
             )
             .join('');
         assert.ok(text.length > 0, 'Hover content should not be empty');
+    });
+});
+
+suite('SSJS TypeScript Service — Signature Help (Bug J)', () => {
+    const documentUri = getDocumentUri('test-ssjs-ts.ssjs');
+
+    suiteSetup(async () => {
+        await activate(documentUri);
+        await sleep(SETTLE_MS);
+    });
+
+    test('Signature help documentation includes ssjs.guide reference link', async () => {
+        // File line 22 (0-indexed): `Platform.Response.Write(Stringify(result));`
+        // Position (22, 34) is inside `Stringify(result` — triggers Stringify signature
+        const sigHelp = (await vscode.commands.executeCommand(
+            'vscode.executeSignatureHelpProvider',
+            documentUri,
+            new vscode.Position(22, 34),
+            '(',
+        )) as vscode.SignatureHelp | undefined;
+
+        if (!sigHelp || sigHelp.signatures.length === 0) {
+            return; // No signature help available — acceptable in CI
+        }
+
+        const doc = sigHelp.signatures[0].documentation;
+        if (!doc) return; // No documentation — acceptable
+
+        const text = typeof doc === 'string' ? doc : (doc as vscode.MarkdownString).value;
+        assert.ok(
+            text.includes('ssjs.guide'),
+            `Signature documentation should include ssjs.guide reference, got: ${text}`,
+        );
+    });
+
+    test('Signature help documentation is a MarkdownString (not plain text)', async () => {
+        // File line 22 (0-indexed): `Platform.Response.Write(Stringify(result));`
+        const sigHelp = (await vscode.commands.executeCommand(
+            'vscode.executeSignatureHelpProvider',
+            documentUri,
+            new vscode.Position(22, 34),
+            '(',
+        )) as vscode.SignatureHelp | undefined;
+
+        if (!sigHelp || sigHelp.signatures.length === 0) {
+            return; // No signature help available — acceptable in CI
+        }
+
+        const doc = sigHelp.signatures[0].documentation;
+        if (!doc) return; // No documentation — acceptable
+
+        // If the fix is working, the LSP server sends MarkupContent { kind: 'markdown' }
+        // which the VS Code client converts to a MarkdownString instance.
+        assert.ok(
+            doc instanceof vscode.MarkdownString,
+            `Signature documentation should be a MarkdownString (rendered markdown), got: ${typeof doc}`,
+        );
     });
 });

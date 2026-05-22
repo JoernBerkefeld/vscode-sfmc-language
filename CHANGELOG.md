@@ -15,7 +15,9 @@ All notable changes to the SFMC Language Service extension will be documented in
 ### Fixed
 
 - **SSJS completions scope**: member-access completions (e.g. `de.`, `api.`, `Platform.Function.`) no longer inject the full list of ~100 SFMC globals into the list — only the relevant members are shown.
-- **HTML language mode**: HTML files containing only `<script runat="server">` blocks (no AMPscript) are no longer force-switched to the `ssjs` language mode.
+- **Extension activation**: the extension now activates on VS Code startup (`onStartupFinished`) so IntelliSense is ready when a `.ssjs` file is opened without needing to open an AMPscript file first.
+- **Signature help link rendering**: the `ssjs.guide` reference link in signature help tooltips now renders as a clickable markdown link instead of plain text.
+- **Signature help fallback removed**: SSJS signature help now uses only the TypeScript language service; the SFMC LSP fallback is no longer invoked, preventing duplicate or incorrect suggestions.
 - **ES6+ diagnostics severity**: ES6+ patterns (`let`, `const`, arrow functions, `for...of`, generator functions, spread `...`, destructuring) are now flagged as **Error** severity (were incorrectly shown as Warning).
 - **Missing ES6+ patterns**: `for...of` loops, generator functions, spread operator (`...`), and object/array destructuring are now detected and flagged as errors.
 - **False-positive SSJS diagnostics**: argument type-checking now uses a fully-qualified prefix lookup (`WSProxy.retrieve` vs `DateTime.TimeZone.Retrieve`), preventing false positives when different namespaces share a method name. Calls on user-defined variables (e.g. `api.retrieve()`) are no longer flagged.

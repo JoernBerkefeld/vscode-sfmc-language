@@ -27,6 +27,7 @@ import {
     getSsjsCompletionInfo,
     getSsjsDiagnostics,
     getSsjsHover,
+    getSsjsSignatureHelp,
 } from './tsService';
 
 // ---------------------------------------------------------------------------
@@ -199,10 +200,20 @@ connection.onCompletion((parameters: TextDocumentPositionParams) => {
     const sfmcItems = sfmcLanguageService.getCompletions(doc, parameters.position) as import('vscode-languageserver').CompletionItem[];
     if (doc.languageId !== 'ssjs') return sfmcItems;
     const { items: tsItems, isMemberCompletion } = getSsjsCompletionInfo(document.uri, parameters.position);
-    // When the cursor is after a `.` (member completion), only TS items are
-    // relevant — merging in all ~100 SFMC globals would pollute the list.
-    if (isMemberCompletion) return tsItems;
-    // Top-level: TS items first, then SFMC globals (de-dup by label, SFMC wins).
+    // Text-based dot-access detection — catches edge cases where TypeScript's
+    // isMemberCompletion is false despite a trailing dot.
+    const textBefore = document.getText({
+        start: { line: parameters.position.line, character: 0 },
+        end: parameters.position,
+    });
+    const isDotAccess = /\.\s*$/.test(textBefore);
+    if (isMemberCompletion || isDotAccess) {
+        // Only show TS items that are "specific" (≤50 = typed namespace members).
+        // If TS returns 100+ items it means the type is `any` (e.g. unknown variable
+        // or a namespace TypeScript can't resolve) — return nothing to avoid noise.
+        return tsItems.length <= 50 ? tsItems : [];
+    }
+    // Top-level: SFMC catalog first, TS fills in anything not already present.
     const sfmcLabels = new Set(sfmcItems.map((i) => i.label));
     const merged = [...sfmcItems, ...tsItems.filter((i) => !sfmcLabels.has(i.label))];
     return merged;
@@ -230,15 +241,11 @@ connection.onHover((parameters) => {
     const sfmcHover = sfmcLanguageService.getHover(doc, line, parameters.position);
     if (doc.languageId !== 'ssjs') return sfmcHover;
     const tsHover = getSsjsHover(document.uri, parameters.position);
-    // Merge: TS provides accurate type signatures; SFMC provides human-readable
-    // descriptions (parameter docs, deprecation notes, etc.).
-    if (!tsHover && !sfmcHover) return null;
-    if (!tsHover) return sfmcHover;
-    if (!sfmcHover) return tsHover;
-    const tsText = extractHoverText(tsHover);
-    const sfmcText = extractHoverText(sfmcHover);
-    const mergedValue = sfmcText ? `${tsText}\n\n${sfmcText}` : tsText;
-    return { contents: { kind: 'markdown', value: mergedValue }, range: tsHover.range };
+    // TS hover now carries full docs (description, @param, @returns, @example, ssjs.guide link)
+    // so it is self-sufficient.  The SFMC LSP hover is used only as a fallback for symbols
+    // that have no TS declaration (ECMAScript builtins, local user functions, etc.).
+    if (tsHover) return tsHover;
+    return sfmcHover;
 });
 
 // ---------------------------------------------------------------------------
@@ -256,6 +263,12 @@ connection.onSignatureHelp((parameters) => {
         start: { line: 0, character: 0 },
         end: parameters.position,
     });
+    // TypeScript signature help provides correct parameter spans for highlighting
+    // TypeScript covers both SFMC catalog functions and locally-defined user
+    // functions (they are in the virtual file). No SFMC LSP fallback for SSJS.
+    if (doc.languageId === 'ssjs') {
+        return getSsjsSignatureHelp(document.uri, parameters.position);
+    }
     return sfmcLanguageService.getSignatureHelp(doc, textUpToCursor);
 });
 

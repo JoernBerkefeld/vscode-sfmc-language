@@ -35,6 +35,11 @@
     "engines": {
         "vscode": "^1.101.0"
     },
+    "activationEvents": [
+        "onLanguage:ampscript",
+        "onLanguage:ssjs",
+        "onStartupFinished"
+    ],
     "main": "./client/out/extension",
     "extensionPack": [
         "Accenture-oss.sfmc-devtools-vscode",
