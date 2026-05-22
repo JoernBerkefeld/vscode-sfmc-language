@@ -63,4 +63,16 @@ suite('SSJS Diagnostics — requiresCoreLoad globals (Bug K)', () => {
         );
         assert.ok(match, 'Should flag GUID() when Platform.Load is absent');
     });
+
+    test('Stringify() before Platform.Load is still flagged (order-aware check)', () => {
+        // Section B of the fixture has a bare Stringify() BEFORE Platform.Load.
+        // The load appearing later must not suppress the earlier error.
+        const stringify2Diags = diags.filter(
+            (d) => d.source === 'ssjs' && d.message.includes('Stringify'),
+        );
+        assert.ok(
+            stringify2Diags.length >= 2,
+            'Should flag both Stringify() calls (before the load and in section A)',
+        );
+    });
 });

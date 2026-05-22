@@ -2,6 +2,17 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.5.2] — 2026-05-22
+
+### Fixed
+
+- **Order-aware `Platform.Load` check**: bare globals (`Stringify()`, `Now()`, `GUID()`, etc.) and Core Library objects (`DataExtension`, `HTTP.Get`, etc.) are now only cleared of diagnostics when `Platform.Load("Core","1.1.5")` appears **before** them in the file — a load statement below the usage no longer silences the error for that call
+- **`Write()` false-positive removed**: bare `Write()` is a native SSJS output function that does not require `Platform.Load`; the erroneous diagnostic has been removed
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from 0.2.4 to 0.2.5 (which bundles `ssjs-data` 0.3.4)
+
 ## [1.5.1] — 2026-05-22
 
 ### Fixed
