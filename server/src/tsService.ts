@@ -35,15 +35,20 @@ const GLOBALS_FILENAME = '__sfmc_globals.d.ts';
 function loadGlobalsContent(): string {
     const candidates: string[] = [];
 
-    // 1. Installed package (dist/ is included in package.json files array)
+    // 1. Direct sibling install — server/node_modules/ssjs-data (most reliable in CI)
+    candidates.push(
+        path.resolve(__dirname, '..', 'node_modules', 'ssjs-data', 'dist', 'sfmc-globals.d.ts'),
+    );
+
+    // 2. Module-resolution lookup (handles hoisted or alternate install locations)
     try {
         const pkgJson = require.resolve('ssjs-data/package.json');
         candidates.push(path.join(path.dirname(pkgJson), 'dist', 'sfmc-globals.d.ts'));
     } catch {
-        // ssjs-data not resolvable
+        // ssjs-data not resolvable via require
     }
 
-    // 2. Workspace sibling — __dirname is server/out at runtime
+    // 3. Workspace sibling — __dirname is server/out at runtime
     candidates.push(
         path.resolve(__dirname, '..', '..', '..', 'ssjs-data', 'dist', 'sfmc-globals.d.ts'),
     );

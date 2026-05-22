@@ -8,8 +8,11 @@ import * as vscode from 'vscode';
 import * as assert from 'node:assert';
 import { getDocUri as getDocumentUri, activate } from './helper';
 
-// Longer settle time so the TS service has time to produce diagnostics
+// Settle time so the TS service has time to produce diagnostics
 const SETTLE_MS = 3000;
+// Extra settle for CI: the LSP completion-provider registration takes longer than
+// diagnostics (which are pushed) — give it 12 s total (activate=4 s + this).
+const COMPLETIONS_SETTLE_MS = 8000;
 
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -24,7 +27,7 @@ suite('SSJS TypeScript Service — Completions', () => {
 
     suiteSetup(async () => {
         await activate(documentUri);
-        await sleep(SETTLE_MS);
+        await sleep(COMPLETIONS_SETTLE_MS);
     });
 
     test('Platform. → includes Function, Variable, Response, Request namespaces', async () => {
