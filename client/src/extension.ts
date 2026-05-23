@@ -68,6 +68,7 @@ const AMPSCRIPT_MARKERS: (string | RegExp)[] = [
     '%%[',
     '%%=',
     /<script\s[^>]*language\s*=\s*["']ampscript["']/i,
+    /<script\b[^>]*\brunat\s*=\s*["']server["']/i,
 ];
 
 function matchesAny(text: string, markers: (string | RegExp)[]): boolean {
@@ -87,9 +88,9 @@ function detectAndSwitchLanguage(doc: TextDocument): void {
     if (doc.languageId !== 'html') return;
     const text = doc.getText();
 
-    // AMPscript takes priority: its grammar embeds HTML (and thus handles SSJS script blocks too).
+    // Switch to sfmc for any HTML containing SFMC content (AMPscript markers or SSJS blocks).
     if (matchesAny(text, AMPSCRIPT_MARKERS)) {
-        languages.setTextDocumentLanguage(doc, 'ampscript');
+        languages.setTextDocumentLanguage(doc, 'sfmc');
         return;
     }
 }
@@ -109,6 +110,8 @@ export function activate(context: ExtensionContext) {
         documentSelector: [
             { scheme: 'file', language: 'ampscript' },
             { scheme: 'untitled', language: 'ampscript' },
+            { scheme: 'file', language: 'sfmc' },
+            { scheme: 'untitled', language: 'sfmc' },
             { scheme: 'file', language: 'ssjs' },
             { scheme: 'untitled', language: 'ssjs' },
         ],
@@ -133,8 +136,13 @@ export function activate(context: ExtensionContext) {
         detectAndSwitchLanguage(doc);
     }
 
-    // Detect AMPscript in HTML documents opened after activation
-    context.subscriptions.push(workspace.onDidOpenTextDocument(detectAndSwitchLanguage));
+    // Detect SFMC content in HTML documents: on open and on content change (e.g. pasting)
+    context.subscriptions.push(
+        workspace.onDidOpenTextDocument(detectAndSwitchLanguage),
+        workspace.onDidChangeTextDocument((event) => {
+            detectAndSwitchLanguage(event.document);
+        })
+    );
 
     checkConflictingExtensions(context);
 

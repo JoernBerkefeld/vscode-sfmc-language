@@ -16,6 +16,7 @@
 		{ "include": "#ampscript-block" },
 		{ "include": "#ampscript-inline" },
 		{ "include": "#ampscript-tag" },
+		{ "include": "#ssjs-tag" },
 		{ "include": "#content-syndication" },
 		{ "include": "#personalization-string" },
 		{ "include": "#gtl-expression" },
@@ -59,6 +60,26 @@
 			"name": "meta.tag.script.ampscript",
 			"patterns": [
 				{ "include": "#ampscript-internals" }
+			]
+		},
+		"ssjs-tag": {
+			"begin": "(<)(script)(?=[^>]*\\brunat\\s*=\\s*[\"']server[\"'])(?![^>]*\\blanguage\\s*=\\s*[\"']ampscript[\"'])([^>]*)(>)",
+			"end": "(</)(script)(\\s*>)",
+			"beginCaptures": {
+				"1": { "name": "punctuation.definition.tag.begin.html" },
+				"2": { "name": "entity.name.tag.html" },
+				"3": { "name": "string.unquoted.html" },
+				"4": { "name": "punctuation.definition.tag.end.html" }
+			},
+			"endCaptures": {
+				"1": { "name": "punctuation.definition.tag.begin.html" },
+				"2": { "name": "entity.name.tag.html" },
+				"3": { "name": "punctuation.definition.tag.end.html" }
+			},
+			"name": "meta.embedded.block.ssjs",
+			"contentName": "source.ssjs",
+			"patterns": [
+				{ "include": "source.ssjs" }
 			]
 		},
 		"content-syndication": {

@@ -4,7 +4,7 @@
   "description": "Language support for Salesforce Marketing Cloud Engagement — AMPscript, SSJS (Server-Side JavaScript), and GTL (Guide Template Language). Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, and snippets.",
   "author": "Jörn Berkefeld",
   "license": "MIT",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/JoernBerkefeld/vscode-sfmc-language.git"
@@ -37,6 +37,7 @@
   },
   "activationEvents": [
     "onLanguage:ampscript",
+    "onLanguage:sfmc",
     "onLanguage:ssjs",
     "onStartupFinished"
   ],
@@ -80,6 +81,18 @@
           "light": "./resources/icons/ssjs-light.svg",
           "dark": "./resources/icons/ssjs-dark.svg"
         }
+      },
+      {
+        "id": "sfmc",
+        "aliases": [
+          "SFMC (AMPscript / SSJS)",
+          "sfmc"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./resources/icons/sfmc-light.svg",
+          "dark": "./resources/icons/sfmc-dark.svg"
+        }
       }
     ],
     "grammars": [
@@ -91,7 +104,20 @@
           "text.html.basic": "html",
           "meta.block.ampscript": "ampscript",
           "meta.inline.ampscript": "ampscript",
-          "meta.tag.script.ampscript": "ampscript"
+          "meta.tag.script.ampscript": "ampscript",
+          "source.ssjs": "ssjs"
+        }
+      },
+      {
+        "language": "sfmc",
+        "scopeName": "text.html.sfmc",
+        "path": "./syntaxes/sfmc.tmLanguage.json",
+        "embeddedLanguages": {
+          "text.html.basic": "html",
+          "meta.block.ampscript": "ampscript",
+          "meta.inline.ampscript": "ampscript",
+          "meta.tag.script.ampscript": "ampscript",
+          "source.ssjs": "ssjs"
         }
       },
       {

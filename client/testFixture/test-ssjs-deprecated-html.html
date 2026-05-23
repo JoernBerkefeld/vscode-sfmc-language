@@ -1,0 +1,12 @@
+<script runat="server">
+// test-ssjs-deprecated-html.html — used by ssjs-deprecated-html.test.ts
+// Tests that hover responses show @deprecated annotations for deprecated SSJS methods
+// inside an HTML <script runat="server"> block.
+Platform.Load("Core", "1.1.5");
+
+// deprecated: SystemDateToLocalDate
+var dt = Platform.Function.SystemDateToLocalDate(new Date());
+
+// non-deprecated reference — hover must NOT include "deprecated"
+var guid = Platform.Function.GUID();
+</script>

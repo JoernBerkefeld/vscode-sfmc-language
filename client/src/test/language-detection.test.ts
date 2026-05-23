@@ -33,75 +33,89 @@ function sleep(ms: number) {
     return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-suite('AMPscript HTML auto-detection — individual marker variants', () => {
-    test('%%[ ... ]%% block marker → ampscript', async () => {
+suite('SFMC HTML auto-detection — individual marker variants', () => {
+    test('%%[ ... ]%% block marker → sfmc', async () => {
         const documentUri = getDocumentUri('marker-block.html');
         await activate(documentUri);
-        const lang = await waitForLanguage(documentUri, 'ampscript');
-        assert.strictEqual(lang, 'ampscript', 'marker-block.html should be detected as ampscript');
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(lang, 'sfmc', 'marker-block.html should be detected as sfmc');
     });
 
-    test('%%= ... =%% inline marker → ampscript', async () => {
+    test('%%= ... =%% inline marker → sfmc', async () => {
         const documentUri = getDocumentUri('marker-inline.html');
         await activate(documentUri);
-        const lang = await waitForLanguage(documentUri, 'ampscript');
-        assert.strictEqual(lang, 'ampscript', 'marker-inline.html should be detected as ampscript');
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(lang, 'sfmc', 'marker-inline.html should be detected as sfmc');
     });
 
-    test('<script language="ampscript"> → ampscript', async () => {
+    test('<script language="ampscript"> → sfmc', async () => {
         const documentUri = getDocumentUri('marker-script-language.html');
         await activate(documentUri);
-        const lang = await waitForLanguage(documentUri, 'ampscript');
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(lang, 'sfmc', 'marker-script-language.html should be detected as sfmc');
+    });
+
+    test('<script language="ampscript" runat="server"> → sfmc', async () => {
+        const documentUri = getDocumentUri('marker-script-language-runat.html');
+        await activate(documentUri);
+        const lang = await waitForLanguage(documentUri, 'sfmc');
         assert.strictEqual(
             lang,
-            'ampscript',
-            'marker-script-language.html should be detected as ampscript'
+            'sfmc',
+            'marker-script-language-runat.html should be detected as sfmc'
         );
     });
 
-    test('<script language="ampscript" runat="server"> → ampscript', async () => {
-        const documentUri = getDocumentUri('marker-script-language-runat.html');
+    test('<script runat="server"> (SSJS only, no language attr) → sfmc', async () => {
+        const documentUri = getDocumentUri('marker-script-runat.html');
         await activate(documentUri);
-        const lang = await waitForLanguage(documentUri, 'ampscript');
-        assert.strictEqual(
-            lang,
-            'ampscript',
-            'marker-script-language-runat.html should be detected as ampscript'
-        );
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(lang, 'sfmc', 'marker-script-runat.html should be detected as sfmc');
     });
 });
 
-suite('AMPscript HTML auto-detection', () => {
-    test('HTML file with %%[ block marker is switched to ampscript', async () => {
+suite('SFMC HTML auto-detection', () => {
+    test('HTML file with %%[ block marker is switched to sfmc', async () => {
         const documentUri = getDocumentUri('ampscript-block.html');
         await activate(documentUri);
-        const lang = await waitForLanguage(documentUri, 'ampscript');
+        const lang = await waitForLanguage(documentUri, 'sfmc');
         assert.strictEqual(
             lang,
-            'ampscript',
-            'Expected language to be switched to ampscript for a file containing %%[ ... ]%%'
+            'sfmc',
+            'Expected language to be switched to sfmc for a file containing %%[ ... ]%%'
         );
     });
 
-    test('HTML file with <script language="ampscript"> tag is switched to ampscript', async () => {
+    test('HTML file with <script language="ampscript"> tag is switched to sfmc', async () => {
         const documentUri = getDocumentUri('ampscript-script-tag.html');
         await activate(documentUri);
-        const lang = await waitForLanguage(documentUri, 'ampscript');
+        const lang = await waitForLanguage(documentUri, 'sfmc');
         assert.strictEqual(
             lang,
-            'ampscript',
-            'Expected language to be switched to ampscript for a file containing a <script language="ampscript"> tag'
+            'sfmc',
+            'Expected language to be switched to sfmc for a file containing a <script language="ampscript"> tag'
         );
     });
 
-    test('HTML file with both AMPscript and SSJS is switched to ampscript (AMPscript wins)', async () => {
-        const documentUri = getDocumentUri('ampscript-and-ssjs.html');
+    test('HTML file with only <script runat="server"> SSJS block is switched to sfmc', async () => {
+        const documentUri = getDocumentUri('ssjs-only.html');
         await activate(documentUri);
-        const lang = await waitForLanguage(documentUri, 'ampscript');
+        const lang = await waitForLanguage(documentUri, 'sfmc');
         assert.strictEqual(
             lang,
-            'ampscript',
-            'Expected language to be ampscript when both AMPscript and SSJS markers are present'
+            'sfmc',
+            'Expected language to be switched to sfmc for a file containing only a SSJS script block'
+        );
+    });
+
+    test('HTML file with both AMPscript and SSJS is switched to sfmc', async () => {
+        const documentUri = getDocumentUri('ampscript-and-ssjs.html');
+        await activate(documentUri);
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(
+            lang,
+            'sfmc',
+            'Expected language to be sfmc when both AMPscript and SSJS markers are present'
         );
     });
 
@@ -114,7 +128,9 @@ suite('AMPscript HTML auto-detection', () => {
             (d) => d.uri.toString() === documentUri.toString()
         );
         assert.ok(
-            doc?.languageId !== 'ampscript' && doc?.languageId !== 'ssjs',
+            doc?.languageId !== 'ampscript' &&
+                doc?.languageId !== 'ssjs' &&
+                doc?.languageId !== 'sfmc',
             `Expected plain HTML file to stay as html, got '${doc?.languageId}'`
         );
     });

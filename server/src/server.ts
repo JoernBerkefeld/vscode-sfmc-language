@@ -123,7 +123,7 @@ function getDocumentSettings(resource: string): Thenable<SfmcSettings> {
 // ---------------------------------------------------------------------------
 function getDocumentLanguage(document: TextDocument): 'ampscript' | 'ssjs' {
     if (document.languageId === 'ssjs') return 'ssjs';
-    if (document.languageId === 'ampscript') return 'ampscript';
+    if (document.languageId === 'ampscript' || document.languageId === 'sfmc') return 'ampscript';
     if (document.uri.toLowerCase().endsWith('.ssjs')) return 'ssjs';
     return 'ampscript';
 }
@@ -146,27 +146,58 @@ async function sendDiagnosticsForDocument(uri: string): Promise<void> {
         uri: document.uri,
     };
     const sfmcDiags = sfmcLanguageService.validate(doc, settings);
-    const tsDiags = doc.languageId === 'ssjs' ? getSsjsDiagnostics(uri) : [];
-    connection.sendDiagnostics({ uri, diagnostics: [...sfmcDiags, ...tsDiags] });
+    let ssjsDiags: import('vscode-languageserver').Diagnostic[] = [];
+    let tsDiags: import('vscode-languageserver').Diagnostic[] = [];
+    if (doc.languageId === 'ssjs') {
+        tsDiags = getSsjsDiagnostics(uri);
+    } else if (doc.languageId === 'ampscript') {
+        const regions = getSsjsRegions(doc.text);
+        if (regions.length > 0) {
+            // Run SSJS-specific validators (requiresCoreLoad, deprecated, etc.) on the
+            // extracted content — positions map 1:1 to the original HTML file.
+            const ssjsDoc = {
+                text: extractSsjsContent(doc.text, regions),
+                languageId: 'ssjs' as const,
+                uri: doc.uri,
+            };
+            ssjsDiags = sfmcLanguageService.validate(ssjsDoc, settings);
+            tsDiags = getSsjsDiagnostics(uri).filter((d) =>
+                isInSsjsRegion(regions, document.offsetAt(d.range.start))
+            );
+        }
+    }
+    connection.sendDiagnostics({ uri, diagnostics: [...sfmcDiags, ...ssjsDiags, ...tsDiags] });
+}
+
+function syncSsjsVirtualFile(document: TextDocument): void {
+    const lang = getDocumentLanguage(document);
+    const text = document.getText();
+    if (lang === 'ssjs') {
+        updateSsjsDocument(document.uri, text);
+    } else if (lang === 'ampscript') {
+        const regions = getSsjsRegions(text);
+        if (regions.length > 0) {
+            updateSsjsDocument(document.uri, extractSsjsContent(text, regions));
+        } else {
+            removeSsjsDocument(document.uri);
+        }
+    }
 }
 
 documents.onDidOpen((e) => {
-    if (getDocumentLanguage(e.document) === 'ssjs') {
-        updateSsjsDocument(e.document.uri, e.document.getText());
-    }
+    syncSsjsVirtualFile(e.document);
     void sendDiagnosticsForDocument(e.document.uri);
 });
 
 documents.onDidChangeContent((e) => {
-    if (getDocumentLanguage(e.document) === 'ssjs') {
-        updateSsjsDocument(e.document.uri, e.document.getText());
-    }
+    syncSsjsVirtualFile(e.document);
     void sendDiagnosticsForDocument(e.document.uri);
 });
 
 documents.onDidClose((e) => {
     documentSettings.delete(e.document.uri);
-    if (getDocumentLanguage(e.document) === 'ssjs') {
+    const lang = getDocumentLanguage(e.document);
+    if (lang === 'ssjs' || lang === 'ampscript') {
         removeSsjsDocument(e.document.uri);
     }
     connection.sendDiagnostics({ uri: e.document.uri, diagnostics: [] });
@@ -201,7 +232,14 @@ connection.onCompletion((parameters: TextDocumentPositionParams) => {
         doc,
         parameters.position
     ) as import('vscode-languageserver').CompletionItem[];
-    if (doc.languageId !== 'ssjs') return sfmcItems;
+
+    // For ampscript docs: delegate to TS service if cursor is inside a SSJS region
+    const isInSsjsContext =
+        doc.languageId === 'ssjs' ||
+        (doc.languageId === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(doc.text), document.offsetAt(parameters.position)));
+    if (!isInSsjsContext) return sfmcItems;
+
     const { items: tsItems, isMemberCompletion } = getSsjsCompletionInfo(
         document.uri,
         parameters.position
@@ -245,7 +283,11 @@ connection.onHover((parameters) => {
         end: { line: parameters.position.line + 1, character: 0 },
     });
     const sfmcHover = sfmcLanguageService.getHover(doc, line, parameters.position);
-    if (doc.languageId !== 'ssjs') return sfmcHover;
+    const inSsjsRegion =
+        doc.languageId === 'ssjs' ||
+        (doc.languageId === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(doc.text), document.offsetAt(parameters.position)));
+    if (!inSsjsRegion) return sfmcHover;
     const tsHover = getSsjsHover(document.uri, parameters.position);
     // TS hover now carries full docs (description, @param, @returns, @example, ssjs.guide link)
     // so it is self-sufficient.  The SFMC LSP hover is used only as a fallback for symbols
@@ -272,7 +314,11 @@ connection.onSignatureHelp((parameters) => {
     // TypeScript signature help provides correct parameter spans for highlighting
     // TypeScript covers both SFMC catalog functions and locally-defined user
     // functions (they are in the virtual file). No SFMC LSP fallback for SSJS.
-    if (doc.languageId === 'ssjs') {
+    const inSsjsCtx =
+        doc.languageId === 'ssjs' ||
+        (doc.languageId === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(doc.text), document.offsetAt(parameters.position)));
+    if (inSsjsCtx) {
         return getSsjsSignatureHelp(document.uri, parameters.position);
     }
     return sfmcLanguageService.getSignatureHelp(doc, textUpToCursor);
@@ -284,7 +330,13 @@ connection.onSignatureHelp((parameters) => {
 connection.onDefinition((parameters: DefinitionParams): Location | null => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return null;
-    if (getDocumentLanguage(document) !== 'ssjs') return null;
+    const defLang = getDocumentLanguage(document);
+    const defText = document.getText();
+    const inSsjsForDef =
+        defLang === 'ssjs' ||
+        (defLang === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(defText), document.offsetAt(parameters.position)));
+    if (!inSsjsForDef) return null;
 
     const line = document.getText({
         start: { line: parameters.position.line, character: 0 },
@@ -313,6 +365,73 @@ connection.onDefinition((parameters: DefinitionParams): Location | null => {
 connection.onDidChangeWatchedFiles(() => {
     connection.console.log('File change event received.');
 });
+
+// ---------------------------------------------------------------------------
+// SSJS region helpers  (used when languageId === 'ampscript' to detect and
+// extract embedded <script runat="server"> blocks for TypeScript features)
+// ---------------------------------------------------------------------------
+
+interface SsjsRegion {
+    start: number; // char offset of first content character (after >)
+    end: number; // char offset of last content character (before </)
+}
+
+/**
+ * Return character-offset ranges of all SSJS script blocks in the document.
+ * Matches `<script runat="server">` WITHOUT `language="ampscript"`.
+ * @param text - full document text
+ * @returns array of {start, end} character offsets for SSJS content
+ */
+function getSsjsRegions(text: string): SsjsRegion[] {
+    const regions: SsjsRegion[] = [];
+    const openTag =
+        /<script(?=[^>]*\brunat\s*=\s*["']server["'])(?![^>]*\blanguage\s*=\s*["']ampscript["'])[^>]*>/gi;
+    const closeTag = /<\/script>/gi;
+    let openMatch: RegExpExecArray | null;
+    while ((openMatch = openTag.exec(text)) !== null) {
+        const contentStart = openMatch.index + openMatch[0].length;
+        closeTag.lastIndex = contentStart;
+        const closeMatch = closeTag.exec(text);
+        if (!closeMatch) break;
+        regions.push({ start: contentStart, end: closeMatch.index });
+        openTag.lastIndex = closeMatch.index + closeMatch[0].length;
+    }
+    return regions;
+}
+
+/**
+ * Return true if the character offset falls within any SSJS region.
+ * @param regions - SSJS regions from getSsjsRegions()
+ * @param offset - character offset to test
+ * @returns true if inside a SSJS region
+ */
+function isInSsjsRegion(regions: SsjsRegion[], offset: number): boolean {
+    return regions.some((r) => offset >= r.start && offset <= r.end);
+}
+
+/**
+ * Return a document-length string containing only SSJS content with all other
+ * characters replaced by spaces (newlines preserved to keep line numbers stable).
+ * This lets the TypeScript service use the same character offsets as the HTML file.
+ * @param text - full document text
+ * @param regions - SSJS regions from getSsjsRegions()
+ * @returns whitespace-padded string of same length as text
+ */
+function extractSsjsContent(text: string, regions: SsjsRegion[]): string {
+    const out: string[] = [];
+    let pos = 0;
+    for (const region of regions) {
+        for (let i = pos; i < region.start; i++) {
+            out.push(text[i] === '\n' ? '\n' : ' ');
+        }
+        out.push(text.slice(region.start, region.end));
+        pos = region.end;
+    }
+    for (let i = pos; i < text.length; i++) {
+        out.push(text[i] === '\n' ? '\n' : ' ');
+    }
+    return out.join('');
+}
 
 // ---------------------------------------------------------------------------
 // Helpers

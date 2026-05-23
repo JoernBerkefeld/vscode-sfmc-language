@@ -2,6 +2,20 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.6.0] — 2026-05-23
+
+### Added
+
+- **New `sfmc` language ID**: HTML files containing any SFMC content (AMPscript `%%[…]%%` / `%%= … =%%` / `<script language="ampscript">` blocks, or SSJS `<script runat="server">` blocks) are now automatically switched to the new **SFMC (AMPscript / SSJS)** language rather than to plain AMPscript — displayed with a combined blue/yellow icon in the status bar. `.amp` and `.ssjs` files are unaffected.
+- **Live auto-detection on paste**: pasting SFMC content into a new `.html` file now immediately re-evaluates the language — no save or re-open required.
+- **SSJS in HTML files**: full SSJS IntelliSense is available inside `<script runat="server">` blocks in HTML:
+  - **Completions**: `Platform.*`, `DataExtension`, `WSProxy`, `Math`, `String`, and all other SFMC globals work inside the script tag
+  - **Hover**: SFMC function signatures, descriptions, `ssjs.guide` links, and `@deprecated` annotations show when hovering over SSJS code in HTML
+  - **Diagnostics**: `requiresCoreLoad` errors, ES6+ errors, and TypeScript type diagnostics are reported at the correct line and column within the HTML file
+  - **Signature help**: parameter hints and `ssjs.guide` links work inside SSJS function calls in HTML
+  - **Go-to Definition**: navigates to SFMC function definitions from within HTML SSJS blocks
+- **Syntax highlighting**: `<script runat="server">` content (without `language="ampscript"`) is now highlighted as SSJS via the TextMate grammar's `ssjs-tag` rule
+
 ## [1.5.2] — 2026-05-22
 
 ### Fixed

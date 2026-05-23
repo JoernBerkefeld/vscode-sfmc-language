@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <defs>
+    <clipPath id="bounds">
+      <rect width="16" height="16" rx="1.5"/>
+    </clipPath>
+  </defs>
+  <rect width="16" height="16" rx="1.5" fill="#f0db4f"/>
+  <polygon points="0,0 16,0 0,16" fill="#0d9dda" clip-path="url(#bounds)"/>
+  <text x="4.5" y="7" font-family="'Segoe UI',Arial,sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A</text>
+  <text x="11.5" y="14" font-family="'Segoe UI',Arial,sans-serif" font-weight="bold" font-size="6" fill="#323330" text-anchor="middle">JS</text>
+</svg>
