@@ -3,9 +3,9 @@ if [[ $SKIP_HOOKS -gt 0 ]]; then
   exit 0
 fi
 
-echo "[PRE-COMMIT] Running lint..."
-npm run lint --no-workspaces || {
-  echo "[PRE-COMMIT] Lint failed. Fix the errors above and try again."
+echo "[PRE-COMMIT] Run lint-staged"
+npx lint-staged || {
+  echo "[PRE-COMMIT] lint-staged reported errors it could not auto-fix. Fix them manually and try again."
   exit 1
 }
 
