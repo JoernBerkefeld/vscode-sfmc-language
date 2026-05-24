@@ -2,6 +2,21 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.6.1] — 2026-05-24
+
+### Added
+
+- **`ContentArea()` and `ContentAreaByName()` hover support**: both the global forms (requiring `Platform.Load`) and the `Platform.Function.*` qualified forms now show correct hover cards with distinct signatures — global forms use `errorMsg: string` as the 3rd parameter, qualified forms use `stopOnError: boolean`
+- **`Platform.Function.Stringify` dedicated page**: hover now links to the new dedicated `/platform-functions/stringify/` ssjs.guide page, noting the difference from the bare-name `Stringify()` global which requires `Platform.Load`
+
+### Fixed
+
+- **Missing `declare function` for non-aliasOf globals in `sfmc-globals.d.ts`**: `Base64Encode`, `Base64Decode`, `Format`, `String`, `Error`, `ContentArea`, and `ContentAreaByName` are now correctly emitted as top-level TypeScript declarations in the bundled type definitions
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from 0.2.5 to 0.2.6 (which bundles `ssjs-data` 0.3.5)
+
 ## [1.6.0] — 2026-05-23
 
 ### Added
