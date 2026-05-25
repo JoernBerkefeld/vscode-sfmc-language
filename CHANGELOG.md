@@ -2,6 +2,13 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.6.3] — 2026-05-25
+
+### Fixed
+
+- **SSJS type checking broken in marketplace install**: `sfmc-globals.d.ts` (the type declarations for `Platform`, `Script`, `Request`, `WSProxy`, and all other SFMC globals) was never included in the VSIX — `node_modules` is stripped at package time so all runtime path lookups failed silently, leaving the TypeScript service disabled. The file is now copied to `server/out/` during `vscode:prepublish` and explicitly re-included in `.vscodeignore`.
+- **Client bundle not minified in published VSIX**: `vscode:prepublish` passed `--minify` only to the server esbuild call (not the client) due to how npm appends extra args to chained scripts. Both bundles are now minified independently.
+
 ## [1.6.2] — 2026-05-25
 
 ### Dependencies

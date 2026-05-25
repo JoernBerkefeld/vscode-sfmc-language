@@ -1,8 +1,8 @@
 {
   "name": "sfmc-language",
   "displayName": "SFMC Language Service",
-  "description": "Language support for Salesforce Marketing Cloud Engagement â€” AMPscript, SSJS (Server-Side JavaScript), and GTL (Guide Template Language). Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, and snippets.",
-  "author": "JÃ¶rn Berkefeld",
+  "description": "Language support for Salesforce Marketing Cloud Engagement — AMPscript, SSJS (Server-Side JavaScript), and GTL (Guide Template Language). Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, and snippets.",
+  "author": "Jörn Berkefeld",
   "license": "MIT",
   "version": "1.6.2",
   "repository": {
@@ -199,10 +199,11 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "vscode:prepublish": "npm run esbuild-client -- --minify && npm run esbuild-server -- --minify && npm run copy-globals",
     "esbuild-base": "npm run esbuild-client -- --sourcemap && npm run esbuild-server -- --sourcemap",
     "esbuild-client": "esbuild ./client/src/extension.ts --bundle --outfile=client/out/extension.js --external:vscode --format=cjs --platform=node",
     "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=server/out/server.js --external:vscode --format=cjs --platform=node",
+    "copy-globals": "node -e \"const {copyFileSync,mkdirSync}=require('fs'),p='server/node_modules/ssjs-data/dist/sfmc-globals.d.ts';mkdirSync('server/out',{recursive:true});copyFileSync(p,'server/out/sfmc-globals.d.ts');console.log('sfmc-globals.d.ts copied')\"",
     "compile": "tsc -b",
     "watch": "tsc -b -w",
     "dev": "npm run compile && code --extensionDevelopmentPath=. ./client/testFixture",

@@ -34,23 +34,26 @@ import {
 const GLOBALS_FILENAME = '__sfmc_globals.d.ts';
 
 function loadGlobalsContent(): string {
-    // 1. Direct sibling install — server/node_modules/ssjs-data (most reliable in CI)
-    const candidates: string[] = [
-        path.resolve(__dirname, '..', 'node_modules', 'ssjs-data', 'dist', 'sfmc-globals.d.ts'),
-    ];
-
-    // 2. Module-resolution lookup (handles hoisted or alternate install locations)
+    // Resolve the path to ssjs-data via require if possible (handles hoisted installs)
+    let resolvedPkgPath: string | undefined;
     try {
-        const pkgJson = require.resolve('ssjs-data/package.json');
-        candidates.push(path.join(path.dirname(pkgJson), 'dist', 'sfmc-globals.d.ts'));
+        resolvedPkgPath = require.resolve('ssjs-data/package.json');
     } catch {
         // ssjs-data not resolvable via require
     }
 
-    // 3. Workspace sibling — __dirname is server/out at runtime
-    candidates.push(
-        path.resolve(__dirname, '..', '..', '..', 'ssjs-data', 'dist', 'sfmc-globals.d.ts')
-    );
+    const candidates: string[] = [
+        // 1. Installed extension — file copied here by vscode:prepublish (__dirname = server/out/)
+        path.resolve(__dirname, 'sfmc-globals.d.ts'),
+        // 2. Dev mode — direct sibling install in server/node_modules
+        path.resolve(__dirname, '..', 'node_modules', 'ssjs-data', 'dist', 'sfmc-globals.d.ts'),
+        // 3. Module-resolution lookup (handles hoisted or alternate install locations)
+        ...(resolvedPkgPath
+            ? [path.join(path.dirname(resolvedPkgPath), 'dist', 'sfmc-globals.d.ts')]
+            : []),
+        // 4. Workspace sibling — __dirname is server/out at runtime
+        path.resolve(__dirname, '..', '..', '..', 'ssjs-data', 'dist', 'sfmc-globals.d.ts'),
+    ];
 
     for (const p of candidates) {
         try {
