@@ -106,10 +106,13 @@ function setVirtualFile(name: string, content: string): void {
 // URI → virtual filename mapping
 // Each SSJS document gets a stable synthetic .js filename so the TS service
 // can process it (TS only handles .js/.ts/.d.ts extensions).
+// Each document may also have a companion .globals.d.ts file that holds
+// ambient declarations derived from ESLint-style /* global NAME */ comments.
 // ---------------------------------------------------------------------------
 
 let docCounter = 0;
 const uriToVirtualName = new Map<string, string>();
+const uriToGlobalsName = new Map<string, string>();
 
 function virtualNameForUri(uri: string): string {
     let name = uriToVirtualName.get(uri);
@@ -118,6 +121,62 @@ function virtualNameForUri(uri: string): string {
         uriToVirtualName.set(uri, name);
     }
     return name;
+}
+
+function globalsNameForUri(uri: string): string {
+    let name = uriToGlobalsName.get(uri);
+    if (!name) {
+        // Derived from the JS virtual name so the two always share the same counter.
+        const docName = virtualNameForUri(uri);
+        name = docName.replace(/\.js$/, '.globals.d.ts');
+        uriToGlobalsName.set(uri, name);
+    }
+    return name;
+}
+
+// ---------------------------------------------------------------------------
+// ESLint global comment parser
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses ESLint-style global comments from SSJS source text and returns a
+ * TypeScript ambient declaration string for all declared names.
+ *
+ * Supported forms:
+ *   /* global DEBUG, deKey * /
+ *   /* globals DEBUG, deKey * /
+ *   /* global DEBUG:readonly, deKey:writable * /
+ *
+ * Qualifiers (`:readonly`, `:writable`) are accepted for ESLint compatibility
+ * but ignored — all names are declared as `any` for the TS checker.
+ *
+ * Returns an empty string when no global comments are present.
+ * @param text - SSJS source text to scan
+ * @returns TypeScript `declare var` statements, or an empty string
+ */
+function parseGlobalCommentDeclarations(text: string): string {
+    // Matches: /* global[s] <body> */  — non-greedy, allows multiline bodies.
+    const GLOBAL_COMMENT = /\/\*\s*globals?\s+([\s\S]*?)\*\//g;
+    // Conservative ASCII JS identifier — rejects anything that looks like a
+    // qualifier fragment or punctuation that slipped through the split.
+    const IDENT = /^[$A-Z_a-z][\w$]*$/;
+
+    const names = new Set<string>();
+    let match: RegExpExecArray | null;
+    while ((match = GLOBAL_COMMENT.exec(text)) !== null) {
+        // Body may use commas and/or whitespace as separators.
+        for (const part of match[1].split(/[\s,]+/)) {
+            if (!part) continue;
+            // Strip optional :readonly / :writable qualifier.
+            const name = part.split(':')[0].trim();
+            if (name && IDENT.test(name)) {
+                names.add(name);
+            }
+        }
+    }
+
+    if (names.size === 0) return '';
+    return [...names].map((n) => `declare var ${n}: any;`).join('\n') + '\n';
 }
 
 // ---------------------------------------------------------------------------
@@ -261,15 +320,32 @@ function tsCategoryToSeverity(category: ts.DiagnosticCategory): DiagnosticSeveri
 /**
  * Notify the service that a SSJS document's content has changed.
  * Must be called before any completions / diagnostics / hover for that URI.
+ *
+ * Also scans the text for ESLint-style global-comment annotations
+ * (the `global` and `globals` block-comment forms) and maintains a
+ * per-document companion `.globals.d.ts` virtual file containing
+ * the corresponding `declare var` statements so the TypeScript checker
+ * does not emit "Cannot find name" errors for those identifiers.
  * @param uri - LSP document URI
  * @param text - full document text
  */
 export function updateSsjsDocument(uri: string, text: string): void {
     setVirtualFile(virtualNameForUri(uri), text);
+
+    const decls = parseGlobalCommentDeclarations(text);
+    const globalsName = globalsNameForUri(uri);
+    if (decls) {
+        setVirtualFile(globalsName, decls);
+    } else {
+        // No global comments — remove any stale companion file from a previous
+        // document version so old names don't linger in the TS service.
+        virtualFiles.delete(globalsName);
+    }
 }
 
 /**
  * Remove a SSJS document from the virtual FS (e.g. on close).
+ * Also removes the companion globals declaration file if one exists.
  * @param uri - LSP document URI
  */
 export function removeSsjsDocument(uri: string): void {
@@ -277,6 +353,11 @@ export function removeSsjsDocument(uri: string): void {
     if (name) {
         virtualFiles.delete(name);
         uriToVirtualName.delete(uri);
+    }
+    const globalsName = uriToGlobalsName.get(uri);
+    if (globalsName) {
+        virtualFiles.delete(globalsName);
+        uriToGlobalsName.delete(uri);
     }
 }
 

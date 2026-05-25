@@ -125,6 +125,28 @@ Variable resolution — inferring the type or value held by a `@variable` at any
 - **ES6+ syntax errors**: `let`/`const`, arrow functions, `for...of`, generator functions, spread `...`, destructuring are flagged as errors (SSJS runs in ES3/ES5 only)
 - **TypeScript type diagnostics**: type-aware errors powered by the embedded TypeScript service
 
+#### Suppressing "Cannot find name" for cross-file variables
+
+SFMC CloudPages and emails often rely on variables that are defined in another asset — such as a global DEBUG flag set in a parent page, a subscriber key passed via AMPscript, or a configuration variable set in an included script. The embedded TypeScript service does not see those other files and will report them as unknown names.
+
+Use an ESLint-style file-level `/* global */` comment to tell the extension which names are supplied by the surrounding context. The comment must appear at the top of the `.ssjs` file (or inside a `<script runat="server">` block for SFMC HTML files):
+
+```javascript
+/* global DEBUG, deKey */
+
+if (DEBUG) {
+    Write(deKey);
+}
+```
+
+Multiple names are separated by commas. The `:readonly` / `:writable` qualifiers used by ESLint are accepted for compatibility but have no effect on TypeScript diagnostics — all declared names are treated as `any`:
+
+```javascript
+/* global DEBUG:readonly, deKey:writable */
+```
+
+You can also use `/* globals */` (with a trailing `s`) — both spellings work identically. The declarations are scoped to the current document and are removed when the file is closed, so they cannot leak into other open files.
+
 ### Variable Resolution
 
 The embedded TypeScript service infers the type — and where possible the concrete value — held by a variable at each point in the file. Hovering over a local variable shows its resolved type (`string`, `number`, a specific object type, etc.) rather than a generic `any`. This works for variables whose initializer has a known type and for variables reassigned within the same scope.

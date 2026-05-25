@@ -2,6 +2,12 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.7.0] — 2026-05-25
+
+### Added
+
+- **`/* global */` comment support for SSJS diagnostics**: the embedded TypeScript checker now honors ESLint-style file-level global-comment annotations. Variables defined in another SFMC asset — such as a debug flag set in a parent page, a subscriber key passed via AMPscript, or a configuration variable from an included script — no longer trigger "Cannot find name" errors when declared with `/* global DEBUG, deKey */` or `/* globals DEBUG:readonly, deKey:writable */`. Declarations are scoped to the current document and cleaned up automatically when the file is closed or the comment is removed. The same syntax works inside `<script runat="server">` blocks in SFMC HTML files.
+
 ## [1.6.3] — 2026-05-25
 
 ### Fixed

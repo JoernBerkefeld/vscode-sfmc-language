@@ -573,3 +573,94 @@ test('getSsjsSignatureHelp parameter labels are numeric spans inside sig label',
         }
     }
 });
+
+// ---------------------------------------------------------------------------
+// Suite: ESLint-style /* global */ comment declarations
+// ---------------------------------------------------------------------------
+console.log('Suite: ESLint global comments');
+
+const URI_GLOBALS = 'file:///test-globals.ssjs';
+
+test('Undeclared variable without global comment produces sfmc-ts diagnostic', () => {
+    const code = 'var result = DEBUG.toString();';
+    updateSsjsDocument(URI_GLOBALS, code);
+    const diags = getSsjsDiagnostics(URI_GLOBALS);
+    assert.ok(
+        diags.some((d) => d.source === 'sfmc-ts'),
+        'Expected sfmc-ts diagnostic for undeclared DEBUG without global comment'
+    );
+});
+
+test('/* global DEBUG */ suppresses unknown-name diagnostic for DEBUG', () => {
+    const code = '/* global DEBUG */\nvar result = DEBUG.toString();';
+    updateSsjsDocument(URI_GLOBALS, code);
+    const diags = getSsjsDiagnostics(URI_GLOBALS);
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics after global comment, got: ${JSON.stringify(diags)}`
+    );
+});
+
+test('/* globals DEBUG, deKey */ suppresses diagnostics for both names', () => {
+    const code = '/* globals DEBUG, deKey */\nvar x = DEBUG; var y = deKey;';
+    updateSsjsDocument(URI_GLOBALS, code);
+    const diags = getSsjsDiagnostics(URI_GLOBALS);
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics after globals comment, got: ${JSON.stringify(diags)}`
+    );
+});
+
+test('/* global DEBUG:readonly, deKey:writable */ qualifier form is accepted', () => {
+    const code = '/* global DEBUG:readonly, deKey:writable */\nvar x = DEBUG; var y = deKey;';
+    updateSsjsDocument(URI_GLOBALS, code);
+    const diags = getSsjsDiagnostics(URI_GLOBALS);
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics with :qualifier form, got: ${JSON.stringify(diags)}`
+    );
+});
+
+test('Removing global comment from updated document restores diagnostic', () => {
+    // First load with global comment — should be clean.
+    const withComment = '/* global DEBUG */\nvar x = DEBUG;';
+    updateSsjsDocument(URI_GLOBALS, withComment);
+    const diagsBefore = getSsjsDiagnostics(URI_GLOBALS);
+    assert.ok(
+        !diagsBefore.some((d) => d.source === 'sfmc-ts'),
+        'Expected no diagnostics with global comment present'
+    );
+
+    // Update to remove the comment — diagnostic should return.
+    const withoutComment = 'var x = DEBUG;';
+    updateSsjsDocument(URI_GLOBALS, withoutComment);
+    const diagsAfter = getSsjsDiagnostics(URI_GLOBALS);
+    assert.ok(
+        diagsAfter.some((d) => d.source === 'sfmc-ts'),
+        'Expected sfmc-ts diagnostic after global comment was removed'
+    );
+});
+
+test('Closing document clears global declarations so stale names do not leak', () => {
+    const URI_LEAK = 'file:///test-leak.ssjs';
+    const code = '/* global SECRET */\nvar x = SECRET;';
+    updateSsjsDocument(URI_LEAK, code);
+
+    // Confirm no diagnostic while open.
+    const diagsOpen = getSsjsDiagnostics(URI_LEAK);
+    assert.ok(!diagsOpen.some((d) => d.source === 'sfmc-ts'), 'Should be clean while open');
+
+    // Close the document.
+    removeSsjsDocument(URI_LEAK);
+
+    // Re-open without the global comment — SECRET must not still be declared.
+    const URI_LEAK2 = 'file:///test-leak2.ssjs';
+    const codeWithout = 'var x = SECRET;';
+    updateSsjsDocument(URI_LEAK2, codeWithout);
+    const diagsClosed = getSsjsDiagnostics(URI_LEAK2);
+    assert.ok(
+        diagsClosed.some((d) => d.source === 'sfmc-ts'),
+        'SECRET should be unknown in a new document without a global comment'
+    );
+    removeSsjsDocument(URI_LEAK2);
+});
