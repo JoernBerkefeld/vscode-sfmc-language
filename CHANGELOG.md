@@ -2,6 +2,12 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.6.2] — 2026-05-25
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from 0.2.6 to 0.2.7 (removes `GetValue` and `SetValue` from the AMPscript function catalog — both were SSJS-only concepts)
+
 ## [1.6.1] — 2026-05-24
 
 ### Added
