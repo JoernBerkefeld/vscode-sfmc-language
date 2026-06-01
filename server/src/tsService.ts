@@ -68,9 +68,7 @@ function loadGlobalsContent(): string {
     return '// sfmc-globals.d.ts not found — SFMC type checking disabled';
 }
 
-const GLOBALS_CONTENT =
-    loadGlobalsContent() +
-    '\n// SFMC global shorthands\ndeclare var WSProxy: typeof Script.Util.WSProxy;\n';
+const GLOBALS_CONTENT = loadGlobalsContent();
 
 // ---------------------------------------------------------------------------
 // Virtual file system

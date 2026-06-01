@@ -81,7 +81,6 @@ All notable changes to the SFMC Language Service extension will be documented in
 - **`@deprecated` indicator in IntelliSense**: hover over deprecated functions (`ContentArea`, `ContentAreaByName`) now shows a `*Deprecated*` notice.
 - **`@remarks requiresCoreLoad` hint**: hover over functions requiring `Platform.Load("Core", "1")` (such as `HTTP.Get`, `HTTP.Post`) now shows a `*remarks:* Requires Platform.Load(...)` hint.
 - **Merged hover**: SSJS hover now combines the TypeScript type signature with the SFMC description — both are shown together instead of one overriding the other.
-- **`new WSProxy()` shorthand**: `WSProxy` is now available as a global constructor alias, so `new WSProxy()` works the same as `new Script.Util.WSProxy()` for completions and type checking.
 
 ### Fixed
 

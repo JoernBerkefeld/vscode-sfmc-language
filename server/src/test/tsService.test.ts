@@ -407,21 +407,9 @@ test('Completions after "Math." include abs, floor, PI', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Suite: WSProxy shorthand (C1 fix) and getSsjsCompletionInfo (Fix A)
+// Suite: getSsjsCompletionInfo (Fix A)
 // ---------------------------------------------------------------------------
-console.log('Suite: WSProxy shorthand + getSsjsCompletionInfo');
-
-const URI_WSPROXY2 = 'file:///test-wsproxy2.ssjs';
-
-test('new WSProxy() short-form — completions include WSProxy instance methods', () => {
-    const code = ['var api = new WSProxy();', 'api.'].join('\n');
-    updateSsjsDocument(URI_WSPROXY2, code);
-    const items = getSsjsCompletions(URI_WSPROXY2, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
-    assert.ok(labels.has('retrieve'), 'Short-form WSProxy should include retrieve');
-    assert.ok(labels.has('createItem'), 'Short-form WSProxy should include createItem');
-});
-
+console.log('Suite: getSsjsCompletionInfo');
 test('getSsjsCompletionInfo returns isMemberCompletion=true after "de."', () => {
     const code = ['Platform.Load("Core", "1");', 'var de = DataExtension.Init("key");', 'de.'].join(
         '\n'

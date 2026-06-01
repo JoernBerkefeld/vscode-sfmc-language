@@ -97,7 +97,7 @@ Variable resolution — inferring the type or value held by a `@variable` at any
 - **298 SFMC-specific completions** sourced from `ssjs-data`: 50 `Platform.Function.*` methods, 27 bare SSJS globals (`Stringify`, `Now`, `Write`, `GUID`, and more), 206 Core Library object methods across 39 objects, and 15 WSProxy operations — plus **60 ES3/ES5 built-in** completions (Array, String, Number, Object, Math, etc.)
 - **`Platform.Function.*`**, **`Platform.Variable.*`**, **`Platform.Response.*`**, **`Platform.Request.*`** methods
 - **Core library objects** with full method listings: `DataExtension`, `Subscriber`, `TriggeredSend`, `HTTP`, `Guard`, and more — available after `Platform.Load("Core", "1.1.5")`
-- **WSProxy** method completions for both `new Script.Util.WSProxy()` and the `new WSProxy()` shorthand
+- **WSProxy** method completions for `new Script.Util.WSProxy()`
 - **Bare-name globals** (`Stringify()`, `Now()`, `GUID()`, etc.) alongside their `Platform.Function.*` equivalents
 - **Context-aware member completions**: after a `.` only the relevant members are shown — the full global list is not injected into member-access positions
 
