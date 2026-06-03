@@ -2,6 +2,16 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.8.1] — 2026-06-03
+
+### Fixed
+
+- **`WSProxy.methodName` entries removed from SSJS completions**: typing "WSProxy" no longer surfaces `WSProxy.createBatch`, `WSProxy.retrieve`, etc. as if they were static calls. Instance method completions (e.g. `proxy.retrieve(...)`) are handled by the TypeScript engine via the typed `Script.Util.WSProxy` class declaration.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `0.3.1` to `^0.3.2`
+
 ## [1.8.0] — 2026-06-03
 
 ### Fixed
