@@ -2,6 +2,19 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [1.8.0] — 2026-06-03
+
+### Fixed
+
+- **`WSProxy` no longer appears in SSJS auto-completions**: using `new WSProxy()` (the short form) is correctly flagged as an error. It was still offered as a completion item; the bare `WSProxy` entry has been removed from the catalog. Use `new Script.Util.WSProxy()` instead.
+- **`DateTime.SystemDateToLocalDate` and `DateTime.LocalDateToSystemDate` completions and diagnostics**: both methods were absent from the SSJS completion catalog and the TypeScript global declarations loaded by the checker were stale. They now complete correctly and no longer show red squiggles when `Platform.Load("core", "1.1.5")` is present.
+- **`Script.Util.WSProxy` hover now shows ssjs.guide link**: the hover card for `Script.Util.WSProxy` and `WSProxy` methods was missing the guide reference link; it is now included.
+- **`sfmc-globals.d.ts` stays fresh automatically**: the file is now refreshed on every `npm run compile` and every `npm install` (via the `postinstall` hook), preventing the stale-type-declarations issue that caused the `DateTime` bugs above.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `0.3.0` to `^0.3.1`
+
 ## [1.7.0] — 2026-05-25
 
 ### Added

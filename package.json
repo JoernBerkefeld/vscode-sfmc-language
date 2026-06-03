@@ -204,7 +204,7 @@
     "esbuild-client": "esbuild ./client/src/extension.ts --bundle --outfile=client/out/extension.js --external:vscode --format=cjs --platform=node",
     "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=server/out/server.js --external:vscode --format=cjs --platform=node",
     "copy-globals": "node -e \"const {copyFileSync,mkdirSync}=require('fs'),p='server/node_modules/ssjs-data/dist/sfmc-globals.d.ts';mkdirSync('server/out',{recursive:true});copyFileSync(p,'server/out/sfmc-globals.d.ts');console.log('sfmc-globals.d.ts copied')\"",
-    "compile": "tsc -b",
+    "compile": "tsc -b && npm run copy-globals",
     "watch": "tsc -b -w",
     "dev": "npm run compile && code --extensionDevelopmentPath=. ./client/testFixture",
     "package": "npx @vscode/vsce package --no-dependencies",
@@ -216,7 +216,7 @@
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+    "postinstall": "cd client && npm install && cd ../server && npm install && cd .. && npm run copy-globals",
     "test": "node ./client/out/test/runTest"
   },
   "devDependencies": {
@@ -241,7 +241,7 @@
     "undici-types": "^8.1.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^0.2.6"
+    "sfmc-language-lsp": "^0.3.1"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [
