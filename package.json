@@ -228,7 +228,7 @@
     "esbuild": "^0.28.0",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-jsdoc": "^62.0.0",
+    "eslint-plugin-jsdoc": "^63.0.1",
     "eslint-plugin-prettier": "^5.5.0",
     "eslint-plugin-unicorn": "^64.0.0",
     "globals": "^17.5.0",
