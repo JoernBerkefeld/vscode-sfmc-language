@@ -2,6 +2,12 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.1.0] — 2026-06-06
+
+### Added
+
+- **Auto-configure `eslint.validate`**: the extension now contributes `eslint.validate` defaults for the `ampscript`, `ssjs`, and `sfmc` language IDs (plus all standard JS/TS/HTML IDs). Users with `dbaeumer.vscode-eslint` installed will see `eslint(sfmc/...)` diagnostics from `eslint-plugin-sfmc` without any manual settings change.
+
 ## [2.0.0] — 2026-06-06
 
 ### Added

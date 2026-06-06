@@ -149,7 +149,19 @@
         "*.ssjs": "ssjs",
         "*.amp": "ampscript",
         "*.ampscript": "ampscript"
-      }
+      },
+      "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact",
+        "html",
+        "vue",
+        "markdown",
+        "ampscript",
+        "ssjs",
+        "sfmc"
+      ]
     },
     "configuration": {
       "type": "object",
