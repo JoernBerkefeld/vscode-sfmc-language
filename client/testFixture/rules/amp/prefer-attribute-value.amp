@@ -1,0 +1,14 @@
+%%[
+/* ── Rule: sfmc/amp-prefer-attribute-value ─────────────────────────────────────
+   Bare personalization identifiers (e.g. FirstName) should be wrapped in
+   AttributeValue() to avoid send-aborting errors when the attribute is absent.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — attribute access wrapped in AttributeValue() */
+VAR @firstName
+SET @firstName = AttributeValue("FirstName")
+
+/* ❌ FAIL — bare identifier FirstName used directly as a value */
+VAR @lastName
+SET @lastName = LastName
+]%%

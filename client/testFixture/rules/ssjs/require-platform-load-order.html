@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<!-- Rule: sfmc/ssjs-require-platform-load-order
+     Platform.Load("core", "1") must appear before any Core library usage.
+     Demonstrated in server-side script blocks embedded in HTML. -->
+
+<!-- ACCEPTED - Platform.Load called before DataExtension.Init -->
+<script runat="server">
+Platform.Load("Core", "1.1.5");
+var de = DataExtension.Init("MyKey");
+</script>
+
+<!-- FAIL - DataExtension.Init called before Platform.Load in this block -->
+<script runat="server">
+var early = DataExtension.Init("TooEarlyKey");
+Platform.Load("Core", "1.1.5");
+</script>
+
+</body>
+</html>

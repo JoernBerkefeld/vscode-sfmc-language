@@ -1,0 +1,21 @@
+%%[
+/* ── Rule: sfmc/amp-function-arity ─────────────────────────────────────────────
+   Flags calls to AMPscript functions with the wrong number of arguments.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — UpperCase takes exactly 1 argument */
+VAR @a
+SET @a = UpperCase("hello")
+
+/* ✅ ACCEPTED — Format takes 2–3 arguments */
+VAR @b
+SET @b = Format(42, "N2")
+
+/* ❌ FAIL — UpperCase called with 2 arguments (max is 1) */
+VAR @c
+SET @c = UpperCase("hello", "extra")
+
+/* ❌ FAIL — DateAdd called with too few arguments (requires 3) */
+VAR @d
+SET @d = DateAdd(NOW())
+]%%

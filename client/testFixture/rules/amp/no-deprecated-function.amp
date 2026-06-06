@@ -1,0 +1,21 @@
+%%[
+/* ── Rule: sfmc/amp-no-deprecated-function ─────────────────────────────────────
+   Flags AMPscript functions that have been deprecated and replaced by newer
+   equivalents.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — UpperCase and Lookup are current, non-deprecated functions */
+VAR @upper
+SET @upper = UpperCase("hello world")
+
+VAR @val
+SET @val = Lookup("MyDE", "Field", "Email", "test@example.com")
+
+/* ❌ FAIL — InsertDE is deprecated; use InsertData instead */
+VAR @legacyInsert
+SET @legacyInsert = InsertData("MyDE", "Email", "test@example.com")
+
+/* ❌ FAIL — DeleteDE is deprecated; use DeleteData instead */
+VAR @legacyDelete
+SET @legacyDelete = DeleteData("MyDE", 1, "Email", "test@example.com")
+]%%

@@ -1,0 +1,24 @@
+%%[
+/* ── Rule: sfmc/amp-require-rowcount-check ─────────────────────────────────────
+   Requires a RowCount > 0 guard before iterating over a LookupRows result.
+   Without the check a RowCount of 0 causes a runtime error inside the loop.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — RowCount guard present before FOR loop */
+VAR @safeRows
+SET @safeRows = LookupRows("MyDE", "Email", "test@example.com")
+IF RowCount(@safeRows) > 0 THEN
+    FOR @i = 1 TO RowCount(@safeRows) DO
+        VAR @r
+        SET @r = Row(@safeRows, @i)
+    NEXT @i
+ENDIF
+
+/* ❌ FAIL — no RowCount check before looping over @unsafeRows */
+VAR @unsafeRows
+SET @unsafeRows = LookupRows("MyDE", "Email", "other@example.com")
+FOR @j = 1 TO RowCount(@unsafeRows) DO
+    VAR @row
+    SET @row = Row(@unsafeRows, @j)
+NEXT @j
+]%%

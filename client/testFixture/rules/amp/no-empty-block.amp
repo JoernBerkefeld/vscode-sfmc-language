@@ -1,0 +1,16 @@
+%%[
+/* ── Rule: sfmc/amp-no-empty-block ─────────────────────────────────────────────
+   Flags AMPscript blocks that contain no executable statements.
+   Empty blocks produce no output and are usually dead code.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — block has at least one statement */
+VAR @x
+SET @x = 1
+]%%
+
+
+/* ❌ FAIL — block is empty (only a comment, no statement) */
+%%[
+/* just a comment inside — no executable statement */
+]%%

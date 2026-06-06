@@ -2,6 +2,17 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.1.2] — 2026-06-06
+
+### Fixed
+
+- Instance methods on core library classes (`DeliveryProfile.Update`, `SenderProfile.Remove`, `Account.Update`, etc.) no longer appear as static method suggestions in VS Code IntelliSense
+- `Function.X` (e.g. `Function.GUID()`) completions removed — this was never a valid SSJS shorthand; only `Platform.Function.X()` and bare `X()` are correct
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.0.2` to `^1.0.3` (removes invalid `Function.X` completions and hover; instance-vs-static fix for core library `.d.ts`)
+
 ## [2.1.1] — 2026-06-06
 
 ### Fixed

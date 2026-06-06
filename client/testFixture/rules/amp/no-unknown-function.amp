@@ -1,0 +1,13 @@
+%%[
+/* ── Rule: sfmc/amp-no-unknown-function ────────────────────────────────────────
+   Flags calls to function names that are not in the AMPscript function catalog.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — UpperCase is a recognized AMPscript function */
+VAR @result
+SET @result = UpperCase("hello world")
+
+/* ❌ FAIL — DoesNotExistFn is not an AMPscript function */
+VAR @bad
+SET @bad = DoesNotExistFn("arg")
+]%%

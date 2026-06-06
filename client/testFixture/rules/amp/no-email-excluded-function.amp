@@ -1,0 +1,22 @@
+%%[
+/* ── Rule: sfmc/amp-no-email-excluded-function ─────────────────────────────────
+   Flags AMPscript functions that are not available in the email execution
+   context — they only work on CloudPages and landing pages.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — UpperCase is available in email context */
+VAR @upper
+SET @upper = UpperCase("hello")
+
+/* ✅ ACCEPTED — Lookup is available in email context */
+VAR @val
+SET @val = Lookup("MyDE", "Field", "Email", "test@example.com")
+
+/* ❌ FAIL — RequestParameter is only available on CloudPages/landing pages */
+VAR @param
+SET @param = RequestParameter("someKey")
+
+/* ❌ FAIL — QueryParameter is only available on CloudPages/landing pages */
+VAR @q
+SET @q = QueryParameter("utm_source")
+]%%

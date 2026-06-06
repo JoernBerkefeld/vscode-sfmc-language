@@ -1,0 +1,27 @@
+%%[
+/* ── Rule: sfmc/amp-no-empty-then ──────────────────────────────────────────────
+   Flags IF statements with an empty THEN branch.
+   An empty THEN usually means the condition is inverted or the code is incomplete.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+VAR @x
+SET @x = 1
+
+/* ✅ ACCEPTED — THEN branch has a statement */
+IF @x == 1 THEN
+    VAR @result
+    SET @result = "yes"
+ENDIF
+
+/* ✅ ACCEPTED — ELSE branch is allowed to be empty (only THEN is checked) */
+IF @x == 2 THEN
+    SET @result = "two"
+ELSE
+ENDIF
+
+/* ❌ FAIL — THEN branch is empty; ELSE has the real work */
+IF @x == 1 THEN
+ELSE
+    SET @result = "not one"
+ENDIF
+]%%

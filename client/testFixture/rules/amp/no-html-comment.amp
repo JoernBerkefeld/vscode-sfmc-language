@@ -1,0 +1,14 @@
+%%[
+/* ── Rule: sfmc/amp-no-html-comment ────────────────────────────────────────────
+   Flags HTML comment syntax (<! -- ... -->) inside AMPscript regions.
+   Use AMPscript block comments /* ... * / instead.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — AMPscript block comment */
+VAR @name
+SET @name = "Jane"
+
+/* ❌ FAIL — HTML comment syntax is not valid AMPscript */
+<!-- this is an HTML comment inside AMPscript -->
+SET @name = UpperCase(@name)
+]%%

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<!-- Rule: sfmc/amp-no-unknown-function
+     Flags calls to functions that do not exist in the AMPscript catalog.
+     Demonstrated with AMPscript open-bracket blocks embedded in HTML. -->
+
+<!-- ACCEPTED - UpperCase is a known AMPscript function -->
+%%[
+VAR @upper
+SET @upper = UpperCase("hello")
+]%%
+<p>Hello, %%=@upper=%%!</p>
+
+<!-- FAIL - CustomFn is not a recognized AMPscript function -->
+%%[
+VAR @bad
+SET @bad = CustomFn("arg")
+]%%
+
+</body>
+</html>

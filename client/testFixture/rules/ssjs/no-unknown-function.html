@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<!-- Rule: sfmc/ssjs-no-unknown-function
+     Flags calls to Platform.Function methods not in the SSJS catalog.
+     Demonstrated in server-side script blocks embedded in HTML. -->
+
+<!-- ACCEPTED - CreateObject is a known Platform.Function method -->
+<script runat="server">
+Platform.Load("Core", "1.1.5");
+var de = Platform.Function.CreateObject("DataExtension");
+</script>
+
+<!-- FAIL - DoesNotExistMethod is not a recognized Platform.Function method -->
+<script runat="server">
+Platform.Load("Core", "1.1.5");
+var bad = Platform.Function.DoesNotExistMethod("arg");
+</script>
+
+</body>
+</html>

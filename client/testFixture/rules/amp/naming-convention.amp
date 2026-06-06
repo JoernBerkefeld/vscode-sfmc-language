@@ -1,0 +1,22 @@
+%%[
+/* ── Rule: sfmc/amp-naming-convention ──────────────────────────────────────────
+   Enforces a consistent naming convention for @variable names.
+   The strict config requires camelCase (e.g. @firstName, not @first_name).
+   AMPscript variables are case-insensitive, so @firstName and @FirstName
+   are the same variable — mixing case in the same block causes redeclaration.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — camelCase variable names */
+VAR @firstName, @subscriberKey, @emailAddress
+SET @firstName    = "Jane"
+SET @subscriberKey = "sub-123"
+SET @emailAddress = "jane@example.com"
+
+/* ❌ FAIL — snake_case does not match required camelCase */
+VAR @error_code
+SET @error_code = "E001"
+
+/* ❌ FAIL — PascalCase does not match camelCase (first letter uppercase) */
+VAR @TotalAmount
+SET @TotalAmount = 42
+]%%

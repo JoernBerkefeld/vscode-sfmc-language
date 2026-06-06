@@ -1,0 +1,18 @@
+%%[
+/* -- Rule: sfmc/amp-no-smart-quotes -----------------------------------
+   Flags Unicode smart/curly quote characters found inside string literals.
+   AMPscript requires straight ASCII quotes only.
+   -------------------------------------------------------------------- */
+
+/* ACCEPTED - straight ASCII double quotes */
+VAR @a
+SET @a = "Hello, world"
+
+/* ACCEPTED - straight ASCII single quotes */
+VAR @b
+SET @b = 'Hello again'
+
+/* FAIL - curly/smart double quotes (Unicode U+201C U+201D) */
+VAR @c
+SET @c = “Hello, world”
+]%%

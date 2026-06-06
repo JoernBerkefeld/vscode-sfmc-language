@@ -1,0 +1,13 @@
+%%[
+/* ── Rule: sfmc/amp-require-variable-declaration ───────────────────────────────
+   Requires @variables to be declared with VAR before use in SET statements.
+   Prevents typos and makes variable scope explicit.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — variable declared with VAR before SET */
+VAR @firstName
+SET @firstName = "Jane"
+
+/* ❌ FAIL — @lastName used in SET without a prior VAR declaration */
+SET @lastName = "Doe"
+]%%

@@ -1,0 +1,15 @@
+%%[
+/* ── Rule: sfmc/amp-no-var-redeclaration ───────────────────────────────────────
+   Flags re-declaring a variable with VAR — silently resets its value to null.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — each variable declared exactly once */
+VAR @firstName, @lastName
+SET @firstName = "Jane"
+SET @lastName  = "Doe"
+
+/* ❌ FAIL — @email is declared twice; second declaration resets it to null */
+VAR @email
+SET @email = "jane@example.com"
+VAR @email
+]%%

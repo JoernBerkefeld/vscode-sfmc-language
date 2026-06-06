@@ -1,0 +1,25 @@
+%%[
+/* ── Rule: sfmc/amp-no-loop-counter-assign ─────────────────────────────────────
+   Flags assignments to the loop counter variable inside a FOR loop body.
+   Modifying the counter causes unpredictable iteration and infinite loops.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+VAR @rows
+SET @rows = LookupRows("MyDE", "Email", "test@example.com")
+
+/* ✅ ACCEPTED — loop counter @i is read but never modified inside the loop */
+IF RowCount(@rows) > 0 THEN
+    FOR @i = 1 TO RowCount(@rows) DO
+        VAR @row
+        SET @row = Row(@rows, @i)
+        /* @i is only read here, never assigned */
+    NEXT @i
+ENDIF
+
+/* ❌ FAIL — @j is assigned inside the loop body (modifying the counter) */
+IF RowCount(@rows) > 0 THEN
+    FOR @j = 1 TO RowCount(@rows) DO
+        SET @j = @j + 1
+    NEXT @j
+ENDIF
+]%%

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<body>
+<!-- ── Rule: sfmc/amp-no-nested-script-tag ───────────────────────────────────
+     Flags a second <script language="ampscript"> opening tag inside an
+     already-open AMPscript script block. Usually means a missing </script>.
+   ─────────────────────────────────────────────────────────────────────────── -->
+
+<!-- ✅ ACCEPTED — single script block, properly opened and closed -->
+<script language="ampscript" runat="server">
+    VAR @name
+    SET @name = "Jane"
+</script>
+
+<!-- ❌ FAIL — second <script language="ampscript"> opened before first was closed -->
+<script language="ampscript" runat="server">
+    VAR @first
+    SET @first = "hello"
+    <script language="ampscript" runat="server">
+        VAR @second
+        SET @second = "world"
+    </script>
+</script>
+
+</body>
+</html>

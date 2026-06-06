@@ -1,0 +1,13 @@
+%%[
+/* ── Rule: sfmc/amp-set-requires-target ────────────────────────────────────────
+   SET must target a @variable; a bare string literal as the left-hand side is
+   a no-op that can hide typos.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — SET targets a @variable */
+VAR @name
+SET @name = "Jane"
+
+/* ❌ FAIL — SET targets a string literal, not a variable */
+SET "orphan" = "Jane"
+]%%

@@ -1,0 +1,32 @@
+%%[
+/* ── MCN mode · AMPscript test fixture ─────────────────────────────────────────
+   Expected diagnostics are noted on the lines that should trigger them.
+   Open this file in VS Code — the ESLint extension shows live squiggles.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ UpperCase is supported in MCN → no MCN error */
+VAR @name
+SET @name = UpperCase("hello world")
+
+/* ✅ Lookup (single row) is supported in MCN → no error */
+VAR @val
+SET @val = Lookup("MyDE", "Field", "Email", "test@example.com")
+
+/* ❌ LookupRows is NOT supported in MCN → [amp-no-unknown-function] error */
+VAR @results
+SET @results = LookupRows("MyDE", "Email", "test@example.com")
+
+/* ✅ FormatDate is supported in MCN (with behavioral differences noted in hover) */
+VAR @date
+SET @date = FormatDate(NOW(), "MM/dd/yyyy", "en-US")
+
+/* ❌ InsertDE is NOT supported in MCN → [amp-no-unknown-function] error */
+VAR @rows
+SET @rows = InsertData("MyDE", "Field1", "Value1")
+
+/* ❌ AddObjectArrayItem is NOT supported in MCN → [amp-no-unknown-function] error */
+AddObjectArrayItem(@obj, "key", "value")
+
+/* ❌ Unknown function (also errors in MCE mode) → [amp-no-unknown-function] error */
+SET @rows = DoesNotExistFunction("arg")
+]%%

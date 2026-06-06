@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<!-- Rule: sfmc/amp-no-nested-ampscript-delimiter
+     Flags open-bracket or inline-expression AMPscript delimiters that are
+     nested inside an already-open AMPscript block. -->
+
+<!-- ACCEPTED - a script block with no nested delimiters -->
+<script language="ampscript" runat="server">
+VAR @name
+SET @name = "Jane"
+</script>
+
+<!-- FAIL - an open-bracket delimiter nested inside the script block -->
+<script language="ampscript" runat="server">
+VAR @a
+%%[ SET @a = "nested" ]%%
+</script>
+
+</body>
+</html>

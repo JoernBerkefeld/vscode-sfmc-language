@@ -1,0 +1,16 @@
+%%[
+/* ── Rule: sfmc/amp-no-inline-statement ────────────────────────────────────────
+   Control-flow statements (VAR, SET, IF, FOR) inside inline AMPscript
+   expressions are not valid. They belong in block AMPscript regions.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ✅ ACCEPTED — control-flow inside a block region */
+VAR @name
+SET @name = UpperCase("hello")
+]%%
+
+Hello UpperCase(@name)
+
+
+/* ❌ FAIL — VAR statement inside an inline expression (should use a block) */
+%%= VAR @bad =%%

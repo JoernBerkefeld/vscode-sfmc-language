@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head><title>MCN mode · embedded test fixture</title></head>
+<body>
+
+<!-- ── Embedded AMPscript (MCN mode) ──────────────────────────────────────── -->
+%%[
+/* ✅ UpperCase is supported in MCN → no error */
+VAR @name
+SET @name = UpperCase("hello world")
+
+/* ❌ InsertDE is NOT supported in MCN → [amp-no-unknown-function] error */
+SET @name = InsertDE("MyDE", "Email", "test@example.com")
+]%%
+
+<p>Hello %%=v(@name)=%%</p>
+
+<!-- ── Embedded SSJS (MCN mode) ───────────────────────────────────────────── -->
+<script runat="server">
+    /* ❌ ALL SSJS calls are flagged in MCN mode → [ssjs-no-unknown-function target:next] errors */
+    Platform.Load("Core", "1.1.1");
+    var de = Platform.Function.CreateObject("DataExtension");
+</script>
+
+</body>
+</html>
