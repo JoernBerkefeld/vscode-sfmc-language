@@ -2,6 +2,26 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.0.0] — 2026-06-06
+
+### Added
+
+- **`sfmcLanguageServer.targetPlatform` setting** (`engagement` | `next`, default `engagement`): controls whether the language server runs in standard MCE mode or in Marketing Cloud Next compatibility mode. Set to `next` to enable the diagnostics below without affecting any existing MCE workflow.
+- **MCN AMPscript diagnostics** (active when `targetPlatform: 'next'`):
+  - **Error** for any AMPscript function call where the function is not supported in Marketing Cloud Next — e.g. `InsertDE`, `AttachFile`, `ContentArea`. Message: `"<FunctionName> is not supported in Marketing Cloud Next."`
+  - **Information** for functions that are MCN-supported but have behavioral differences (`FormatDate`, `Lookup`, `StringToDate`) — the `mcnNotes` text is surfaced as a hint in the Problems panel so the behavioral difference is visible at the call site.
+- **MCN SSJS diagnostics** (active when `targetPlatform: 'next'`):
+  - **Error** on any `<script runat="server">` block — SSJS is not supported in Marketing Cloud Next. The error is placed on the opening `<script>` tag.
+- **MCN hover badge**: every AMPscript function hover card now shows a Marketing Cloud Next support line — either `"Supported in Marketing Cloud Next (API v67.0+)"` (optionally with behavioral notes) or `"Not supported in Marketing Cloud Next"`.
+
+### Fixed
+
+- **MCN diagnostic line numbers** — errors were reported on the wrong line when the document contained multi-line comment blocks or HTML content before the AMPscript region. The offset now correctly reflects the absolute document position.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^0.3.2` to `^1.0.1` (MCN platform support + line-number bugfix)
+
 ## [1.8.1] — 2026-06-03
 
 ### Fixed

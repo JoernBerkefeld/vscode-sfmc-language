@@ -126,5 +126,15 @@ NEXT @i
     
     <!-- Inline Lookup -->
     <p>Status: %%=Lookup("MyDE", "Status", "Email", @email)=%%</p>
+
+    <!-- New: MCN compatibility — hover should show "Supported in Marketing Cloud Next (API v67.0+)" -->
+    <p>Upper: %%=UpperCase(@firstName)=%%</p>
+    <p>Formatted date: %%=FormatDate(Now(), "MM/dd/yyyy")=%%</p>
+
+    <!-- New: MCN unsupported — hover should show "Not supported in Marketing Cloud Next" -->
+    <!-- (InsertDE is not in MCN; enable targetPlatform:"next" to see the error diagnostic) -->
+    %%[
+        /* InsertDE("MyDE", 1, "Email", @email) */
+    ]%%
 </body>
 </html>

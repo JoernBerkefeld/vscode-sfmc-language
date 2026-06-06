@@ -1,10 +1,10 @@
 {
   "name": "sfmc-language",
   "displayName": "SFMC Language Service",
-  "description": "Language support for Salesforce Marketing Cloud Engagement — AMPscript, SSJS (Server-Side JavaScript), and GTL (Guide Template Language). Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, and snippets.",
+  "description": "Language support for Salesforce Marketing Cloud (Engagement and Next) — AMPscript, SSJS, and GTL. Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, snippets, and MCN compatibility checks.",
   "author": "Jörn Berkefeld",
   "license": "MIT",
-  "version": "1.8.1",
+  "version": "2.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/JoernBerkefeld/vscode-sfmc-language.git"
@@ -22,6 +22,7 @@
     "sfmc",
     "salesforce",
     "marketing cloud",
+    "marketing cloud next",
     "server-side javascript",
     "multi-root ready",
     "mcp",
@@ -176,6 +177,20 @@
           "type": "boolean",
           "default": false,
           "description": "Suppress warnings about conflicting AMPscript extensions (xnerd.ampscript-language, FiB.beautyAmp)."
+        },
+        "sfmcLanguageServer.targetPlatform": {
+          "scope": "resource",
+          "type": "string",
+          "enum": [
+            "engagement",
+            "next"
+          ],
+          "enumDescriptions": [
+            "Marketing Cloud Engagement (default): existing behaviour, no platform-specific diagnostics.",
+            "Marketing Cloud Next: flags AMPscript functions unsupported in MCN as errors, and flags any SSJS content as unsupported."
+          ],
+          "default": "engagement",
+          "description": "Target platform for MCN compatibility diagnostics. Set to 'next' to detect AMPscript functions or SSJS code that cannot run in Marketing Cloud Next."
         }
       }
     },
@@ -241,7 +256,7 @@
     "undici-types": "^8.1.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^0.3.2"
+    "sfmc-language-lsp": "^1.0.1"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [

@@ -28,7 +28,7 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 ### Auto-Completion
 
-- **152 AMPscript functions** with snippet-style parameter placeholders, organized across 14 categories (Content, Data Extension, HTTP, String, Math, and more — see `ampscript-data`)
+- **150 AMPscript functions** with snippet-style parameter placeholders, organized across 14 categories (Content, Data Extension, HTTP, String, Math, and more — see `ampscript-data`)
 - **17 keywords** with contextual snippets (`var`, `set`, `if`/`then`/`elseif`/`else`/`endif`, `for`/`to`/`downto`/`do`/`next`, `and`/`or`/`not`, `true`/`false`)
 - **74 system personalization strings** with descriptions (subscriber identity, email/job metadata, dates, sender info, URLs, MobileConnect demographics, GroupConnect, execution context)
 - **File-scoped variable suggestions** extracted from `@variable` declarations in the current document
@@ -52,6 +52,23 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 - **Nesting-aware control flow**: stack-based `IF`/`ENDIF` and `FOR`/`NEXT` validation with line-level error locations
 - **Unknown function detection**: flags function calls not in the AMPscript catalog
 - **Best-practice hints**: informational warnings for bare subscriber attribute access without `AttributeValue()` wrapping
+
+### Marketing Cloud Next compatibility (`sfmcLanguageServer.targetPlatform`)
+
+Set **`sfmcLanguageServer.targetPlatform`** to `"next"` (default: `"engagement"`) to enable MCN-mode diagnostics. Engagement mode is completely unchanged — the setting is additive.
+
+| Setting value | Behaviour |
+|---|---|
+| `"engagement"` (default) | Existing diagnostics only — no MCN-specific checks |
+| `"next"` | Adds errors for MCN-unsupported functions and SSJS blocks; adds information hints for functions with behavioral differences |
+
+**In `"next"` mode:**
+
+- **Error** for any AMPscript function not available in Marketing Cloud Next (41 of 150 functions are supported). Example: `InsertDE`, `AttachFile`, `ContentArea` → `"InsertDE is not supported in Marketing Cloud Next."`
+- **Information** for supported functions with behavioral differences (`FormatDate`, `Lookup`, `StringToDate`) — the note is shown in the Problems panel at the call site so you can act on it before deploying
+- **Error** on any `<script runat="server">` block — SSJS is not supported in Marketing Cloud Next
+
+**Hover cards** always show the MCN support line regardless of the setting: `"Supported in Marketing Cloud Next (API v67.0+)"` or `"Not supported in Marketing Cloud Next"`, so you can check at a glance without switching modes.
 
 ### Variable Resolution
 
@@ -124,6 +141,7 @@ Variable resolution — inferring the type or value held by a `@variable` at any
 - **Missing `Platform.Load`**: flags calls to Core Library objects (`DataExtension`, `HTTP.Get`, etc.) and bare globals (`Stringify()`, `Now()`, `GUID()`, etc.) when `Platform.Load("Core", "1.1.5")` has not been called **before** that line — order-aware
 - **ES6+ syntax errors**: `let`/`const`, arrow functions, `for...of`, generator functions, spread `...`, destructuring are flagged as errors (SSJS runs in ES3/ES5 only)
 - **TypeScript type diagnostics**: type-aware errors powered by the embedded TypeScript service
+- **MCN incompatibility** (when `sfmcLanguageServer.targetPlatform` is `"next"`): **Error** on any `<script runat="server">` block — SSJS is not supported in Marketing Cloud Next
 
 #### Suppressing "Cannot find name" for cross-file variables
 

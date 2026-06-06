@@ -154,19 +154,23 @@ export function activate(context: ExtensionContext) {
 
     void checkAndShowWhatsNew(context, EXTENSION_DISPLAY_NAME);
 
-    context.subscriptions.push(
-        lm.registerMcpServerDefinitionProvider('sfmcLanguageMcp', {
-            provideMcpServerDefinitions: () => [
-                new McpStdioServerDefinition(
-                    'Salesforce Marketing Cloud (mcp-server-sfmc)',
-                    'npx',
-                    ['-y', 'mcp-server-sfmc@latest'],
-                    {},
-                    'mcp-server-sfmc@latest'
-                ),
-            ],
-        })
-    );
+    // lm.registerMcpServerDefinitionProvider and McpStdioServerDefinition require VS Code ≥1.99.
+    // Guard the call so the core language service activates on older hosts (e.g. older Cursor).
+    if (typeof lm?.registerMcpServerDefinitionProvider === 'function') {
+        context.subscriptions.push(
+            lm.registerMcpServerDefinitionProvider('sfmcLanguageMcp', {
+                provideMcpServerDefinitions: () => [
+                    new McpStdioServerDefinition(
+                        'Salesforce Marketing Cloud (mcp-server-sfmc)',
+                        'npx',
+                        ['-y', 'mcp-server-sfmc@latest'],
+                        {},
+                        'mcp-server-sfmc@latest'
+                    ),
+                ],
+            })
+        );
+    }
 }
 
 export function deactivate(): Thenable<void> | undefined {
