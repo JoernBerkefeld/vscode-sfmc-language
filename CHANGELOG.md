@@ -2,6 +2,16 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.1.1] — 2026-06-06
+
+### Fixed
+
+- Diagnostic line numbers for arity errors, arg-type warnings, unknown-function errors, HTML-comment warnings, and JS-line-comment warnings were reported N lines too early when a multi-line `/* */` block comment appeared before the problematic AMPscript code.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.0.1` to `^1.0.2` (line-position bugfix for non-MCN diagnostics)
+
 ## [2.1.0] — 2026-06-06
 
 ### Added
