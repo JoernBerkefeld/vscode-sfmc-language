@@ -2,6 +2,30 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.2.0] - 2026-06-15
+
+### Added
+
+- Enum completion exclusivity: when the cursor is on an enum-typed AMPscript parameter (e.g. the second argument of `DatePart`), IntelliSense now offers only the valid enum values instead of mixing them with functions, keywords, and variables.
+
+### Changed
+
+- Enum validation now also flags numeric and boolean literals passed to an enum-typed parameter (previously only quoted string literals were checked).
+- Repeat-group signature help highlights repeating parameter slots correctly (e.g. `Concat`'s `stringN`, and the paired columns of `UpdateData` / `UpsertData`).
+
+### Fixed
+
+- `HTTPPost2` snippet now matches the current 6-argument signature (`url, contentType, contentToPost, exceptionOnError, response, responseRowSet`) instead of the outdated argument list.
+
+### Known issues
+
+- When the cursor is on an enum-typed argument, VS Code's contributed AMPscript snippets (e.g. `%%=`, `ampblock`) may still appear alongside the enum values. Suppressing those requires migrating the snippets to a programmatic provider, which is planned for a follow-up release.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.2.0` to `^1.3.0` (enum completion exclusivity, number/boolean enum validation, repeat-group signature help)
+- Bump `ampscript-data` (transitively, via the language server) from `2.0.1` to `2.0.2` (Concat syntax `stringN` fix)
+
 ## [2.1.2] — 2026-06-06
 
 ### Fixed

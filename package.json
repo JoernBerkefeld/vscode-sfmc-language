@@ -226,12 +226,13 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run esbuild-client -- --minify && npm run esbuild-server -- --minify && npm run copy-globals",
-    "esbuild-base": "npm run esbuild-client -- --sourcemap && npm run esbuild-server -- --sourcemap",
+    "clean": "node -e \"const {rmSync}=require('fs');for(const p of ['client/out','server/out','client/tsconfig.tsbuildinfo','server/tsconfig.tsbuildinfo','tsconfig.tsbuildinfo'])rmSync(p,{recursive:true,force:true});console.log('cleaned client/out, server/out, *.tsbuildinfo')\"",
+    "vscode:prepublish": "npm run clean && npm run esbuild-client -- --minify && npm run esbuild-server -- --minify && npm run copy-globals",
+    "esbuild-base": "npm run clean && npm run esbuild-client -- --sourcemap && npm run esbuild-server -- --sourcemap && npm run copy-globals",
     "esbuild-client": "esbuild ./client/src/extension.ts --bundle --outfile=client/out/extension.js --external:vscode --format=cjs --platform=node",
     "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=server/out/server.js --external:vscode --format=cjs --platform=node",
     "copy-globals": "node -e \"const {copyFileSync,mkdirSync}=require('fs'),p='server/node_modules/ssjs-data/dist/sfmc-globals.d.ts';mkdirSync('server/out',{recursive:true});copyFileSync(p,'server/out/sfmc-globals.d.ts');console.log('sfmc-globals.d.ts copied')\"",
-    "compile": "tsc -b && npm run copy-globals",
+    "compile": "npm run clean && tsc -b && npm run copy-globals",
     "watch": "tsc -b -w",
     "dev": "npm run compile && code --extensionDevelopmentPath=. ./client/testFixture",
     "package": "npx @vscode/vsce package --no-dependencies",
@@ -268,7 +269,7 @@
     "undici-types": "^8.1.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^1.0.1"
+    "sfmc-language-lsp": "^1.3.0"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [

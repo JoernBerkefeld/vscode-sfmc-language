@@ -112,6 +112,53 @@ FOR @i = 1 TO @rowCount DO
     SET @currentEmail = Field(@currentRow, "Email")
 NEXT @i
 
+/* -----------------------------------------------------------------------------
+   ampscript-data v2.0.0 changes — verify hover/signature/completion
+   ----------------------------------------------------------------------------- */
+
+/* New: AttachFile now requires only 2 args (was 4) — signature help should mark
+   the last params optional. Calling with 2 args must NOT raise an arity error. */
+SET @attach = AttachFile("filename", "displayname")
+
+/* New: HTTPPost2 rebuilt — signature help shows
+   url, contentType, contentToPost, exceptionOnError, response, responseRowSet
+   (then optional repeating headerName/headerValue pairs).
+   Hover example should be the 6-arg form. */
+SET @status = HTTPPost2("https://example.com", "application/json", @payload, true, @response, @responseRowSet)
+
+/* New: variadic repeat groups — Concat repeats a single param any number of times;
+   signature help should keep accepting more args without an arity error. */
+SET @joined = Concat(@firstName, " ", @lastName, " (", @email, ")")
+
+/* New: UpdateData / UpsertData are 1+N variadic (id + repeating column/value pairs).
+   Signature help should show the repeating pair group. */
+SET @updated = UpdateData("MyDE", 1, "Email", @email)
+SET @upserted = UpsertData("MyDE", 1, "Email", @email, "Status", "active")
+
+/* New: inline deprecation — hover over ContentArea / ContentAreaByName should show
+   the deprecation note and the recommended replacement (ContentBlockById / ...ByName). */
+SET @legacy = ContentArea(12345)
+SET @legacyByName = ContentAreaByName("my-content")
+
+/* New: DatePart returns a string — hover return type should read "string".
+   Completion of the 2nd arg should offer: year, Y, month, M, monthName, day, D, hour, H, minute, MI */
+SET @monthName = DatePart(@currentDate, "monthname")
+
+/* New: union-type validation — GetPublishedSocialContent accepts string|number;
+   neither of these should raise a type-mismatch diagnostic. */
+SET @social1 = GetPublishedSocialContent("abc123")
+SET @social2 = GetPublishedSocialContent(123)
+
+/* New: GetSocialPublishURL — 1st arg socialNetworkCode is a number (no quotes). */
+SET @pubUrl = GetSocialPublishURL(1, "https://example.com")
+
+/* New: ContentImageByID requires at least 2 args — calling with 1 should warn (min args). */
+SET @img = ContentImageByID(12345, "Alt text")
+
+/* New: BarcodeURL — hover/signature should show clean param names without "bool" prefixes
+   (showText, transparentBG instead of boolShowText, boolTransparentBG). */
+SET @barcode = BarcodeURL("12345", "qr", 200, 200, "", true, "scan me", 0, false)
+
 ]%%
 
 <!-- Inline AMPscript expressions -->

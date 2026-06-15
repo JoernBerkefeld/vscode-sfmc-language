@@ -121,8 +121,7 @@
 			"\t@${3:payload},",
 			"\ttrue,",
 			"\t@${4:response},",
-			"\t@${5:responseHeaders},",
-			"\t@${1:statusCode}",
+			"\t@${5:responseRowSet}",
 			")"
 		],
 		"description": "HTTP POST with error handling using HTTPPost2"
