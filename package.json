@@ -203,6 +203,12 @@
           ],
           "default": "engagement",
           "description": "Target platform for MCN compatibility diagnostics. Set to 'next' to detect AMPscript functions or SSJS code that cannot run in Marketing Cloud Next."
+        },
+        "sfmcLanguageServer.disableLspDiagnosticsForEslintRules": {
+          "scope": "resource",
+          "type": "boolean",
+          "default": false,
+          "description": "Suppress LSP diagnostics that are already covered by eslint-plugin-sfmc rules (e.g. unknown function, arity, enum value, smart quotes, comment syntax). Use this when both the language server and ESLint are active to avoid duplicate warnings. Diagnostics unique to the LSP (delimiter balance, IF/ENDIF/FOR/NEXT balance, GTL, MCN compatibility) are always shown."
         }
       }
     },
@@ -232,7 +238,8 @@
     "esbuild-client": "esbuild ./client/src/extension.ts --bundle --outfile=client/out/extension.js --external:vscode --format=cjs --platform=node",
     "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=server/out/server.js --external:vscode --format=cjs --platform=node",
     "copy-globals": "node -e \"const {copyFileSync,mkdirSync}=require('fs'),p='server/node_modules/ssjs-data/dist/sfmc-globals.d.ts';mkdirSync('server/out',{recursive:true});copyFileSync(p,'server/out/sfmc-globals.d.ts');console.log('sfmc-globals.d.ts copied')\"",
-    "compile": "npm run clean && tsc -b && npm run copy-globals",
+    "dev:sync-lsp": "node -e \"const {cpSync}=require('fs');cpSync('../sfmc-language-lsp/dist',`server/node_modules/sfmc-language-lsp/dist`,{recursive:true});console.log('sfmc-language-lsp/dist synced from local build — dev only, do not use before release packaging')\"",
+    "compile": "npm run clean && npm run dev:sync-lsp && tsc -b && npm run copy-globals",
     "watch": "tsc -b -w",
     "dev": "npm run compile && code --extensionDevelopmentPath=. ./client/testFixture",
     "package": "npx @vscode/vsce package --no-dependencies",
@@ -269,7 +276,7 @@
     "undici-types": "^8.1.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^1.3.0"
+    "sfmc-language-lsp": "^1.5.0"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [

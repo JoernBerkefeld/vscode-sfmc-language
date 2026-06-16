@@ -165,12 +165,12 @@ SET @barcode = BarcodeURL("12345", "qr", 200, 200, "", true, "scan me", 0, false
 <html>
 <body>
     <h1>Hello, %%=v(@firstName)=%%!</h1>
-    
+
     <!-- Hover: verify inline function calls -->
     <p>Your email is: %%=v(@email)=%%</p>
     <p>Today's date: %%=Format(Now(), "MMMM d, yyyy")=%%</p>
     <p>Full name: %%=Concat(@firstName, " ", @lastName)=%%</p>
-    
+
     <!-- Inline Lookup -->
     <p>Status: %%=Lookup("MyDE", "Status", "Email", @email)=%%</p>
 
@@ -185,3 +185,46 @@ SET @barcode = BarcodeURL("12345", "qr", 200, 200, "", true, "scan me", 0, false
     ]%%
 </body>
 </html>
+/* Sample A: rowset type hover */
+%%[
+  SET @rows = LookupRows('MyDE', 'Status', 'Active')
+  /* Hover @rows above to see: Type: rowset */
+]%%
+
+/* Sample B: FOR loop index type hover */
+%%[
+  FOR @i = 1 TO 5 DO
+    /* Hover @i to see: Type: number */
+  NEXT @i
+]%%
+
+/* Sample C: string literal type hover */
+%%[
+  SET @name = "John"
+  /* Hover @name to see: Type: string */
+]%%
+
+/* Sample D: type mismatch warning */
+%%[
+  SET @name = "Alice"
+  SET @count = RowCount(@name)
+  /* @name is string but RowCount expects rowset → should show warning */
+]%%
+
+/* Sample E: deprecated function warning */
+%%[
+  /* Replace DeprecatedFunctionName with an actual deprecated AMPscript function */
+  SET @r = ContentArea("DE","col","val","col2","val2")
+  /* hover WAT to see deprecation warning with replacement */
+]%%
+
+/* Sample F: enum completions */
+%%[
+  SET @diff = DateDiff(NOW(), NOW(), /* <-- place cursor here, trigger completions */ )
+]%%
+
+/* Sample G: invalid enum value → warning */
+%%[
+  SET @diff = DateDiff(NOW(), NOW(), "X")
+  /* "X" is not a valid DatePart → should show warning */
+]%%

@@ -2,6 +2,29 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.3.0] - 2026-06-16
+
+### Added
+
+- AMPscript `@variable` hovers now show inferred type in a TypeScript-style code fence (e.g. `var @rows: rowset`, `var @x: any`) — matching the SSJS variable hover design.
+- AMPscript parameter hints (signature help) now display TypeScript-style typed labels: `param?: type` (e.g. `startDate: date`, `numRetries?: number`). Optional parameters are marked with `?` instead of square brackets, and the full `param?: type` token is highlighted as you type each argument — matching the SSJS signature help experience.
+- `sfmcLanguageServer.disableLspDiagnosticsForEslintRules` setting: when enabled, LSP diagnostics that duplicate `eslint-plugin-sfmc` rules are suppressed so ESLint remains the single source of truth for those checks.
+
+### Changed
+
+- `ampscript/enum-value` diagnostic severity changed from **Warning** to **Error** — passing a literal value not in the allowed enum is now a hard error.
+- `ampscript/arg-type` diagnostic severity changed from **Warning** to **Error** — literal and variable type mismatches are now hard errors.
+
+### Fixed
+
+- Parameter highlighting in signature help no longer partially matches `content` inside `contentTypeHeader` — the correct parameter token is always highlighted (fixes `HTTPPostWithRetry` parameter 3 regression).
+- Signature help parameter documentation now uses `MarkupContent` so `**Default:**` formatting and backtick literals render correctly instead of showing raw markdown text.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.3.0` to `^1.5.0` (typed sig help labels, variable hover redesign, enum/arg-type as errors, labelRange fix, MarkupContent for param docs)
+- Bump `ampscript-data` (transitively) from `2.0.2` to `2.0.3`
+
 ## [2.2.0] - 2026-06-15
 
 ### Added
