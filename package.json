@@ -276,7 +276,7 @@
     "undici-types": "^8.1.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^1.5.0"
+    "sfmc-language-lsp": "^1.6.0"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [

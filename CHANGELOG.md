@@ -2,6 +2,21 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.4.0] - 2026-06-18
+
+### Added
+
+- Value-confirmed `Date` prototype methods (`getFullYear`, `getDay`, `getMinutes`, `getSeconds`, `getMilliseconds`, `valueOf`, `toString`, `toDateString`, `toUTCString`), the `Date.UTC` static, and `Object.defineProperty` are now recognized as working ECMAScript built-ins in completions, hover, and diagnostics.
+
+### Changed
+
+- `Array.prototype.splice` is now treated as polyfillable (broken on the SFMC JINT engine) rather than a working built-in.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.5.0` to `^1.6.0` (ssjs-data 0.6.0 ECMAScript built-ins catalog updates)
+- Bump `ssjs-data` (transitively) from `0.5.0`/`0.4.2` to `0.6.0`
+
 ## [2.3.0] - 2026-06-16
 
 ### Added
