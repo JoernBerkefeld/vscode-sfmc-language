@@ -112,3 +112,16 @@ Write(Stringify(data));
 // Variable function
 var myVar = Variable.GetValue("@myVariable");
 Variable.SetValue("@newVar", "newValue");
+
+// -----------------------------------------------------------------------------
+// ECMAScript built-ins — hover now shows ssjs.guide + MDN links
+// -----------------------------------------------------------------------------
+
+// New: ECMAScript builtin hover links to both ssjs.guide and MDN (e.g. Math.PI)
+var circleArea = Math.PI * 4 * 4;
+
+// New: Array.prototype method hover deep-links to MDN (e.g. Array/slice)
+var firstTwo = myArray.slice(0, 2);
+
+// New: String.prototype method hover deep-links to MDN (e.g. String/replace)
+var cleaned = myString.replace("old", "new");

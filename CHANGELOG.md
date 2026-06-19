@@ -2,6 +2,23 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.5.0] - 2026-06-19
+
+### Added
+
+- ECMAScript built-in hovers now include an official **MDN** documentation link next to the existing `ssjs.guide` reference. Instance methods deep-link to the exact MDN page (e.g. `Array.prototype.slice` → `.../Global_Objects/Array/slice`), constructors and global functions resolve to their reference pages, and unrecognized owners fall back to an MDN search URL.
+
+### Changed
+
+- `Array.prototype.splice` polyfill documentation corrected to use MDN parameter names and to note that the engine bug only surfaces once the third (insertion) argument and beyond are used; calls limited to the first two arguments behave correctly.
+- All ECMAScript built-ins (including previously missing ones) are now discoverable via `ssjs.guide` search and resolve to a documentation page from hover.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.6.0` to `^1.7.0` (MDN hover links)
+- Bump `ssjs-data` (transitively) from `0.6.0` to `0.8.0` (splice polyfill fix, builtin search indexing, `mdnBuiltinUrl()` helper)
+- Bump `ampscript-data` (transitively) to `2.0.4` (removed unsupported `like` operator from `RetrieveSalesforceObjects`)
+
 ## [2.4.0] - 2026-06-18
 
 ### Added
