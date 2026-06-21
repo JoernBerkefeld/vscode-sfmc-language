@@ -19,6 +19,7 @@ import {
     Diagnostic,
     DiagnosticSeverity,
     Hover,
+    Location,
     MarkupContent,
     Position,
     Range,
@@ -111,6 +112,7 @@ function setVirtualFile(name: string, content: string): void {
 let docCounter = 0;
 const uriToVirtualName = new Map<string, string>();
 const uriToGlobalsName = new Map<string, string>();
+const uriToPolyfillsName = new Map<string, string>();
 
 function virtualNameForUri(uri: string): string {
     let name = uriToVirtualName.get(uri);
@@ -121,6 +123,22 @@ function virtualNameForUri(uri: string): string {
     return name;
 }
 
+/**
+ * Reverse lookup: map a virtual filename produced by `virtualNameForUri` (or its
+ * `.polyfills.d.ts` / `.globals.d.ts` companions) back to the originating LSP
+ * document URI. Returns undefined for the shared globals file or unknown names.
+ * @param fileName - virtual filename from the TS language service
+ * @returns the originating document URI, or undefined
+ */
+function uriForVirtualName(fileName: string): string | undefined {
+    // Companion files share the document's counter; normalize to the base .js name.
+    const base = fileName.replace(/\.polyfills\.d\.ts$/, '.js').replace(/\.globals\.d\.ts$/, '.js');
+    for (const [uri, name] of uriToVirtualName) {
+        if (name === base) return uri;
+    }
+    return undefined;
+}
+
 function globalsNameForUri(uri: string): string {
     let name = uriToGlobalsName.get(uri);
     if (!name) {
@@ -128,6 +146,17 @@ function globalsNameForUri(uri: string): string {
         const docName = virtualNameForUri(uri);
         name = docName.replace(/\.js$/, '.globals.d.ts');
         uriToGlobalsName.set(uri, name);
+    }
+    return name;
+}
+
+function polyfillsNameForUri(uri: string): string {
+    let name = uriToPolyfillsName.get(uri);
+    if (!name) {
+        // Derived from the JS virtual name so the two always share the same counter.
+        const docName = virtualNameForUri(uri);
+        name = docName.replace(/\.js$/, '.polyfills.d.ts');
+        uriToPolyfillsName.set(uri, name);
     }
     return name;
 }
@@ -175,6 +204,319 @@ function parseGlobalCommentDeclarations(text: string): string {
 
     if (names.size === 0) return '';
     return [...names].map((n) => `declare var ${n}: any;`).join('\n') + '\n';
+}
+
+// ---------------------------------------------------------------------------
+// Prototype polyfill parser
+// ---------------------------------------------------------------------------
+
+/**
+ * Built-in constructors whose `.prototype` can be polyfilled in SSJS, mapped to
+ * the TypeScript interface that `sfmc-globals.d.ts` declares for instances of
+ * that type. `Array` is generic (`interface Array<T>`) so it carries its type
+ * parameter; the rest are non-generic.
+ */
+const POLYFILL_INTERFACE_BY_CTOR: Record<string, { iface: string; typeParams: string }> = {
+    Array: { iface: 'Array', typeParams: '<T>' },
+    String: { iface: 'String', typeParams: '' },
+    Number: { iface: 'Number', typeParams: '' },
+    Boolean: { iface: 'Boolean', typeParams: '' },
+    Object: { iface: 'Object', typeParams: '' },
+    Date: { iface: 'Date', typeParams: '' },
+    Function: { iface: 'Function', typeParams: '' },
+    RegExp: { iface: 'RegExp', typeParams: '' },
+};
+
+/**
+ * Scans SSJS source for prototype polyfills of the form
+ * `Ctor.prototype.method = ...` and returns TypeScript interface-merge
+ * declarations that add each polyfilled method to the matching built-in
+ * interface from `sfmc-globals.d.ts`.
+ *
+ * Because the bundled `sfmc-globals.d.ts` intentionally declares only the
+ * SSJS-supported subset of built-in methods (no `Array.prototype.forEach`,
+ * `String.prototype.startsWith`, …), polyfilling an unsupported method would
+ * otherwise raise `Property 'X' does not exist` on both the assignment and
+ * every later call. Merging the polyfilled members back into the interface
+ * teaches the checker that those methods now exist for this document.
+ *
+ * Each polyfilled member is emitted as a *method signature* (not a bare
+ * `: any` property) so hover reports `(method) String.startsWith(...)` rather
+ * than `(property) … : any`.  When the polyfill is assigned a function
+ * expression, the function's own parameter names are reused — typed from the
+ * polyfill's `@param {Type}` / `@returns {Type}` JSDoc when present, otherwise
+ * `any` — and any JSDoc block immediately preceding the assignment is forwarded
+ * so the checker surfaces the documented `@param` / `@returns` text on hover.
+ * The polyfill's body is still type-checked normally and unrelated diagnostics
+ * are preserved.
+ *
+ * Returns an empty string when no prototype polyfills are present.
+ * @param text - SSJS source text to scan
+ * @returns TypeScript interface-merge statements, or an empty string
+ */
+function parsePolyfillDeclarations(text: string): string {
+    // Match `Ctor.prototype.method = function (params) {` where Ctor is a known
+    // built-in. Captures the constructor, the method name, and — when the value
+    // is a function expression — its parameter list. The trailing function part
+    // is optional so non-function polyfills still register the member.
+    const POLYFILL =
+        /\b(Array|String|Number|Boolean|Object|Date|Function|RegExp)\s*\.\s*prototype\s*\.\s*([$A-Z_a-z][\w$]*)\s*(?:=\s*function\s*\*?\s*[$A-Z_a-z]*\s*\(([^)]*)\))?/g;
+
+    // Group method declarations per interface so each interface is merged once.
+    interface PolyMethod {
+        params: string[];
+        jsdoc: string;
+        paramTypes: Map<string, string>;
+        optionalParams: Set<string>;
+        returnType: string;
+    }
+    const membersByIface = new Map<
+        string,
+        { typeParams: string; methods: Map<string, PolyMethod> }
+    >();
+    let match: RegExpExecArray | null;
+    while ((match = POLYFILL.exec(text)) !== null) {
+        const ctor = match[1];
+        const method = match[2];
+        const rawParams = match[3];
+        const target = POLYFILL_INTERFACE_BY_CTOR[ctor];
+        if (!target) continue;
+
+        const params =
+            rawParams === undefined
+                ? []
+                : rawParams
+                      .split(',')
+                      .map((p) => p.trim())
+                      // Strip default values / rest syntax — only the name matters.
+                      .map((p) =>
+                          p
+                              .replace(/^\.\.\./, '')
+                              .split('=')[0]
+                              .trim()
+                      )
+                      .filter((p) => /^[$A-Z_a-z][\w$]*$/.test(p));
+
+        const rawJsdoc = extractPrecedingJsdoc(text, match.index);
+        const { paramTypes, optionalParams, returnType } = parseJsdocTypes(rawJsdoc);
+        // Strip JSDoc type annotations before forwarding: in a `.d.ts` TypeScript
+        // type-checks `@param {Type}` / `@property {Type}` / `@typedef` tags, so an
+        // undeclared or duplicate type name (e.g. a user `@typedef Client`) would
+        // raise spurious diagnostics and break the interface merge. The synthesized
+        // signature already carries the (sanitized) types.
+        const jsdoc = stripJsdocTypeAnnotations(rawJsdoc);
+
+        let bucket = membersByIface.get(target.iface);
+        if (!bucket) {
+            bucket = { typeParams: target.typeParams, methods: new Map<string, PolyMethod>() };
+            membersByIface.set(target.iface, bucket);
+        }
+        // First declaration with a function signature wins; a later bare
+        // reference must not overwrite captured params/jsdoc.
+        const existing = bucket.methods.get(method);
+        if (!existing || (existing.params.length === 0 && params.length > 0)) {
+            bucket.methods.set(method, {
+                params,
+                jsdoc,
+                paramTypes,
+                optionalParams,
+                returnType,
+            });
+        }
+    }
+
+    if (membersByIface.size === 0) return '';
+
+    const blocks: string[] = [];
+    for (const [iface, { typeParams, methods }] of membersByIface) {
+        const memberLines: string[] = [];
+        for (const [name, { params, jsdoc, paramTypes, optionalParams, returnType }] of methods) {
+            if (jsdoc) memberLines.push(indentLines(jsdoc, '    '));
+            // Use the JSDoc `@param {Type}` / `@returns {Type}` annotations when
+            // present so hover reports the documented types instead of `any`.
+            // A parameter marked optional in JSDoc (`[name]`) emits `name?: type`;
+            // every parameter after an optional one must also be optional in TS.
+            let sawOptional = false;
+            const paramStr = params
+                .map((p) => {
+                    const optional = sawOptional || optionalParams.has(p);
+                    if (optional) sawOptional = true;
+                    return `${p}${optional ? '?' : ''}: ${paramTypes.get(p) ?? 'any'}`;
+                })
+                .join(', ');
+            memberLines.push(`    ${name}(${paramStr}): ${returnType};`);
+        }
+        blocks.push(`interface ${iface}${typeParams} {\n${memberLines.join('\n')}\n}`);
+    }
+    return blocks.join('\n') + '\n';
+}
+
+/**
+ * Map a single JSDoc type token to a TypeScript-safe type. Primitives and the
+ * known built-in interfaces pass through (with canonical casing); `Array`
+ * becomes `any[]`; anything not recognised (e.g. user types like `Client` that
+ * are not declared in the virtual program) falls back to `any` so the generated
+ * `.polyfills.d.ts` never references an undeclared name.
+ * @param raw - a single JSDoc type token (no `{}`)
+ * @returns a TypeScript-safe type string
+ */
+function jsdocTokenToTsType(raw: string): string {
+    const t = raw.trim();
+    if (!t) return 'any';
+    // String literal unions like 'a'|'b' — keep as-is (valid TS literal types).
+    if (/^(['"]).*\1$/.test(t)) return t;
+    const lower = t.toLowerCase();
+    switch (lower) {
+        case 'array': {
+            return 'any[]';
+        }
+        case 'void':
+        case 'undefined':
+        case 'null':
+        case 'any': {
+            return lower;
+        }
+        case 'string':
+        case 'number':
+        case 'boolean': {
+            return lower;
+        }
+        case 'object': {
+            return 'Object';
+        }
+        case 'date': {
+            return 'Date';
+        }
+        case 'function': {
+            return 'Function';
+        }
+        case 'regexp': {
+            return 'RegExp';
+        }
+        default: {
+            return 'any';
+        }
+    }
+}
+
+/**
+ * Convert a JSDoc type expression (the text inside `{...}`) into a TypeScript
+ * type, supporting `|` unions and `Type[]` array suffixes. Unknown tokens
+ * degrade to `any`.
+ * @param expr - JSDoc type expression without surrounding braces
+ * @returns a TypeScript-safe type string
+ */
+function jsdocTypeToTs(expr: string): string {
+    const trimmed = expr.trim();
+    if (!trimmed) return 'any';
+    if (trimmed.includes('|')) {
+        return trimmed
+            .split('|')
+            .map((p) => jsdocTypeToTs(p))
+            .join(' | ');
+    }
+    // `Type[]` suffix.
+    const arrayMatch = trimmed.match(/^(.+?)\s*\[\s*\]$/);
+    if (arrayMatch) {
+        const inner = jsdocTokenToTsType(arrayMatch[1]);
+        return inner === 'any' ? 'any[]' : `${inner}[]`;
+    }
+    return jsdocTokenToTsType(trimmed);
+}
+
+/**
+ * Parse `@param {Type} name` and `@returns {Type}` annotations out of a JSDoc
+ * comment block, returning a map of parameter name to TS type, the set of
+ * parameters marked optional (JSDoc `[name]` / `[name=default]` syntax), and the
+ * return type (defaulting to `any` when no `@returns` type is documented).
+ * @param jsdoc - the raw JSDoc comment block
+ * @returns parsed parameter types, optional-parameter names, and the return type
+ */
+function parseJsdocTypes(jsdoc: string): {
+    paramTypes: Map<string, string>;
+    optionalParams: Set<string>;
+    returnType: string;
+} {
+    const paramTypes = new Map<string, string>();
+    const optionalParams = new Set<string>();
+    let returnType = 'any';
+    if (!jsdoc) return { paramTypes, optionalParams, returnType };
+
+    // Match `@param {Type} name` and the optional form `@param {Type} [name]`
+    // (or `[name=default]`). The bracket and default value only mark optionality
+    // — the bare identifier is captured as the parameter name.
+    const paramRe = /@param\s*\{([^}]*)\}\s*(\[)?\s*([$A-Z_a-z][\w$]*)(?:\s*=\s*[^\]]*)?(\])?/g;
+    let m: RegExpExecArray | null;
+    while ((m = paramRe.exec(jsdoc)) !== null) {
+        const name = m[3];
+        paramTypes.set(name, jsdocTypeToTs(m[1]));
+        if (m[2] === '[' && m[4] === ']') optionalParams.add(name);
+    }
+
+    const returnRe = /@returns?\s*\{([^}]*)\}/;
+    const rm = returnRe.exec(jsdoc);
+    if (rm) returnType = jsdocTypeToTs(rm[1]);
+
+    return { paramTypes, optionalParams, returnType };
+}
+
+/**
+ * Remove JSDoc *type* annotations from a comment block so it is safe to forward
+ * into a generated `.d.ts`. TypeScript type-checks type expressions inside JSDoc
+ * tags (`@param {Type}`, `@returns {Type}`, `@property {Type}`, `@typedef
+ * {Type}`, …); an undeclared or duplicate type name in a forwarded comment
+ * would raise spurious diagnostics and can break the surrounding interface merge.
+ * Stripping the `{...}` (and dropping whole `@typedef`/`@property` lines, which
+ * only exist to declare types) leaves human-readable descriptions intact while
+ * removing anything TypeScript would try to resolve.
+ * @param jsdoc - the raw JSDoc comment block
+ * @returns the JSDoc block with type annotations removed
+ */
+function stripJsdocTypeAnnotations(jsdoc: string): string {
+    if (!jsdoc) return '';
+    const cleaned = jsdoc
+        .split('\n')
+        .filter((line) => !/^\s*\*?\s*@(?:typedef|property|prop)\b/.test(line))
+        // Remove the `{Type}` token from any remaining tag (e.g. @param, @returns).
+        .map((line) => line.replaceAll(/(@\w+)\s*\{[^}]*\}/g, '$1'))
+        .join('\n');
+    return cleaned;
+}
+
+/**
+ * Extract the JSDoc block (`/** … *\/`) immediately preceding `index` in
+ * `text`, ignoring intervening whitespace. Returns the raw comment (without
+ * surrounding indentation) or an empty string when none is directly adjacent.
+ * @param text - full source text
+ * @param index - offset of the polyfill assignment
+ * @returns the adjacent JSDoc comment, or an empty string
+ */
+function extractPrecedingJsdoc(text: string, index: number): string {
+    const before = text.slice(0, index);
+    // Only a JSDoc block separated from the assignment by whitespace counts.
+    // The body must not contain a `*/`, so the match is the *closest* comment to
+    // the assignment — otherwise a lazy `[\s\S]*?` would span from an earlier
+    // comment across intervening source code into this one.
+    const match = before.match(/\/\*\*(?:(?!\*\/)[\s\S])*\*\/\s*$/);
+    if (!match) return '';
+    // Normalize leading indentation so re-indentation is predictable.
+    return match[0]
+        .split('\n')
+        .map((l) => l.replace(/^\s+/, l.trimStart().startsWith('*') ? ' ' : ''))
+        .join('\n');
+}
+
+/**
+ * Re-indent a multi-line block so every line is prefixed with `indent`.
+ * @param block - text block to indent
+ * @param indent - indentation string to prepend to each line
+ * @returns the indented block
+ */
+function indentLines(block: string, indent: string): string {
+    return block
+        .split('\n')
+        .map((l) => indent + l)
+        .join('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -339,6 +681,16 @@ export function updateSsjsDocument(uri: string, text: string): void {
         // document version so old names don't linger in the TS service.
         virtualFiles.delete(globalsName);
     }
+
+    const polyfills = parsePolyfillDeclarations(text);
+    const polyfillsName = polyfillsNameForUri(uri);
+    if (polyfills) {
+        setVirtualFile(polyfillsName, polyfills);
+    } else {
+        // No prototype polyfills — drop any stale companion file so members
+        // from a previous document version don't linger in the TS service.
+        virtualFiles.delete(polyfillsName);
+    }
 }
 
 /**
@@ -356,6 +708,11 @@ export function removeSsjsDocument(uri: string): void {
     if (globalsName) {
         virtualFiles.delete(globalsName);
         uriToGlobalsName.delete(uri);
+    }
+    const polyfillsName = uriToPolyfillsName.get(uri);
+    if (polyfillsName) {
+        virtualFiles.delete(polyfillsName);
+        uriToPolyfillsName.delete(uri);
     }
 }
 
@@ -465,9 +822,22 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
         return [];
     }
 
+    const jsdocRanges = jsdocCommentRanges(file.content);
+
     const results: Diagnostic[] = [];
     for (const d of tsDiags) {
         if (d.start === undefined || d.length === undefined) continue;
+        // Suppress "cannot find name" diagnostics that fall inside a JSDoc
+        // comment. SSJS authors routinely reference SFMC types (e.g. WSProxy) or
+        // user `@typedef`s in `@param`/`@property`/`@returns` tags; with
+        // `checkJs` enabled TypeScript flags those undeclared names even though
+        // they have no effect on the executed code.
+        if (
+            (d.code === 2304 || d.code === 2552 || d.code === 2300) &&
+            isInsideJsdoc(d.start, jsdocRanges)
+        ) {
+            continue;
+        }
         const start = offsetToPosition(file.content, d.start);
         const end = offsetToPosition(file.content, d.start + d.length);
         const message =
@@ -483,6 +853,32 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
         });
     }
     return results;
+}
+
+/**
+ * Compute the `[start, end)` offset ranges of every JSDoc block comment
+ * (`/** … *\/`) in the given source text.
+ * @param text - full document text
+ * @returns an array of `[start, end)` offset tuples
+ */
+function jsdocCommentRanges(text: string): Array<[number, number]> {
+    const ranges: Array<[number, number]> = [];
+    const re = /\/\*\*[\s\S]*?\*\//g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+        ranges.push([m.index, m.index + m[0].length]);
+    }
+    return ranges;
+}
+
+/**
+ * Determine whether `offset` falls within any of the supplied comment ranges.
+ * @param offset - character offset to test
+ * @param ranges - JSDoc comment ranges from {@link jsdocCommentRanges}
+ * @returns true when the offset is inside a JSDoc comment
+ */
+function isInsideJsdoc(offset: number, ranges: Array<[number, number]>): boolean {
+    return ranges.some(([start, end]) => offset >= start && offset < end);
 }
 
 /**
@@ -553,6 +949,158 @@ export function getSsjsHover(uri: string, position: Position): Hover | null {
     }
 
     return range ? { contents: content, range } : { contents: content };
+}
+
+/**
+ * Return LSP definition Location(s) from the embedded TypeScript language
+ * service at the given cursor position. This gives `.ssjs` files the same
+ * go-to-definition quality as `.js` (top-level functions, locals, object
+ * members, and prototype-polyfilled methods).
+ *
+ * Definitions that resolve into a synthetic companion file (the per-document
+ * `.polyfills.d.ts` interface-merge) are remapped to the real
+ * `Ctor.prototype.method = …` assignment in the originating document, so the
+ * user navigates to their own polyfill rather than a generated declaration.
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns an array of LSP Locations (possibly empty)
+ */
+export function getSsjsDefinition(uri: string, position: Position): Location[] {
+    const name = uriToVirtualName.get(uri);
+    const file = name ? virtualFiles.get(name) : undefined;
+    if (!name || !file) return [];
+
+    const offset = positionToOffset(file.content, position);
+    let defs: readonly ts.DefinitionInfo[] | undefined;
+    try {
+        defs = languageService.getDefinitionAtPosition(name, offset);
+    } catch {
+        return [];
+    }
+    if (!defs || defs.length === 0) return [];
+
+    const locations: Location[] = [];
+    for (const def of defs) {
+        const targetUri = uriForVirtualName(def.fileName);
+        // Skip definitions in the shared globals file — those are ambient API
+        // declarations with no navigable source for the user.
+        if (!targetUri) continue;
+        const targetFile = virtualFiles.get(virtualNameForUri(targetUri));
+        if (!targetFile) continue;
+
+        // A hit inside the synthetic polyfills file points at the generated
+        // interface member; redirect to the real prototype assignment.
+        const isPolyfillFile = def.fileName.endsWith('.polyfills.d.ts');
+        const span = isPolyfillFile
+            ? findPrototypeAssignmentSpan(targetFile.content, def.name)
+            : { start: def.textSpan.start, length: def.textSpan.length };
+        if (!span) continue;
+
+        locations.push({
+            uri: targetUri,
+            range: Range.create(
+                offsetToPosition(targetFile.content, span.start),
+                offsetToPosition(targetFile.content, span.start + span.length)
+            ),
+        });
+    }
+    return locations;
+}
+
+/**
+ * Return LSP reference Location(s) from the embedded TypeScript language
+ * service at the given cursor position — powering Find All References for
+ * `.ssjs` files (top-level functions, locals, object members, and
+ * prototype-polyfilled methods).
+ *
+ * References that resolve into the synthetic per-document `.polyfills.d.ts`
+ * companion are remapped to the real `Ctor.prototype.method = …` assignment in
+ * the originating document, matching the go-to-definition remap, so the user
+ * never sees a generated declaration in the results.
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns an array of LSP Locations (possibly empty)
+ */
+export function getSsjsReferences(uri: string, position: Position): Location[] {
+    const name = uriToVirtualName.get(uri);
+    const file = name ? virtualFiles.get(name) : undefined;
+    if (!name || !file) return [];
+
+    const offset = positionToOffset(file.content, position);
+    let refs: ts.ReferenceEntry[] | undefined;
+    try {
+        refs = languageService.getReferencesAtPosition(name, offset);
+    } catch {
+        return [];
+    }
+    if (!refs || refs.length === 0) return [];
+
+    const locations: Location[] = [];
+    const seen = new Set<string>();
+    for (const ref of refs) {
+        const targetUri = uriForVirtualName(ref.fileName);
+        // Skip references in the shared globals file — ambient API declarations
+        // with no navigable source for the user.
+        if (!targetUri) continue;
+        const targetFile = virtualFiles.get(virtualNameForUri(targetUri));
+        if (!targetFile) continue;
+
+        // A hit inside the synthetic polyfills file points at the generated
+        // interface member; redirect to the real prototype assignment.
+        const isPolyfillFile = ref.fileName.endsWith('.polyfills.d.ts');
+        const span = isPolyfillFile
+            ? findPrototypeAssignmentSpan(
+                  targetFile.content,
+                  prototypeMethodNameFor(targetFile.content, ref.textSpan.start)
+              )
+            : { start: ref.textSpan.start, length: ref.textSpan.length };
+        if (!span) continue;
+
+        const start = offsetToPosition(targetFile.content, span.start);
+        const end = offsetToPosition(targetFile.content, span.start + span.length);
+        // De-duplicate (the polyfill remap can collapse several synthetic hits
+        // onto the same assignment span).
+        const key = `${targetUri}:${start.line}:${start.character}:${end.line}:${end.character}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        locations.push({ uri: targetUri, range: Range.create(start, end) });
+    }
+    return locations;
+}
+
+/**
+ * Read the method identifier at `offset` inside a generated `.polyfills.d.ts`
+ * interface member so the reference remap can locate the matching prototype
+ * assignment in the source document.
+ * @param text - the polyfills declaration file content
+ * @param offset - the reference text-span start within that file
+ * @returns the method name at the offset, or an empty string
+ */
+function prototypeMethodNameFor(text: string, offset: number): string {
+    const match = /^[$A-Z_a-z][\w$]*/.exec(text.slice(offset));
+    return match ? match[0] : '';
+}
+
+/**
+ * Locate the `…prototype.<method>` assignment for a polyfilled method in the
+ * document source and return the text span covering the method name, so
+ * go-to-definition lands on the polyfill itself.
+ * @param text - document source text
+ * @param method - the polyfilled method name
+ * @returns the method-name text span, or null if not found
+ */
+function findPrototypeAssignmentSpan(
+    text: string,
+    method: string
+): { start: number; length: number } | null {
+    const escaped = method.replaceAll('$', String.raw`\$`);
+    const re = new RegExp(String.raw`\bprototype\s*\.\s*(` + escaped + String.raw`)\b`, 'g');
+    const match = re.exec(text);
+    if (!match) return null;
+    // Offset of the captured method name (group 1) within the full match.
+    const start = match.index + match[0].indexOf(match[1]);
+    return { start, length: match[1].length };
 }
 
 /**

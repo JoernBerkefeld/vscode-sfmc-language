@@ -11,6 +11,7 @@ export default tseslint.config(
             '**/node_modules/**',
             'client/out/**',
             'server/out/**',
+            'client/testFixture/**',
             '**/*.vsix',
             '**/coverage/**',
             '.vscode-test/**',

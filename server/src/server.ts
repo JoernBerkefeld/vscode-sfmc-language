@@ -14,6 +14,7 @@ import {
     TextDocumentSyncKind,
     InitializeResult,
     DefinitionParams,
+    ReferenceParams,
     Location,
     CodeAction,
 } from 'vscode-languageserver/node';
@@ -28,6 +29,8 @@ import {
     getSsjsDiagnostics,
     getSsjsHover,
     getSsjsSignatureHelp,
+    getSsjsDefinition as getSsjsTsDefinition,
+    getSsjsReferences as getSsjsTsReferences,
 } from './tsService';
 
 // ---------------------------------------------------------------------------
@@ -61,6 +64,7 @@ connection.onInitialize((parameters: InitializeParams) => {
             },
             codeActionProvider: true,
             definitionProvider: true,
+            referencesProvider: true,
         },
     };
     if (hasWorkspaceFolderCapability) {
@@ -327,7 +331,7 @@ connection.onSignatureHelp((parameters) => {
 // ---------------------------------------------------------------------------
 // Go to Definition
 // ---------------------------------------------------------------------------
-connection.onDefinition((parameters: DefinitionParams): Location | null => {
+connection.onDefinition((parameters: DefinitionParams): Location | Location[] | null => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return null;
     const defLang = getDocumentLanguage(document);
@@ -338,6 +342,16 @@ connection.onDefinition((parameters: DefinitionParams): Location | null => {
             isInSsjsRegion(getSsjsRegions(defText), document.offsetAt(parameters.position)));
     if (!inSsjsForDef) return null;
 
+    // Prefer the embedded TypeScript language service: it resolves top-level
+    // functions, locals, object members, and prototype-polyfilled methods —
+    // matching the go-to-definition behavior users get in plain .js files.
+    const tsLocations = getSsjsTsDefinition(document.uri, parameters.position);
+    if (tsLocations.length > 0) {
+        return tsLocations.length === 1 ? tsLocations[0] : tsLocations;
+    }
+
+    // Fallback: regex-based resolution of file-local `function name()` declarations
+    // (covers cases where TS has no symbol, e.g. inside AMPscript-embedded SSJS).
     const line = document.getText({
         start: { line: parameters.position.line, character: 0 },
         end: { line: parameters.position.line + 1, character: 0 },
@@ -357,6 +371,26 @@ connection.onDefinition((parameters: DefinitionParams): Location | null => {
     const location = sfmcLanguageService.getDefinition(doc, word);
     if (!location) return null;
     return { uri: document.uri, range: location.range };
+});
+
+// ---------------------------------------------------------------------------
+// Find All References
+// ---------------------------------------------------------------------------
+connection.onReferences((parameters: ReferenceParams): Location[] | null => {
+    const document = documents.get(parameters.textDocument.uri);
+    if (!document) return null;
+    const refLang = getDocumentLanguage(document);
+    const refText = document.getText();
+    const inSsjsForRef =
+        refLang === 'ssjs' ||
+        (refLang === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(refText), document.offsetAt(parameters.position)));
+    if (!inSsjsForRef) return null;
+
+    // The embedded TypeScript language service resolves references for top-level
+    // functions, locals, object members, and prototype-polyfilled methods.
+    const tsLocations = getSsjsTsReferences(document.uri, parameters.position);
+    return tsLocations.length > 0 ? tsLocations : null;
 });
 
 // ---------------------------------------------------------------------------

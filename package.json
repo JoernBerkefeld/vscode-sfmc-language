@@ -239,6 +239,7 @@
     "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=server/out/server.js --external:vscode --format=cjs --platform=node",
     "copy-globals": "node -e \"const {copyFileSync,mkdirSync}=require('fs'),p='server/node_modules/ssjs-data/dist/sfmc-globals.d.ts';mkdirSync('server/out',{recursive:true});copyFileSync(p,'server/out/sfmc-globals.d.ts');console.log('sfmc-globals.d.ts copied')\"",
     "dev:sync-lsp": "node -e \"const {cpSync}=require('fs');cpSync('../sfmc-language-lsp/dist','server/node_modules/sfmc-language-lsp/dist',{recursive:true});console.log('sfmc-language-lsp/dist synced from local build')\"",
+    "dev:sync-ssjs-data": "node -e \"const {execSync}=require('child_process');const {cpSync}=require('fs');execSync('node scripts/generate-dts.mjs',{cwd:'../ssjs-data',stdio:'inherit'});cpSync('../ssjs-data/dist','server/node_modules/ssjs-data/dist',{recursive:true});console.log('ssjs-data/dist regenerated + synced from local source')\"",
     "compile": "npm run clean && tsc -b && npm run copy-globals",
     "watch": "tsc -b -w",
     "dev": "npm run compile && code --extensionDevelopmentPath=. ./client/testFixture",
@@ -276,7 +277,7 @@
     "undici-types": "^8.1.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^1.7.0"
+    "sfmc-language-lsp": "^1.7.1"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [

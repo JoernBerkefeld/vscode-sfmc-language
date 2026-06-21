@@ -12,7 +12,7 @@ var _wsproxy = new Script.Util.WSProxy();
 var _httpReq = new Script.Util.HttpRequest("https://example.com");
 var _de = DataExtension.Init("TestDE");
 var _account = Account.Init("");
-var _accountUser = AccountUser.Init("", "");
+var _accountUser = AccountUser.Init("", 1);
 var _portfolio = Portfolio.Init("");
 var _contentArea = ContentAreaObj.Init("");
 var _folder = Folder.Init("");
@@ -29,7 +29,8 @@ var _subscriber = Subscriber.Init("");
 var _subscriberAttrs = _subscriber.Attributes;
 var _subscriberLists = _subscriber.Lists;
 var _email = Email.Init("");
-var _send = Send.Init("");
+var _send = Send.Init(1);
+var _sendDef = Send.Definition.Init("");
 var _sendTracking = _send.Tracking;
 var _triggeredSend = TriggeredSend.Init("");
 var _tsTracking = _triggeredSend.Tracking;
@@ -40,6 +41,7 @@ var _str = "test";
 var _num = 42;
 var _obj = {};
 var _re = /test/i;
+var _date = new Date();
 
 
 // ── Platform ──
@@ -48,27 +50,27 @@ void (Platform.Load("libraryName", "version"));
 
 // ── Platform.Function ──
 // Platform.Function.Lookup
-void (Platform.Function.Lookup("deName", "returnField", "whereFieldNames", "whereFieldValues"));
+void (Platform.Function.Lookup("deName", "returnField", [], []));
 // Platform.Function.LookupRows
-void (Platform.Function.LookupRows("deName", "whereFieldNames", "whereFieldValues"));
+void (Platform.Function.LookupRows("deName", [], []));
 // Platform.Function.LookupOrderedRows
-void (Platform.Function.LookupOrderedRows("deName", 1, "orderBy", "whereFieldNames", "whereFieldValues"));
+void (Platform.Function.LookupOrderedRows("deName", 1, "orderBy", [], []));
 // Platform.Function.InsertData
-void (Platform.Function.InsertData("deName", "fieldNames", []));
+void (Platform.Function.InsertData("deName", [], []));
 // Platform.Function.InsertDE
-void (Platform.Function.InsertDE("deName", "fieldNames", []));
+void (Platform.Function.InsertDE("deName", [], []));
 // Platform.Function.UpdateData
-void (Platform.Function.UpdateData("deName", "whereFieldNames", "whereFieldValues", "fieldNames", []));
+void (Platform.Function.UpdateData("deName", [], [], [], []));
 // Platform.Function.UpdateDE
-void (Platform.Function.UpdateDE("deName", "whereFieldNames", "whereFieldValues", "fieldNames", []));
+void (Platform.Function.UpdateDE("deName", [], [], [], []));
 // Platform.Function.UpsertData
-void (Platform.Function.UpsertData("deName", "whereFieldNames", "whereFieldValues", "fieldNames", []));
+void (Platform.Function.UpsertData("deName", [], [], [], []));
 // Platform.Function.UpsertDE
-void (Platform.Function.UpsertDE("deName", "whereFieldNames", "whereFieldValues", "fieldNames", []));
+void (Platform.Function.UpsertDE("deName", [], [], [], []));
 // Platform.Function.DeleteData
-void (Platform.Function.DeleteData("deName", "whereFieldNames", []));
+void (Platform.Function.DeleteData("deName", [], []));
 // Platform.Function.DeleteDE
-void (Platform.Function.DeleteDE("deName", "whereFieldNames", []));
+void (Platform.Function.DeleteDE("deName", [], []));
 // Platform.Function.ContentBlockByKey
 void (Platform.Function.ContentBlockByKey("customerKey"));
 // Platform.Function.ContentBlockByName
@@ -84,9 +86,9 @@ void (Platform.Function.TreatAsContent("content"));
 // Platform.Function.BeginImpressionRegion
 void (Platform.Function.BeginImpressionRegion("name"));
 // Platform.Function.EndImpressionRegion
-void (Platform.Function.EndImpressionRegion(true));
+void (Platform.Function.EndImpressionRegion());
 // Platform.Function.Now
-void (Platform.Function.Now(true));
+void (Platform.Function.Now());
 // Platform.Function.SystemDateToLocalDate
 void (Platform.Function.SystemDateToLocalDate("dateString"));
 // Platform.Function.LocalDateToSystemDate
@@ -128,7 +130,7 @@ void (Platform.Function.HTTPGet("url", true));
 // Platform.Function.HTTPPost
 void (Platform.Function.HTTPPost("url", "contentType", "payload"));
 // Platform.Function.ParseJSON
-void (Platform.Function.ParseJSON("jsonString"));
+void (Platform.Function.ParseJSON([]));
 // Platform.Function.RedirectTo
 void (Platform.Function.RedirectTo("url"));
 // Platform.Function.UrlEncode
@@ -178,7 +180,7 @@ void (Platform.Request.GetQueryStringParameter("parameterName"));
 // Platform.Request.GetFormField
 void (Platform.Request.GetFormField("name"));
 // Platform.Request.GetPostData
-void (Platform.Request.GetPostData("encoding"));
+void (Platform.Request.GetPostData());
 // Platform.Request.GetCookieValue
 void (Platform.Request.GetCookieValue("cookieName"));
 // Platform.Request.GetUserLanguages
@@ -238,7 +240,7 @@ void (ErrorUtil.ThrowWSProxyError({}));
 // HTTP.Get
 void (HTTP.Get("url"));
 // HTTP.Post
-void (HTTP.Post("url", "contentType", "payload", "headerNames", []));
+void (HTTP.Post("url", "contentType", "payload", [], []));
 
 // ── Script.Util ──
 // new Script.Util.WSProxy
@@ -310,7 +312,7 @@ void (_de.Rows.Lookup([], []));
 // DataExtension.Rows.Remove
 void (_de.Rows.Remove([], []));
 // DataExtension.Rows.Retrieve
-void (_de.Rows.Retrieve({}));
+void (_de.Rows.Retrieve());
 // DataExtension.Rows.Update
 void (_de.Rows.Update({}, [], []));
 // Account.Init
@@ -354,7 +356,7 @@ void (_contentArea.Update({}));
 // ContentAreaObj.Remove
 void (_contentArea.Remove());
 // Folder.Init
-void (Folder.Init("key"));
+void (Folder.Init());
 // Folder.Add
 void (Folder.Add({}));
 // Folder.Retrieve
@@ -432,7 +434,7 @@ void (_list.Remove());
 // List.Subscribers.Add
 void (_listSubscribers.Add({}));
 // List.Subscribers.Retrieve
-void (_listSubscribers.Retrieve({}));
+void (_listSubscribers.Retrieve());
 // List.Subscribers.Unsubscribe
 void (_listSubscribers.Unsubscribe("emailAddress"));
 // List.Subscribers.Update
@@ -502,13 +504,13 @@ void (Send.Definition.AddWithDE({}, "sendClassificationKey", "emailKey", "sendab
 // Send.Definition.AddWithFilterDefinition
 void (Send.Definition.AddWithFilterDefinition({}, "sendClassificationKey", "emailKey", "filterDefinitionKey", 1));
 // Send.Definition.Retrieve
-void (Send.Definition.Retrieve({}));
+void (Send.Definition.Retrieve());
 // Send.Definition.Update
-void (Send.Definition.Update({}));
+void (_sendDef.Update({}));
 // Send.Definition.Remove
-void (Send.Definition.Remove());
+void (_sendDef.Remove());
 // Send.Definition.Send
-void (Send.Definition.Send());
+void (_sendDef.Send());
 // TriggeredSend.Init
 void (TriggeredSend.Init("key"));
 // TriggeredSend.Add
@@ -526,7 +528,7 @@ void (_triggeredSend.Publish());
 // TriggeredSend.Send
 void (_triggeredSend.Send("emailAddress"));
 // TriggeredSend.Tracking.Retrieve
-void (_tsTracking.Retrieve({}));
+void (_tsTracking.Retrieve());
 // TriggeredSend.Tracking.Clicks.Retrieve
 void (_tsClicks.Retrieve({}));
 // TriggeredSend.Tracking.TotalByInterval.Retrieve
@@ -554,93 +556,95 @@ void (UnsubEvent.Retrieve({}));
 
 // ── ECMAScript ──
 // Array.prototype.join
-void (_arr.join("separator"));
+void (_arr.join());
 // Array.prototype.push
-void (_arr.push({}));
+void (_arr.push());
 // Array.prototype.pop
 void (_arr.pop());
 // Array.prototype.shift
 void (_arr.shift());
 // Array.prototype.unshift
-void (_arr.unshift({}));
+void (_arr.unshift());
 // Array.prototype.concat
-void (_arr.concat({}));
+void (_arr.concat());
 // Array.prototype.slice
-void (_arr.slice(1));
+void (_arr.slice());
 // Array.prototype.sort
-void (_arr.sort(function() {}));
+void (_arr.sort());
 // Array.prototype.reverse
 void (_arr.reverse());
-// Array.prototype.splice
-void (_arr.splice(1));
 // Array.prototype.length
 void (_arr.length);
+// Array.prototype.toLocaleString
+void (_arr.toLocaleString());
 // String.prototype.charAt
-void (_str.charAt(1));
+void (_str.charAt());
 // String.prototype.charCodeAt
-void (_str.charCodeAt(1));
+void (_str.charCodeAt());
 // String.prototype.indexOf
-void (_str.indexOf("searchValue"));
+void (_str.indexOf());
 // String.prototype.lastIndexOf
-void (_str.lastIndexOf("searchValue"));
+void (_str.lastIndexOf());
 // String.prototype.match
-void (_str.match({}));
+void (_str.match());
 // String.prototype.replace
-void (_str.replace({}));
+void (_str.replace());
 // String.prototype.search
-void (_str.search({}));
+void (_str.search());
 // String.prototype.slice
-void (_str.slice(1));
+void (_str.slice());
 // String.prototype.split
-void (_str.split({}));
+void (_str.split());
 // String.prototype.substring
-void (_str.substring(1));
+void (_str.substring());
 // String.prototype.toLowerCase
 void (_str.toLowerCase());
+// String.prototype.toLocaleLowerCase
+void (_str.toLocaleLowerCase());
 // String.prototype.toUpperCase
 void (_str.toUpperCase());
 // String.prototype.concat
-void (_str.concat("string"));
+void (_str.concat());
 // String.prototype.substr
-void (_str.substr(1));
+void (_str.substr());
 // String.prototype.length
 void (_str.length);
 // Math.abs
-void (Math.abs(1));
+void (Math.abs());
 // Math.ceil
-void (Math.ceil(1));
+void (Math.ceil());
 // Math.floor
-void (Math.floor(1));
+void (Math.floor());
 // Math.max
-void (Math.max(1));
+void (Math.max());
 // Math.min
-void (Math.min(1));
+void (Math.min());
 // Math.pow
-void (Math.pow(1));
+void (Math.pow());
 // Math.random
 void (Math.random());
 // Math.round
-void (Math.round(1));
+void (Math.round());
 // Math.sqrt
-void (Math.sqrt(1));
+void (Math.sqrt());
 // Math.sin
-void (Math.sin(1));
+void (Math.sin());
 // Math.cos
-void (Math.cos(1));
+void (Math.cos());
 // Math.tan
-void (Math.tan(1));
+void (Math.tan());
 // Math.asin
-void (Math.asin(1));
+void (Math.asin());
 // Math.acos
-void (Math.acos(1));
+void (Math.acos());
 // Math.atan
-void (Math.atan(1));
+void (Math.atan());
 // Math.atan2
-void (Math.atan2(1));
+void (Math.atan2());
 // Math.exp
-void (Math.exp(1));
+void (Math.exp());
 // Math.log
-void (Math.log(1));
+void (Math.log());
 // Math.PI
 void (Math.PI);
 // Math.E
@@ -658,21 +662,21 @@ void (Math.SQRT2);
 // Math.SQRT1_2
 void (Math.SQRT1_2);
 // Number.prototype.toFixed
-void (_num.toFixed(1));
+void (_num.toFixed());
 // Number.prototype.toExponential
-void (_num.toExponential(1));
+void (_num.toExponential());
 // Number.prototype.toPrecision
-void (_num.toPrecision(1));
+void (_num.toPrecision());
 // Object.prototype.hasOwnProperty
-void (_obj.hasOwnProperty("v"));
+void (_obj.hasOwnProperty());
 // Global.parseInt
-void (parseInt("string"));
+void (parseInt());
 // Global.parseFloat
-void (parseFloat("string"));
+void (parseFloat());
 // Global.isNaN
-void (isNaN({}));
+void (isNaN());
 // Global.isFinite
-void (isFinite({}));
+void (isFinite());
 // Global.RegExp
 void (RegExp("pattern"));
 // RegExp.test
@@ -689,12 +693,34 @@ void (_re.ignoreCase);
 void (_re.multiline);
 // RegExp.lastIndex
 void (_re.lastIndex);
+// Date.prototype.getFullYear
+void (_date.getFullYear());
+// Date.prototype.getMinutes
+void (_date.getMinutes());
+// Date.prototype.getSeconds
+void (_date.getSeconds());
+// Date.prototype.getDay
+void (_date.getDay());
+// Date.prototype.getMilliseconds
+void (_date.getMilliseconds());
+// Date.prototype.toString
+void (_date.toString());
+// Date.prototype.toDateString
+void (_date.toDateString());
+// Date.prototype.toUTCString
+void (_date.toUTCString());
+// Date.prototype.valueOf
+void (_date.valueOf());
+// Date.UTC
+void (Date.UTC());
+// Object.defineProperty
+void (Object.defineProperty());
 
 // ── SSJS Global ──
 // String
 void (String({}));
 // Error
-void (new Error("message"));
+void (new Error());
 // Base64Encode
 void (Base64Encode("string"));
 // Base64Decode
@@ -706,21 +732,21 @@ void (ContentAreaByName("name"));
 
 // ── SSJS Global Alias ──
 // BeginImpressionRegion (alias of Platform.Function.BeginImpressionRegion)
-void (BeginImpressionRegion({}));
+void (BeginImpressionRegion("name"));
 // EndImpressionRegion (alias of Platform.Function.EndImpressionRegion)
-void (EndImpressionRegion({}));
+void (EndImpressionRegion());
 // Now (alias of Platform.Function.Now)
-void (Now({}));
+void (Now());
 // Redirect (alias of Platform.Response.Redirect)
-void (Redirect({}));
+void (Redirect("url", true));
 // GUID (alias of Platform.Function.GUID)
-void (GUID({}));
+void (GUID());
 // IsEmailAddress (alias of Platform.Function.IsEmailAddress)
-void (IsEmailAddress({}));
+void (IsEmailAddress("value"));
 // IsPhoneNumber (alias of Platform.Function.IsPhoneNumber)
-void (IsPhoneNumber({}));
+void (IsPhoneNumber("value"));
 // Write (alias of Platform.Response.Write)
-void (Write({}));
+void (Write("content"));
 // Stringify (alias of Platform.Function.Stringify)
 void (Stringify({}));
 
@@ -740,6 +766,6 @@ void (_reCtor.exec("sample"));
 void (_str.match(_reCtor));
 
 // Native constructors — ssjs.guide/engine-limitations/known-bugs.md
-var _date = new Date();
+var _dateCtor = new Date();
 var _arrCtor = new Array(3);
 var _objCtor = new Object();

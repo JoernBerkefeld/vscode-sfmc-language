@@ -2,6 +2,24 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.6.0] - 2026-06-21
+
+### Added
+
+- **Find All References** for SSJS symbols (variables and functions) — right-click → *Find All References* / `Shift+F12` now lists every usage in the file.
+
+### Fixed
+
+- Optional JSDoc parameters (`@param {Type} [name]`) on polyfill / user methods now produce an optional TypeScript parameter, so calling the method with fewer arguments no longer reports a spurious `Expected N arguments, but got M` error and hover keeps the declared type instead of falling back to `any`.
+- JSDoc type annotations that reference user-defined or undeclared types (e.g. `@typedef`, `@property {WSProxy} …`) no longer trigger false `Cannot find name` / `Duplicate identifier` diagnostics. Type validation is now scoped to executable code; types named only inside JSDoc comments are not checked.
+- A polyfill assignment such as `Array.prototype.map = function(){…}` no longer breaks the generated declaration merge (the preceding-JSDoc extractor previously over-captured intervening source), which had caused a spurious `Property 'map' does not exist on type 'any[]'` error.
+- No more false `Generator functions are not supported` diagnostic when a regular `function` keyword is followed by a JSDoc block on a later line.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.7.0` to `^1.7.1` (generator-function diagnostic fix)
+- Bump `ssjs-data` (bundled via the language server) from `0.8.0` to `0.9.0` (constructible built-ins, HTTP/WSProxy result property types, MDN doc links, `ParseJSON`/`Stringify` return-type corrections)
+
 ## [2.5.0] - 2026-06-19
 
 ### Added

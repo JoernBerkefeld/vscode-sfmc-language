@@ -17,6 +17,8 @@ import {
     getSsjsDiagnostics,
     getSsjsHover,
     getSsjsSignatureHelp,
+    getSsjsDefinition,
+    getSsjsReferences,
 } from '../tsService';
 
 // ---------------------------------------------------------------------------
@@ -629,6 +631,290 @@ test('Removing global comment from updated document restores diagnostic', () => 
     );
 });
 
+// ---------------------------------------------------------------------------
+// Suite: prototype polyfills
+// ---------------------------------------------------------------------------
+console.log('Suite: prototype polyfills');
+
+const URI_POLY = 'file:///test-polyfill.ssjs';
+
+test('Array.prototype.forEach polyfill assignment produces no diagnostic', () => {
+    const code = [
+        'Array.prototype.forEach = function (callback) {',
+        '    for (var i = 0; i < this.length; i++) {',
+        '        callback(this[i], i, this);',
+        '    }',
+        '};',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    const diags = getSsjsDiagnostics(URI_POLY);
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics for forEach polyfill, got: ${JSON.stringify(diags)}`
+    );
+});
+
+test('Array.prototype.map polyfill assignment produces no diagnostic', () => {
+    const code = [
+        'Array.prototype.map = function (callbackFn) {',
+        '    var arr = [];',
+        '    for (var i = 0; i < this.length; i++) {',
+        '        arr.push(callbackFn(this[i], i, this));',
+        '    }',
+        '    return arr;',
+        '};',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    const diags = getSsjsDiagnostics(URI_POLY);
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics for map polyfill, got: ${JSON.stringify(diags)}`
+    );
+});
+
+test('String.prototype.startsWith polyfill enables later use on a string', () => {
+    const code = [
+        'if (!String.prototype.startsWith) {',
+        '    String.prototype.startsWith = function (searchString, position) {',
+        '        position = position || 0;',
+        '        return this.indexOf(searchString, position) === position;',
+        '    };',
+        '}',
+        'var id = "003000000000000000";',
+        'var ok = id.startsWith("003");',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    const diags = getSsjsDiagnostics(URI_POLY);
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics for startsWith polyfill + use, got: ${JSON.stringify(diags)}`
+    );
+});
+
+test('Using startsWith WITHOUT a polyfill still produces a diagnostic', () => {
+    const code = ['var id = "003";', 'var ok = id.startsWith("003");'].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    const diags = getSsjsDiagnostics(URI_POLY);
+    assert.ok(
+        diags.some((d) => d.source === 'sfmc-ts'),
+        'Expected sfmc-ts diagnostic for startsWith use without a polyfill'
+    );
+});
+
+test('Removing a polyfill from an updated document restores the diagnostic', () => {
+    const withPoly = [
+        'String.prototype.startsWith = function (s) { return this.indexOf(s) === 0; };',
+        'var ok = "abc".startsWith("a");',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, withPoly);
+    assert.ok(
+        !getSsjsDiagnostics(URI_POLY).some((d) => d.source === 'sfmc-ts'),
+        'Expected clean diagnostics with polyfill present'
+    );
+
+    const withoutPoly = 'var ok = "abc".startsWith("a");';
+    updateSsjsDocument(URI_POLY, withoutPoly);
+    assert.ok(
+        getSsjsDiagnostics(URI_POLY).some((d) => d.source === 'sfmc-ts'),
+        'Expected sfmc-ts diagnostic after polyfill removed'
+    );
+});
+
+test('Closing document clears polyfill declarations so they do not leak', () => {
+    const URI_PLEAK = 'file:///test-poly-leak.ssjs';
+    updateSsjsDocument(
+        URI_PLEAK,
+        'String.prototype.startsWith = function (s) { return this.indexOf(s) === 0; };'
+    );
+    removeSsjsDocument(URI_PLEAK);
+
+    const URI_PLEAK2 = 'file:///test-poly-leak2.ssjs';
+    updateSsjsDocument(URI_PLEAK2, 'var ok = "abc".startsWith("a");');
+    assert.ok(
+        getSsjsDiagnostics(URI_PLEAK2).some((d) => d.source === 'sfmc-ts'),
+        'startsWith should be unknown in a new document without a polyfill'
+    );
+    removeSsjsDocument(URI_PLEAK2);
+});
+
+test('Polyfilled method hover shows a method signature with parsed params + JSDoc', () => {
+    const code = [
+        '/**',
+        ' * @param {string} searchString what to search for',
+        ' * @param {number} position where to start',
+        ' * @returns {boolean} whether it starts with searchString',
+        ' */',
+        'String.prototype.startsWith = function (searchString, position) {',
+        '    position = position || 0;',
+        '    return this.indexOf(searchString, position) === position;',
+        '};',
+        'var ok = "hello".startsWith("he");',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    // Hover over the `.startsWith` usage on the last line.
+    const usageLine = code.split('\n').length - 1;
+    const usageCol = code.split('\n')[usageLine].indexOf('startsWith');
+    const hover = getSsjsHover(URI_POLY, { line: usageLine, character: usageCol });
+    assert.ok(hover, 'Expected a hover for the polyfilled method usage');
+    const value = (hover!.contents as { value: string }).value;
+    assert.ok(
+        value.includes('(method) String.startsWith('),
+        `Expected a (method) signature, got: ${value}`
+    );
+    assert.ok(
+        value.includes('searchString') && value.includes('position'),
+        `Expected parsed param names in the signature, got: ${value}`
+    );
+    assert.ok(
+        value.includes('what to search for'),
+        `Expected forwarded @param JSDoc in the hover, got: ${value}`
+    );
+    // Issue #1: param/return types come from the JSDoc, not `any`.
+    assert.ok(
+        value.includes('searchString: string'),
+        `Expected the @param {string} type in the signature, got: ${value}`
+    );
+    assert.ok(
+        value.includes('position: number'),
+        `Expected the @param {number} type in the signature, got: ${value}`
+    );
+    assert.ok(
+        /\)\s*:\s*boolean/.test(value),
+        `Expected the @returns {boolean} type in the signature, got: ${value}`
+    );
+});
+
+test('Polyfilled method hover maps {Array} JSDoc to any[] and falls back to any for unknown types', () => {
+    const code = [
+        '/**',
+        ' * @param {Function} callbackFn callback for map',
+        ' * @param {Client} ctx unknown user type',
+        ' * @returns {Array} mapped array',
+        ' */',
+        'Array.prototype.map = function (callbackFn, ctx) {',
+        '    var arr = [];',
+        '    for (var i = 0; i < this.length; i++) {',
+        '        arr.push(callbackFn(this[i], i, this));',
+        '    }',
+        '    return arr;',
+        '};',
+        'var out = [1, 2].map(function (x) { return x; });',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    const usageLine = code.split('\n').length - 1;
+    const usageCol = code.split('\n')[usageLine].indexOf('.map') + 1;
+    const hover = getSsjsHover(URI_POLY, { line: usageLine, character: usageCol });
+    assert.ok(hover, 'Expected a hover for the polyfilled map usage');
+    const value = (hover!.contents as { value: string }).value;
+    assert.ok(
+        value.includes('callbackFn: Function'),
+        `Expected the @param {Function} type in the signature, got: ${value}`
+    );
+    assert.ok(
+        value.includes('ctx: any'),
+        `Expected unknown JSDoc type {Client} to fall back to any, got: ${value}`
+    );
+    assert.ok(
+        /\)\s*:\s*any\[\]/.test(value),
+        `Expected the @returns {Array} type to map to any[], got: ${value}`
+    );
+});
+
+test('Go to definition on a polyfilled method lands on the prototype assignment', () => {
+    const code = [
+        'String.prototype.startsWith = function (searchString) {',
+        '    return this.indexOf(searchString) === 0;',
+        '};',
+        'var ok = "hello".startsWith("he");',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    const usageLine = code.split('\n').length - 1;
+    const usageCol = code.split('\n')[usageLine].indexOf('startsWith');
+    const defs = getSsjsDefinition(URI_POLY, { line: usageLine, character: usageCol });
+    assert.ok(defs.length > 0, 'Expected a definition for the polyfilled method');
+    assert.strictEqual(defs[0].uri, URI_POLY, 'Definition should point back to the same document');
+    // The prototype assignment `String.prototype.startsWith` is on line 0.
+    assert.strictEqual(defs[0].range.start.line, 0, 'Definition should land on the polyfill line');
+});
+
+test('Go to definition on a top-level function call lands on its declaration', () => {
+    const code = [
+        'function buildKey(id) {',
+        '    return "k-" + id;',
+        '}',
+        'var k = buildKey("123");',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    const callLine = code.split('\n').length - 1;
+    const callCol = code.split('\n')[callLine].indexOf('buildKey');
+    const defs = getSsjsDefinition(URI_POLY, { line: callLine, character: callCol });
+    assert.ok(defs.length > 0, 'Expected a definition for the function call');
+    assert.strictEqual(defs[0].uri, URI_POLY, 'Definition should point back to the same document');
+    assert.strictEqual(
+        defs[0].range.start.line,
+        0,
+        'Definition should land on the function declaration line'
+    );
+});
+
+test('Go to definition returns empty for an unknown identifier', () => {
+    updateSsjsDocument(URI_POLY, 'var x = somethingUndeclared;');
+    const defs = getSsjsDefinition(URI_POLY, { line: 0, character: 8 });
+    assert.strictEqual(defs.length, 0, 'Expected no definitions for an unknown identifier');
+});
+
+test('Find all references on a top-level function returns declaration + all calls', () => {
+    const code = [
+        'function buildKey(id) {',
+        '    return "k-" + id;',
+        '}',
+        'var a = buildKey("1");',
+        'var b = buildKey("2");',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    // Cursor on the declaration name `buildKey` (line 0).
+    const refs = getSsjsReferences(URI_POLY, { line: 0, character: 'function '.length });
+    assert.ok(refs.length >= 3, `Expected >= 3 references (decl + 2 calls), got ${refs.length}`);
+    assert.ok(
+        refs.every((r) => r.uri === URI_POLY),
+        'All references should be in the same document'
+    );
+    const lines = refs.map((r) => r.range.start.line).toSorted((x, y) => x - y);
+    assert.deepStrictEqual(lines, [0, 3, 4], `Expected references on lines 0,3,4, got ${lines}`);
+});
+
+test('Find all references on a polyfilled method includes the prototype assignment', () => {
+    const code = [
+        'String.prototype.startsWith = function (searchString) {',
+        '    return this.indexOf(searchString) === 0;',
+        '};',
+        'var a = "hello".startsWith("he");',
+        'var b = "world".startsWith("wo");',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    // Cursor on a usage of `.startsWith` (line 3).
+    const usageCol = code.split('\n')[3].indexOf('startsWith');
+    const refs = getSsjsReferences(URI_POLY, { line: 3, character: usageCol });
+    assert.ok(refs.length > 0, 'Expected references for the polyfilled method');
+    assert.ok(
+        refs.every((r) => r.uri === URI_POLY),
+        'All references should be in the same document'
+    );
+    // The prototype assignment is on line 0; usages on lines 3 and 4.
+    const lines = new Set(refs.map((r) => r.range.start.line));
+    assert.ok(
+        lines.has(0),
+        `Expected the prototype assignment (line 0) in references, got ${[...lines]}`
+    );
+    assert.ok(lines.has(3) && lines.has(4), `Expected usages on lines 3 and 4, got ${[...lines]}`);
+});
+
+test('Find all references returns empty for an unknown identifier', () => {
+    updateSsjsDocument(URI_POLY, 'var x = somethingUndeclared;');
+    const refs = getSsjsReferences(URI_POLY, { line: 0, character: 8 });
+    assert.strictEqual(refs.length, 0, 'Expected no references for an unknown identifier');
+});
+
 test('Closing document clears global declarations so stale names do not leak', () => {
     const URI_LEAK = 'file:///test-leak.ssjs';
     const code = '/* global SECRET */\nvar x = SECRET;';
@@ -651,4 +937,100 @@ test('Closing document clears global declarations so stale names do not leak', (
         'SECRET should be unknown in a new document without a global comment'
     );
     removeSsjsDocument(URI_LEAK2);
+});
+
+test('Optional JSDoc param [name] emits an optional parameter so 1-arg calls are valid', () => {
+    const URI_OPT = 'file:///test-optional.ssjs';
+    const code = [
+        '/**',
+        ' * @param {string} searchString what to search for',
+        ' * @param {number} [position] where to start',
+        ' * @returns {boolean} whether it starts with searchString',
+        ' */',
+        'String.prototype.startsWith = function (searchString, position) {',
+        '    position = position || 0;',
+        '    return this.indexOf(searchString, position) === position;',
+        '};',
+        'var ok = "hello".startsWith("he");',
+    ].join('\n');
+    updateSsjsDocument(URI_OPT, code);
+
+    // Hover shows `position?: number` (optional marker present).
+    const usageLine = code.split('\n').length - 1;
+    const usageCol = code.split('\n')[usageLine].indexOf('startsWith');
+    const hover = getSsjsHover(URI_OPT, { line: usageLine, character: usageCol });
+    assert.ok(hover, 'Expected a hover for the polyfilled method usage');
+    const value = (hover!.contents as { value: string }).value;
+    assert.ok(
+        value.includes('position?: number'),
+        `Expected optional param position?: number in the signature, got: ${value}`
+    );
+
+    // No "Expected 2 arguments" diagnostic for the single-arg call.
+    const diags = getSsjsDiagnostics(URI_OPT);
+    assert.ok(
+        !diags.some((d) => d.code === 2554),
+        `Expected no arity error for the optional param, got: ${JSON.stringify(diags)}`
+    );
+    removeSsjsDocument(URI_OPT);
+});
+
+test('Polyfill JSDoc referencing an undeclared/user type does not break the interface merge', () => {
+    const URI_TD = 'file:///test-typedef.ssjs';
+    const code = [
+        '/**',
+        ' * @typedef {object} Client',
+        ' * @property {string} instance_url url of the SFMC instance',
+        ' * @property {WSProxy} proxy WSProxy instance for API calls',
+        ' * @property {number} mid mid of the BU',
+        ' */',
+        '',
+        '/**',
+        ' * @param {Function} callbackFn callback for map',
+        ' * @param {Client} ctx execution context',
+        ' * @returns {Array} mapped array',
+        ' */',
+        'Array.prototype.map = function (callbackFn, ctx) {',
+        '    var arr = [];',
+        '    for (var i = 0; i < this.length; i++) {',
+        '        arr.push(callbackFn(this[i], i, this));',
+        '    }',
+        '    return arr;',
+        '};',
+        'var out = [1, 2].map(function (x) { return x; });',
+    ].join('\n');
+    updateSsjsDocument(URI_TD, code);
+    const diags = getSsjsDiagnostics(URI_TD);
+
+    // The user `@typedef Client` (and the polyfill JSDoc that references it /
+    // WSProxy) must not produce "duplicate identifier" or "cannot find name"
+    // errors inside the comments, and the Array.map merge must take effect so
+    // `[1,2].map(...)` is valid (no 2339).
+    assert.ok(
+        !diags.some((d) => d.code === 2300),
+        `Expected no duplicate-identifier error, got: ${JSON.stringify(diags)}`
+    );
+    assert.ok(
+        !diags.some((d) => d.code === 2304 || d.code === 2552),
+        `Expected no cannot-find-name error inside JSDoc, got: ${JSON.stringify(diags)}`
+    );
+    assert.ok(
+        !diags.some((d) => d.code === 2339),
+        `Expected the Array.map merge to apply (no property-does-not-exist), got: ${JSON.stringify(
+            diags
+        )}`
+    );
+    removeSsjsDocument(URI_TD);
+});
+
+test('Real code errors are still reported (JSDoc suppression is scoped to comments)', () => {
+    const URI_REAL = 'file:///test-real-error.ssjs';
+    // `Client` in executable code (not a JSDoc comment) must still error.
+    updateSsjsDocument(URI_REAL, 'var z = somethingUndeclared;');
+    const diags = getSsjsDiagnostics(URI_REAL);
+    assert.ok(
+        diags.some((d) => d.code === 2304),
+        `Expected a cannot-find-name error for real code, got: ${JSON.stringify(diags)}`
+    );
+    removeSsjsDocument(URI_REAL);
 });

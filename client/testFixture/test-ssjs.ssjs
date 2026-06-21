@@ -125,3 +125,75 @@ var firstTwo = myArray.slice(0, 2);
 
 // New: String.prototype method hover deep-links to MDN (e.g. String/replace)
 var cleaned = myString.replace("old", "new");
+
+// -----------------------------------------------------------------------------
+// Constructible built-ins — no false TS diagnostics (Bug 1 + Bug 7)
+// -----------------------------------------------------------------------------
+
+// New: `new Error()` is constructible (Bug 1) — no red squiggle expected
+var err = new Error("boom");
+var errMsg = err.message;
+
+// New: value globals are constructible with prototype (Bug 7)
+var arr2 = new Array(3);
+var isArr = Array.isArray(arr2);
+var now = new Date();
+var num = new Number(5);
+var str2 = new String("hi");
+var obj2 = new Object();
+
+// New: defining a prototype polyfill must not flag String/Array.prototype (Bug 7)
+String.prototype.startsWith = function (search) {
+    return this.indexOf(search) === 0;
+};
+
+// -----------------------------------------------------------------------------
+// HttpRequest / HttpGet typed instances (Bug 2 + Bug 3)
+// -----------------------------------------------------------------------------
+
+// New: HttpRequest exposes writable props; send() returns HttpResponseInstance
+var req = new Script.Util.HttpRequest("https://api.example.com");
+req.method = "POST";
+req.contentType = "application/json";
+req.emptyContentHandling = true;
+req.postData = Stringify({ a: 1 });
+var resp = req.send();
+var statusCode = resp.statusCode;
+var body = resp.content;
+
+// New: HttpGet has a smaller writable prop set (emptyContentHandling is numeric)
+var get = new Script.Util.HttpGet("https://api.example.com");
+get.retries = 1;
+get.emptyContentHandling = 0;
+
+// -----------------------------------------------------------------------------
+// WSProxy returns WSProxyResult, not generic object (Bug 10)
+// -----------------------------------------------------------------------------
+
+// New: retrieve() returns a typed WSProxyResult with Status/Results/RequestID
+var proxy = new Script.Util.WSProxy();
+var wsResult = proxy.retrieve("DataExtension", ["Name"]);
+var wsStatus = wsResult.Status;
+var wsRows = wsResult.Results;
+
+// -----------------------------------------------------------------------------
+// Stringify accepts any value type (Bug 8)
+// -----------------------------------------------------------------------------
+
+// New: Stringify is not restricted to objects
+var s1 = Stringify("a string");
+var s2 = Stringify(42);
+var s3 = Stringify([1, 2, 3]);
+
+// -----------------------------------------------------------------------------
+// Generator-keyword false positive (Bug 9)
+// -----------------------------------------------------------------------------
+
+// New: a regular function followed by a JSDoc block must NOT be flagged as a
+// generator declaration. The `*` below belongs to the comment, not `function`.
+function notAGenerator() {}
+
+/**
+ * Some documented helper.
+ */
+function documentedHelper() {}
