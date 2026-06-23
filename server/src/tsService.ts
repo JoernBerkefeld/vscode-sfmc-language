@@ -325,7 +325,9 @@ function parsePolyfillDeclarations(text: string): string {
         }
     }
 
-    if (membersByIface.size === 0) return '';
+    const staticBlocks = parseStaticPolyfillDeclarations(text);
+
+    if (membersByIface.size === 0) return staticBlocks;
 
     const blocks: string[] = [];
     for (const [iface, { typeParams, methods }] of membersByIface) {
@@ -347,6 +349,122 @@ function parsePolyfillDeclarations(text: string): string {
             memberLines.push(`    ${name}(${paramStr}): ${returnType};`);
         }
         blocks.push(`interface ${iface}${typeParams} {\n${memberLines.join('\n')}\n}`);
+    }
+    return blocks.join('\n') + '\n' + staticBlocks;
+}
+
+/**
+ * Built-in constructors whose STATIC members can be polyfilled in SSJS, mapped to
+ * the declaration target that the merge must re-open. `Math` is a namespace
+ * (`declare namespace Math`), the others are `*Constructor` interfaces declared by
+ * `sfmc-globals.d.ts` (e.g. `interface ArrayConstructor`).
+ */
+const STATIC_POLYFILL_TARGET_BY_CTOR: Record<
+    string,
+    { target: string; kind: 'interface' | 'namespace' }
+> = {
+    Array: { target: 'ArrayConstructor', kind: 'interface' },
+    Object: { target: 'ObjectConstructor', kind: 'interface' },
+    Number: { target: 'NumberConstructor', kind: 'interface' },
+    String: { target: 'StringConstructor', kind: 'interface' },
+    Date: { target: 'DateConstructor', kind: 'interface' },
+    Math: { target: 'Math', kind: 'namespace' },
+    JSON: { target: 'JSON', kind: 'namespace' },
+};
+
+/**
+ * Scans SSJS source for STATIC polyfills of the form `Ctor.method = function (…)`
+ * (e.g. `Array.isArray = …`, `Object.getPrototypeOf = …`, `Math.max = …`) and
+ * returns TypeScript declarations that add each member to the matching
+ * `*Constructor` interface (via declaration merging) or `Math`/`JSON` namespace.
+ *
+ * Like `parsePolyfillDeclarations` for prototype members, this is required because
+ * `sfmc-globals.d.ts` intentionally omits unsupported statics. Once the
+ * "Insert polyfill" quick-fix adds `Array.isArray = function () { … }`, the
+ * assignment target must exist or TypeScript raises ts2339
+ * ("Property 'isArray' does not exist on type 'ArrayConstructor'").
+ *
+ * Returns an empty string when no static polyfills are present.
+ * @param text - SSJS source text to scan
+ * @returns TypeScript merge statements, or an empty string
+ */
+function parseStaticPolyfillDeclarations(text: string): string {
+    // Match `Ctor.method = function (params)` where Ctor is a known built-in and
+    // `method` is NOT `prototype` (those are handled by parsePolyfillDeclarations).
+    const STATIC_POLYFILL =
+        /\b(Array|Object|Number|String|Date|Math|JSON)\s*\.\s*([$A-Z_a-z][\w$]*)\s*=\s*function\s*\*?\s*[$A-Z_a-z]*\s*\(([^)]*)\)/g;
+
+    interface StaticMethod {
+        params: string[];
+        jsdoc: string;
+        paramTypes: Map<string, string>;
+        optionalParams: Set<string>;
+        returnType: string;
+    }
+    // target name → { kind, methods }
+    const byTarget = new Map<
+        string,
+        { kind: 'interface' | 'namespace'; methods: Map<string, StaticMethod> }
+    >();
+
+    let match: RegExpExecArray | null;
+    while ((match = STATIC_POLYFILL.exec(text)) !== null) {
+        const ctor = match[1];
+        const method = match[2];
+        const rawParams = match[3];
+        if (method === 'prototype') continue;
+        const target = STATIC_POLYFILL_TARGET_BY_CTOR[ctor];
+        if (!target) continue;
+
+        const params = rawParams
+            .split(',')
+            .map((p) => p.trim())
+            .map((p) =>
+                p
+                    .replace(/^\.\.\./, '')
+                    .split('=')[0]
+                    .trim()
+            )
+            .filter((p) => /^[$A-Z_a-z][\w$]*$/.test(p));
+
+        const rawJsdoc = extractPrecedingJsdoc(text, match.index);
+        const { paramTypes, optionalParams, returnType } = parseJsdocTypes(rawJsdoc);
+        const jsdoc = stripJsdocTypeAnnotations(rawJsdoc);
+
+        let bucket = byTarget.get(target.target);
+        if (!bucket) {
+            bucket = { kind: target.kind, methods: new Map<string, StaticMethod>() };
+            byTarget.set(target.target, bucket);
+        }
+        if (!bucket.methods.has(method)) {
+            bucket.methods.set(method, { params, jsdoc, paramTypes, optionalParams, returnType });
+        }
+    }
+
+    if (byTarget.size === 0) return '';
+
+    const blocks: string[] = [];
+    for (const [target, { kind, methods }] of byTarget) {
+        const memberLines: string[] = [];
+        for (const [name, { params, jsdoc, paramTypes, optionalParams, returnType }] of methods) {
+            if (jsdoc) memberLines.push(indentLines(jsdoc, '    '));
+            let sawOptional = false;
+            const paramStr = params
+                .map((p) => {
+                    const optional = sawOptional || optionalParams.has(p);
+                    if (optional) sawOptional = true;
+                    return `${p}${optional ? '?' : ''}: ${paramTypes.get(p) ?? 'any'}`;
+                })
+                .join(', ');
+            // Namespace members use `function name(...)`; interface members `name(...)`.
+            memberLines.push(
+                kind === 'namespace'
+                    ? `    function ${name}(${paramStr}): ${returnType};`
+                    : `    ${name}(${paramStr}): ${returnType};`
+            );
+        }
+        const header = kind === 'namespace' ? `declare namespace ${target}` : `interface ${target}`;
+        blocks.push(`${header} {\n${memberLines.join('\n')}\n}`);
     }
     return blocks.join('\n') + '\n';
 }
@@ -991,10 +1109,21 @@ export function getSsjsDefinition(uri: string, position: Position): Location[] {
         // A hit inside the synthetic polyfills file points at the generated
         // interface member; redirect to the real prototype assignment.
         const isPolyfillFile = def.fileName.endsWith('.polyfills.d.ts');
-        const span = isPolyfillFile
+        let span = isPolyfillFile
             ? findPrototypeAssignmentSpan(targetFile.content, def.name)
             : { start: def.textSpan.start, length: def.textSpan.length };
         if (!span) continue;
+
+        // For a `Ctor.prototype.method = function …` polyfill that carries a
+        // leading JSDoc block, TypeScript resolves the method's definition into
+        // the JSDoc comment (the first textual occurrence of the name inside the
+        // `/** … */`) rather than the assignment identifier. Redirect any
+        // same-document definition whose span lands inside a comment to the real
+        // prototype assignment so go-to-definition lands on the code line.
+        if (!isPolyfillFile && isOffsetInsideComment(targetFile.content, span.start)) {
+            const assignmentSpan = findPrototypeAssignmentSpan(targetFile.content, def.name);
+            if (assignmentSpan) span = assignmentSpan;
+        }
 
         locations.push({
             uri: targetUri,
@@ -1083,6 +1212,30 @@ function prototypeMethodNameFor(text: string, offset: number): string {
 }
 
 /**
+ * Determine whether `offset` falls inside a line (`// …`) or block (`/* … *\/`)
+ * comment in the given source text. Used to detect when TypeScript resolved a
+ * prototype-polyfill definition into its leading JSDoc block instead of the
+ * assignment identifier, so the definition can be redirected to the code line.
+ * @param text - source text to scan
+ * @param offset - character offset to test
+ * @returns true when the offset lies within a comment
+ */
+function isOffsetInsideComment(text: string, offset: number): boolean {
+    // Block comments: /* … */ (covers JSDoc /** … */).
+    const block = /\/\*[\s\S]*?\*\//g;
+    let m: RegExpExecArray | null;
+    while ((m = block.exec(text)) !== null) {
+        if (offset >= m.index && offset < m.index + m[0].length) return true;
+    }
+    // Line comments: // … to end of line.
+    const line = /\/\/[^\n]*/g;
+    while ((m = line.exec(text)) !== null) {
+        if (offset >= m.index && offset < m.index + m[0].length) return true;
+    }
+    return false;
+}
+
+/**
  * Locate the `…prototype.<method>` assignment for a polyfilled method in the
  * document source and return the text span covering the method name, so
  * go-to-definition lands on the polyfill itself.
@@ -1096,11 +1249,18 @@ function findPrototypeAssignmentSpan(
 ): { start: number; length: number } | null {
     const escaped = method.replaceAll('$', String.raw`\$`);
     const re = new RegExp(String.raw`\bprototype\s*\.\s*(` + escaped + String.raw`)\b`, 'g');
-    const match = re.exec(text);
-    if (!match) return null;
-    // Offset of the captured method name (group 1) within the full match.
-    const start = match.index + match[0].indexOf(match[1]);
-    return { start, length: match[1].length };
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(text)) !== null) {
+        // Offset of the captured method name (group 1) within the full match.
+        const start = match.index + match[0].indexOf(match[1]);
+        // The polyfill's own JSDoc references the method as
+        // `Ctor.prototype.method` in prose (e.g. "Polyfill for
+        // String.prototype.search"); skip any match inside a comment so the
+        // span lands on the real assignment identifier, not the doc text.
+        if (isOffsetInsideComment(text, start)) continue;
+        return { start, length: match[1].length };
+    }
+    return null;
 }
 
 /**

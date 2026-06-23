@@ -208,7 +208,7 @@
           "scope": "resource",
           "type": "boolean",
           "default": false,
-          "description": "Suppress LSP diagnostics that are already covered by eslint-plugin-sfmc rules (e.g. unknown function, arity, enum value, smart quotes, comment syntax). Use this when both the language server and ESLint are active to avoid duplicate warnings. Diagnostics unique to the LSP (delimiter balance, IF/ENDIF/FOR/NEXT balance, GTL, MCN compatibility) are always shown."
+          "description": "Suppress LSP diagnostics that are already covered by eslint-plugin-sfmc rules (e.g. AMPscript unknown function, arity, enum value, smart quotes, comment syntax; SSJS unavailable/broken or polyfillable ECMAScript methods covered by the ssjs/no-unavailable-method rule). Use this when both the language server and ESLint are active to avoid duplicate warnings. Diagnostics unique to the LSP (delimiter balance, IF/ENDIF/FOR/NEXT balance, GTL, MCN compatibility) are always shown."
         }
       }
     },
@@ -277,7 +277,7 @@
     "undici-types": "^8.1.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^1.7.1"
+    "sfmc-language-lsp": "^1.9.2"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [

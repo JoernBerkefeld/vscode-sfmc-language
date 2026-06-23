@@ -197,3 +197,19 @@ function notAGenerator() {}
  * Some documented helper.
  */
 function documentedHelper() {}
+
+// -----------------------------------------------------------------------------
+// New (ssjs-data 0.10.0): KNOWN_UNSUPPORTED members + gap-filling polyfills
+// -----------------------------------------------------------------------------
+
+// New: members the SFMC engine does not support or implements incorrectly
+// should be flagged by diagnostics (verified on CloudPages).
+var nums = [3, 1, 2];
+var sliced = nums.slice(0, 2); // broken native — use the slice polyfill
+var sorted = nums.sort(); // broken native — use the sort polyfill
+var sub = "hello".substr(1, 3); // throws on engine — use substr polyfill
+var pos = "abc".search(/x/); // returns 0 (not -1) on no match — use polyfill
+var chars = "abc".split(""); // does NOT split into characters on engine
+var hi = Math.max(1, 2, 3); // throws with 3+ args on engine — use polyfill
+var lo = Math.min(); // returns NaN on engine — use polyfill
+var proto = Object.getPrototypeOf(nums); // missing native — use polyfill

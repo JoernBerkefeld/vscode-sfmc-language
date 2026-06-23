@@ -102,7 +102,7 @@ if (deKey) {
 
 /**
  * Retrieves access token for connection
- * @param {WSProxy} proxy - WSProxy instance for API calls
+ * @param {Script.Util.WSProxy} proxy - WSProxy instance for API calls
  * @param {number} mid - fetched the mid of the BU
  * @returns {Client} access token for making api calls
  */

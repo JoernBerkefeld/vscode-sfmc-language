@@ -32,10 +32,10 @@ SET @prefCount = RowCount(@preferences)
      ----------------------------------------------------------------------------- -->
 <script runat="server">
     Platform.Load("core", "1.1.5");
-    
+
     // WSProxy for SOAP API calls
     var prox = new Script.Util.WSProxy();
-    
+
     // Retrieve Data Extension rows
     var cols = ["Email", "FirstName", "LastName", "Status"];
     var filter = {
@@ -44,7 +44,7 @@ SET @prefCount = RowCount(@preferences)
         Value: "Active"
     };
     var result = prox.retrieve("DataExtensionObject[MyDataExtension]", cols, filter);
-    
+
     // Process results
     if (result && result.Results) {
         for (var i = 0; i < result.Results.length; i++) {
@@ -52,9 +52,11 @@ SET @prefCount = RowCount(@preferences)
             Write("<p>Email: " + row.Properties[0].Value + "</p>");
         }
     }
-    
+
     // HTTP call example
     var response = HTTP.Get("https://api.example.com/data");
+    var resp = HTTP.Post("https://api.example.com/data", "application/json", '{"key": "value"}', ["Authorization"], ["Bearer token123"]);
+
     var responseData = Platform.Function.ParseJSON(response.Content);
 </script>
 
@@ -64,11 +66,11 @@ SET @prefCount = RowCount(@preferences)
 <div class="content">
     <p>Email: %%=v(@email)=%%</p>
     <p>Date: %%=Format(Now(), "yyyy-MM-dd")=%%</p>
-    
+
     %%[ IF @prefCount > 0 THEN ]%%
         <h2>Your Preferences</h2>
         <ul>
-        %%[ FOR @i = 1 TO @prefCount DO 
+        %%[ FOR @i = 1 TO @prefCount DO
             SET @pref = Row(@preferences, @i)
             SET @prefName = Field(@pref, "PreferenceName")
         ]%%
@@ -87,7 +89,7 @@ SET @prefCount = RowCount(@preferences)
     // Alternative SSJS declaration style
     var timestamp = Platform.Function.Now();
     var guid = Platform.Function.GUID();
-    
+
     Write("<p>Generated at: " + timestamp + "</p>");
     Write("<p>Request ID: " + guid + "</p>");
 </script>

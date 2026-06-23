@@ -95,6 +95,30 @@ test('No diagnostics for valid SSJS', () => {
     assert.strictEqual(diags.length, 0, `Unexpected diagnostics: ${JSON.stringify(diags)}`);
 });
 
+test('HTTP.Get return type exposes Content/Status (no 2339 on .Content)', () => {
+    // HTTP.Get is typed { Status: number, Content: string }; reading .Content must type-check.
+    const code = 'var r = HTTP.Get("https://example.com"); var c = r.Content; var s = r.Status;';
+    updateSsjsDocument(URI_BASIC, code);
+    const diags = getSsjsDiagnostics(URI_BASIC);
+    assert.ok(
+        !diags.some((d) => d.code === 2339),
+        `Unexpected 2339 on HTTP.Get result members: ${JSON.stringify(diags)}`
+    );
+});
+
+test('HTTP.Post return type exposes StatusCode/Response (no 2339)', () => {
+    // HTTP.Post is typed { StatusCode: string, Response: string }.
+    const code =
+        'var r = HTTP.Post("https://example.com", "application/json", "{}", [], []);' +
+        ' var sc = r.StatusCode; var resp = r.Response;';
+    updateSsjsDocument(URI_BASIC, code);
+    const diags = getSsjsDiagnostics(URI_BASIC);
+    assert.ok(
+        !diags.some((d) => d.code === 2339),
+        `Unexpected 2339 on HTTP.Post result members: ${JSON.stringify(diags)}`
+    );
+});
+
 test('Produces diagnostic for reference to undeclared variable', () => {
     const code = 'var result = undeclaredVar.toString();';
     updateSsjsDocument(URI_BASIC, code);
@@ -837,6 +861,38 @@ test('Go to definition on a polyfilled method lands on the prototype assignment'
     assert.strictEqual(defs[0].range.start.line, 0, 'Definition should land on the polyfill line');
 });
 
+test('Go to definition skips the JSDoc comment and lands on the polyfill assignment', () => {
+    // The polyfill JSDoc references the method as `String.prototype.search` in
+    // prose. Go-to-definition must skip that comment occurrence and land on the
+    // real assignment line, not the doc text.
+    const code = [
+        '/**',
+        ' * Polyfill for String.prototype.search (SFMC SSJS).',
+        ' * @param {RegExp} regexp - the pattern to search for',
+        ' * @returns {number} the index of the first match, or -1',
+        ' */',
+        'String.prototype.search = function (regexp) {',
+        '    var str = "" + this;',
+        '    var m = str.match(regexp);',
+        '    if (m === null || m.length === 0) { return -1; }',
+        '    return str.indexOf(m[0]);',
+        '};',
+        'var pos = "hello world".search(/world/);',
+    ].join('\n');
+    updateSsjsDocument(URI_POLY, code);
+    const assignmentLine = 5; // `String.prototype.search = function …`
+    const usageLine = code.split('\n').length - 1;
+    const usageCol = code.split('\n')[usageLine].indexOf('search');
+    const defs = getSsjsDefinition(URI_POLY, { line: usageLine, character: usageCol });
+    assert.ok(defs.length > 0, 'Expected a definition for the polyfilled method');
+    assert.strictEqual(defs[0].uri, URI_POLY, 'Definition should point back to the same document');
+    assert.strictEqual(
+        defs[0].range.start.line,
+        assignmentLine,
+        `Definition should land on the assignment line ${assignmentLine}, not the JSDoc, got line ${defs[0].range.start.line}`
+    );
+});
+
 test('Go to definition on a top-level function call lands on its declaration', () => {
     const code = [
         'function buildKey(id) {',
@@ -1033,4 +1089,128 @@ test('Real code errors are still reported (JSDoc suppression is scoped to commen
         `Expected a cannot-find-name error for real code, got: ${JSON.stringify(diags)}`
     );
     removeSsjsDocument(URI_REAL);
+});
+
+// ---------------------------------------------------------------------------
+// Suite: static polyfills (Ctor.method = function) — interface/namespace merge
+// ---------------------------------------------------------------------------
+console.log('Suite: static polyfills');
+
+const URI_STATIC = 'file:///test-static-polyfill.ssjs';
+
+test('Array.isArray static polyfill assignment produces no diagnostic (2339)', () => {
+    const code = [
+        '/**',
+        ' * Polyfill for Array.isArray (SFMC SSJS).',
+        ' * @param {any} value - value to test',
+        ' * @returns {boolean} whether value is an array',
+        ' */',
+        'Array.isArray = function (value) {',
+        "    return Object.prototype.toString.call(value) === '[object Array]';",
+        '};',
+        'var b = Array.isArray([1, 2, 3]);',
+    ].join('\n');
+    updateSsjsDocument(URI_STATIC, code);
+    const diags = getSsjsDiagnostics(URI_STATIC);
+    assert.ok(
+        !diags.some((d) => d.code === 2339),
+        `Expected no "does not exist on ArrayConstructor" (2339) for Array.isArray polyfill, got: ${JSON.stringify(diags)}`
+    );
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics for Array.isArray polyfill, got: ${JSON.stringify(diags)}`
+    );
+    removeSsjsDocument(URI_STATIC);
+});
+
+test('forEach polyfill callback invocation is callable (no 2349)', () => {
+    // The callback param is typed `Function` via JSDoc — `Function` must carry a
+    // call signature in sfmc-globals.d.ts or `callback(...)` errors with
+    // "Type 'never' has no call signatures" (2349) under noLib:true.
+    const code = [
+        '/**',
+        ' * Polyfill for Array.prototype.forEach (SFMC SSJS).',
+        ' * @param {Function} callback - called with (element, index, array)',
+        ' * @returns {void}',
+        ' */',
+        'Array.prototype.forEach = function (callback) {',
+        "    if (typeof callback !== 'function') { return; }",
+        '    for (var i = 0; i < this.length; i++) {',
+        '        callback(this[i], i, this);',
+        '    }',
+        '};',
+    ].join('\n');
+    updateSsjsDocument(URI_STATIC, code);
+    const diags = getSsjsDiagnostics(URI_STATIC);
+    assert.ok(
+        !diags.some((d) => d.code === 2349),
+        `Expected no "not callable" (2349) for forEach callback invocation, got: ${JSON.stringify(diags)}`
+    );
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics for forEach polyfill, got: ${JSON.stringify(diags)}`
+    );
+    removeSsjsDocument(URI_STATIC);
+});
+
+test('Array.prototype.map polyfill accepts a plain function callback (no 2769)', () => {
+    // A `@param {Function} callback` must accept a plain function/arrow expression.
+    // If `interface Function` carries a `new (...)` construct signature, the
+    // expression fails to match and TS raises ts2769 ("provides no match for the
+    // signature new (...)") on the `function` keyword of the call site.
+    const code = [
+        '/**',
+        ' * Polyfill for Array.prototype.map (SFMC SSJS).',
+        ' * @param {Function} callback - called with (element, index, array)',
+        ' * @returns {Array} a new array of the callback results',
+        ' */',
+        'Array.prototype.map = function (callback) {',
+        "    if (typeof callback !== 'function') { return []; }",
+        '    var result = [];',
+        '    for (var i = 0; i < this.length; i++) {',
+        '        result.push(callback(this[i], i, this));',
+        '    }',
+        '    return result;',
+        '};',
+        'var out = [1, 2].map(function (x) { return x; });',
+    ].join('\n');
+    updateSsjsDocument(URI_STATIC, code);
+    const diags = getSsjsDiagnostics(URI_STATIC);
+    assert.ok(
+        !diags.some((d) => d.code === 2769),
+        `Expected no "no overload matches" (2769) for map(function) call, got: ${JSON.stringify(diags)}`
+    );
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics for map polyfill call, got: ${JSON.stringify(diags)}`
+    );
+    removeSsjsDocument(URI_STATIC);
+});
+
+test('Array.prototype.forEach polyfill accepts a plain function callback (no 2769)', () => {
+    const code = [
+        '/**',
+        ' * Polyfill for Array.prototype.forEach (SFMC SSJS).',
+        ' * @param {Function} callback - called with (element, index, array)',
+        ' * @returns {void}',
+        ' */',
+        'Array.prototype.forEach = function (callback) {',
+        "    if (typeof callback !== 'function') { return; }",
+        '    for (var i = 0; i < this.length; i++) {',
+        '        callback(this[i], i, this);',
+        '    }',
+        '};',
+        '[1, 2].forEach(function (x) { return x; });',
+    ].join('\n');
+    updateSsjsDocument(URI_STATIC, code);
+    const diags = getSsjsDiagnostics(URI_STATIC);
+    assert.ok(
+        !diags.some((d) => d.code === 2769),
+        `Expected no "no overload matches" (2769) for forEach(function) call, got: ${JSON.stringify(diags)}`
+    );
+    assert.ok(
+        !diags.some((d) => d.source === 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics for forEach polyfill call, got: ${JSON.stringify(diags)}`
+    );
+    removeSsjsDocument(URI_STATIC);
 });

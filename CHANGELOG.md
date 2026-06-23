@@ -2,6 +2,30 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.7.0] - 2026-06-24
+
+### Added
+
+- **Insert polyfill** quick-fix for SSJS: when a diagnostic flags a polyfillable ES3/ES5/ES6 member, the lightbulb inserts the verified ES3-safe polyfill source (with full JSDoc — description, `@param` incl. `[]` for optional, `@returns`). The polyfill is placed **after** a leading `/* global … */` directive when present, otherwise at the top of the file, and is skipped if already present.
+- **Replace with Platform.Function** quick-fix: rewrites `JSON.parse(...)` to `Platform.Function.ParseJSON(...)` and `JSON.stringify(...)` to `Platform.Function.Stringify(...)`.
+- Method hover now shows the SFMC-engine **caveat** below the description for built-ins that behave incorrectly (e.g. `String.search` returning the wrong index).
+
+### Changed
+
+- SSJS `ssjs/polyfill-required` diagnostic now fires **only** for members that have a verified polyfill available; members with no polyfill are left to TypeScript's native diagnostics, removing duplicate squiggles. Diagnostic wording distinguishes "broken" vs "unavailable" members.
+- The `sfmcLanguageServer.disableLspDiagnosticsForEslintRules` setting description now documents that it also suppresses the SSJS unavailable/broken/polyfillable diagnostics covered by `eslint-plugin-sfmc`'s `ssjs/no-unavailable-method` rule.
+
+### Fixed
+
+- **Go to Definition** on a polyfilled method (both at the polyfill declaration and at call sites) now lands on the `Ctor.prototype.method = …` assignment line instead of the preceding JSDoc comment.
+- `HTTP.Get` / `HTTP.Post` results no longer report a false `Property does not exist on type 'object'` error. Their return types are now `{ Status: number, Content: string }` and `{ StatusCode: string, Response: string }` respectively.
+- Polyfilled `Array.prototype.map` / `forEach` callbacks no longer trigger a spurious `No overload matches this call` (sfmc-ts 2769); static polyfills like `Array.isArray` no longer report `Property does not exist on type 'ArrayConstructor'` (sfmc-ts 2339).
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.7.1` to `^1.9.2` (insert-polyfill quick-fix, `JSON` → `Platform.Function` quick-fix, `polyfill-required` diagnostic, caveat hover).
+- Bump `ssjs-data` (bundled via the language server) from `0.9.0` to `0.11.1` (`KNOWN_UNSUPPORTED`, gap-filling polyfills, stronger `String.search` caveat, corrected `HTTP.Get` / `HTTP.Post` return object shapes).
+
 ## [2.6.0] - 2026-06-21
 
 ### Added

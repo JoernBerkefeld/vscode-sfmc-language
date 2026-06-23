@@ -1,3 +1,47 @@
+/* global DEBUG, deKey */
+/**
+ * Polyfill for String.prototype.startsWith (SFMC SSJS).
+ * @param {string} searchString - characters to search for at the start
+ * @param {number} [position] - position to start searching from (default 0)
+ * @returns {boolean} true when the string starts with searchString
+ */
+String.prototype.startsWith = function (searchString, position) {
+    position = position || 0;
+    return this.indexOf(searchString, position) === position;
+};
+
+/**
+ * Polyfill for Array.prototype.map (SFMC SSJS).
+ * @param {Function} callback - called with (element, index, array); its return value becomes the new element
+ * @returns {Array} a new array of the callback results
+ */
+Array.prototype.map = function (callback) {
+    if (typeof callback !== 'function') { return []; }
+    var result = [];
+    for (var i = 0; i < this.length; i++) {
+        result.push(callback(this[i], i, this));
+    }
+    return result;
+};
+
+
+
+/**
+ * Polyfill for String.prototype.search (SFMC SSJS).
+ * @param {RegExp} regexp - the pattern to search for
+ * @returns {number} the index of the first match, or -1
+ */
+String.prototype.search = function (regexp) {
+    var str = "" + this;
+    var m = str.match(regexp);
+    if (m === null || m.length === 0) { return -1; }
+    return str.indexOf(m[0]);
+};
+
+
+
+
+
 // Test 8–10: DateTime methods with correct namespace prefix
 Platform.Load("Core", "1.1.5");
 var sysDate = DateTime.SystemDateToLocalDate(Now());
@@ -21,16 +65,7 @@ Write("hello world");
 
 
 
-// Test 1: hover .startsWith → searchString: string, position?: number): boolean
-/**
- * @param {string} searchString what to search for
- * @param {number} [position] where to start
- * @returns {boolean} whether it starts with searchString
- */
- String.prototype.startsWith = function (searchString, position) {
-    position = position || 0;
-    return this.indexOf(searchString, position) === position;
-};
+
 var a = "hello".startsWith("he");
 var b = "world".startsWith("wo");
 
@@ -44,18 +79,7 @@ var b = "world".startsWith("wo");
  */
 
 
-/**
- * @param {Function} callbackFn callback for map
- * @param {Client} ctx unknown user type
- * @returns {Array} mapped array
- */
-Array.prototype.map = function (callbackFn, ctx) {
-    var arr = [];
-    for (var i = 0; i < this.length; i++) {
-        arr.push(callbackFn(this[i], i, this));
-    }
-    return arr;
-};
+
 var out = [1, 2].map(function (x) { return x; });
 
 // Test 3: polyfill with NO JSDoc → defaults to any
@@ -63,6 +87,7 @@ String.prototype.trimStart = function () {
     return this.replace(/^\s+/, "");
 };
 var t = "  x".trimStart();
+
 
 // Test 4: Find All References on a top-level function
 function buildKey(id) {
@@ -73,3 +98,17 @@ var k2 = buildKey("2");
 
 // Test 6: unknown identifier → no references
 var z = somethingUndeclared;
+
+
+
+// Test 1 & 2 & 3: polyfillable method -> squiggle + "Insert polyfill" quick-fix
+var s = "5";
+var padded = s.padStart(3, "0");
+
+
+// Test 4: known-unsupported, no polyfill -> diagnostic with suggestion, no insert fix
+var obj = Platform.Function.ParseJSON('{"a":1}');
+var keys = Object.keys(obj);
+
+// Test 5: caveat hover -> hover over `search` shows wrong-index caveat
+var pos = "hello world".search(/world/);
