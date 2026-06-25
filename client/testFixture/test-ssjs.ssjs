@@ -1,3 +1,56 @@
+/**
+ * Polyfill for Math.min (SFMC SSJS) — handles any argument count.
+ * @param {...number} [values] - numbers to compare
+ * @returns {number} the smallest value, or NaN if any value is NaN
+ */
+Math.min = function () {
+    if (arguments.length === 0) { return Number.POSITIVE_INFINITY; }
+    var best = Number(arguments[0]);
+    if (best !== best) { return NaN; }
+    for (var i = 1; i < arguments.length; i++) {
+        var v = Number(arguments[i]);
+        if (v !== v) { return NaN; }
+        if (v < best) { best = v; }
+    }
+    return best;
+};
+
+/**
+ * Polyfill for Object.getPrototypeOf (SFMC SSJS).
+ * @param {object} obj - the object whose prototype to return
+ * @returns {object|null} the prototype, or null
+ */
+Object.getPrototypeOf = function (obj) {
+    if (obj === null || obj === undefined) { return null; }
+    return obj.constructor ? obj.constructor.prototype : null;
+};
+
+/**
+ * Polyfill for Array.isArray (SFMC SSJS).
+ * @param {*} value - the value to test
+ * @returns {boolean} true when the value is an Array
+ */
+Array.isArray = function (value) {
+    return Object.prototype.toString.call(value) === '[object Array]';
+};
+
+/**
+ * Polyfill for Math.max (SFMC SSJS) — handles any argument count.
+ * @param {...number} [values] - numbers to compare
+ * @returns {number} the largest value, or NaN if any value is NaN
+ */
+Math.max = function () {
+    if (arguments.length === 0) { return Number.NEGATIVE_INFINITY; }
+    var best = Number(arguments[0]);
+    if (best !== best) { return NaN; }
+    for (var i = 1; i < arguments.length; i++) {
+        var v = Number(arguments[i]);
+        if (v !== v) { return NaN; }
+        if (v > best) { best = v; }
+    }
+    return best;
+};
+
 // =============================================================================
 // SSJS Test File for Extension Development
 // Use this file to test completions, hover, and diagnostics
@@ -33,7 +86,7 @@ var prox = new Script.Util.WSProxy();
 // Hover: verify retrieve shows correct signature
 var deResult = prox.retrieve("DataExtension", ["CustomerKey", "Name"]);
 
-// Hover: verify create shows correct signature  
+// Hover: verify create shows correct signature
 var createResult = prox.createItem("DataExtensionObject", {
     CustomerKey: "MyDE",
     Properties: [
@@ -97,7 +150,7 @@ Platform.Load("core", "1.1.5");
 var deRows = DataExtension.Init("MyDataExtension");
 var rows = deRows.Rows.Retrieve();
 
-// Subscriber operations  
+// Subscriber operations
 var sub = Subscriber.Init("subscriber@example.com");
 var subStatus = sub.Attributes;
 
@@ -119,11 +172,12 @@ Variable.SetValue("@newVar", "newValue");
 
 // New: ECMAScript builtin hover links to both ssjs.guide and MDN (e.g. Math.PI)
 var circleArea = Math.PI * 4 * 4;
-
+var myArray = [1, 2, 3];
 // New: Array.prototype method hover deep-links to MDN (e.g. Array/slice)
 var firstTwo = myArray.slice(0, 2);
 
 // New: String.prototype method hover deep-links to MDN (e.g. String/replace)
+var myString = "old string";
 var cleaned = myString.replace("old", "new");
 
 // -----------------------------------------------------------------------------
@@ -213,3 +267,11 @@ var chars = "abc".split(""); // does NOT split into characters on engine
 var hi = Math.max(1, 2, 3); // throws with 3+ args on engine — use polyfill
 var lo = Math.min(); // returns NaN on engine — use polyfill
 var proto = Object.getPrototypeOf(nums); // missing native — use polyfill
+
+
+
+Platform.Load("core", "1.1.1");
+var re = /[0-9]+/g;
+var arr = [1, 2, 3];
+arr.push(4);
+var s = "hello".indexOf("l");

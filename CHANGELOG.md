@@ -2,6 +2,18 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.7.1] - 2026-06-25
+
+### Fixed
+
+- Typing `RegExp` (without a trailing dot) no longer offers `RegExp.prototype` instance members (`test`, `exec`, `lastIndex`, `global`, `source`, …) as bare global completions. Those members are only valid on a `RegExp` instance, so suggesting them as standalone identifiers produced misleading completions and TypeScript "property does not exist" squiggles. Prototype/instance members are now excluded from global completions; the `RegExp` constructor is still offered as a bare identifier.
+- Required parameters of ECMAScript built-ins are no longer typed as optional in hover and diagnostics. `Date.parse(dateString)` (required per MDN) and 30+ siblings — `Math.pow`/`atan2`, `parseInt`/`parseFloat`/`isNaN`/`isFinite`, `Object.defineProperty`, `Object.hasOwnProperty`, `Date.UTC`, `String.charAt`/`match`/`replace`/`slice`/`split` — now correctly require their leading arguments.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.9.2` to `^1.10.2` (RegExp global-completion fix, required-parameter arity fix).
+- Bump `ssjs-data` (bundled via the language server) from `0.11.1` to `0.12.1` (corrected required-parameter optionality in the generated type declarations).
+
 ## [2.7.0] - 2026-06-24
 
 ### Added
