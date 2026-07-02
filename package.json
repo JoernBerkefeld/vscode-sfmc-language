@@ -142,6 +142,14 @@
       {
         "language": "ampscript",
         "path": "./snippets/gtl.snippets.json"
+      },
+      {
+        "language": "ampscript",
+        "path": "./snippets/mcn-handlebars.snippets.json"
+      },
+      {
+        "language": "sfmc",
+        "path": "./snippets/mcn-handlebars.snippets.json"
       }
     ],
     "configurationDefaults": {
@@ -240,6 +248,8 @@
     "copy-globals": "node -e \"const {copyFileSync,mkdirSync}=require('fs'),p='server/node_modules/ssjs-data/dist/sfmc-globals.d.ts';mkdirSync('server/out',{recursive:true});copyFileSync(p,'server/out/sfmc-globals.d.ts');console.log('sfmc-globals.d.ts copied')\"",
     "dev:sync-lsp": "node -e \"const {cpSync}=require('fs');cpSync('../sfmc-language-lsp/dist','server/node_modules/sfmc-language-lsp/dist',{recursive:true});console.log('sfmc-language-lsp/dist synced from local build')\"",
     "dev:sync-ssjs-data": "node -e \"const {execSync}=require('child_process');const {cpSync}=require('fs');execSync('node scripts/generate-dts.mjs',{cwd:'../ssjs-data',stdio:'inherit'});cpSync('../ssjs-data/dist','server/node_modules/ssjs-data/dist',{recursive:true});console.log('ssjs-data/dist regenerated + synced from local source')\"",
+    "dev:sync-handlebars-data": "node -e \"const {cpSync}=require('fs');cpSync('../handlebars-data/src','server/node_modules/handlebars-data/src',{recursive:true});console.log('handlebars-data/src synced from local source')\"",
+    "dev:sync-ampscript-data": "node -e \"const {cpSync}=require('fs');cpSync('../ampscript-data/src','server/node_modules/ampscript-data/src',{recursive:true});console.log('ampscript-data/src synced from local source')\"",
     "compile": "npm run clean && tsc -b && npm run copy-globals",
     "watch": "tsc -b -w",
     "dev": "npm run compile && code --extensionDevelopmentPath=. ./client/testFixture",
@@ -277,7 +287,7 @@
     "undici-types": "^8.1.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^1.10.2"
+    "sfmc-language-lsp": "^2.0.1"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [

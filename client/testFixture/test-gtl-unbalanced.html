@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+    <head>
+        <title>GTL — unbalanced block (must warn under engagement)</title>
+    </head>
+    <!--
+        Checklist item 12 (GTL under engagement):
+          - Keep sfmcLanguageServer.targetPlatform = "engagement" (the default).
+          - The body has an opening each block with no matching closing tag, so
+            the GTL validator must report a WARNING:
+              source "gtl": "Unclosed each block. Expected a matching closing tag."
+
+        Checklist item 13 (GTL suppressed under next):
+          - Switch sfmcLanguageServer.targetPlatform to "next".
+          - The "gtl" warning disappears; the MCN Handlebars parser instead
+            reports a handlebars/syntax-error for the unclosed block. Same text,
+            different engine — confirms GTL is engagement-only.
+
+        NOTE: literal GTL tokens are intentionally kept out of this comment so the
+        validator only sees the unbalanced block in the body below.
+    -->
+    <body>
+        {{#each rows}}
+            <p>{{Name}}</p>
+    </body>
+</html>

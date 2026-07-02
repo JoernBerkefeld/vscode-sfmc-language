@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+    <head>
+        <title>MCN Handlebars — unsupported constructs (must be flagged)</title>
+    </head>
+    <!--
+        Open this file with sfmcLanguageServer.targetPlatform = "next".
+
+        Every construct in the body below is NOT supported by the locked-down MCN
+        Handlebars engine and MUST raise a diagnostic (with a quick-fix / code
+        action where applicable). Use this fixture to verify diagnostics + code
+        actions for:
+
+          - partial                        -> unsupported
+          - partial block                  -> unsupported
+          - decorator                      -> unsupported
+          - inline partial/decorator block -> unsupported
+          - log (handlebars.js debug helper) -> unsupported
+
+        NOTE: literal mustache tokens are intentionally kept out of this comment
+        so the Handlebars parser only sees the constructs in the body.
+    -->
+    <body>
+        <!-- Partial: MCN cannot register partials -->
+        {{> siteHeader}}
+
+        <!-- Partial block -->
+        {{#> layout}}
+            <p>Fallback content</p>
+        {{/layout}}
+
+        <!-- Decorator -->
+        {{* inlineDecorator}}
+
+        <!-- Inline partial / decorator block -->
+        {{#*inline "myPartial"}}
+            <p>Inline partial body</p>
+        {{/inline}}
+
+        <!-- handlebars.js {{log}} debugging helper is not available in MCN -->
+        {{log "debugging value" contact.email}}
+    </body>
+</html>

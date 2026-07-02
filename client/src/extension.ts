@@ -71,9 +71,25 @@ const AMPSCRIPT_MARKERS: (string | RegExp)[] = [
     /<script\b[^>]*\brunat\s*=\s*["']server["']/i,
 ];
 
+// MCN Handlebars markers. `{!$...}` data bindings are unambiguously SFMC, so
+// they switch the document regardless of platform. A bare `{{...}}` mustache is
+// shared by many template engines (Vue, Angular, Mustache, Jekyll), so it only
+// claims the document when the user targets Marketing Cloud Next — Handlebars is
+// MCN-only and there is no benefit to hijacking `{{...}}` HTML under Engagement.
+const HANDLEBARS_BINDING_MARKER = /\{!\$[A-Za-z0-9_.]/;
+const HANDLEBARS_MUSTACHE_MARKER = /\{\{[#/!{>]?\s*[A-Za-z@]/;
+
 function matchesAny(text: string, markers: (string | RegExp)[]): boolean {
     return markers.some((marker) =>
         typeof marker === 'string' ? text.includes(marker) : marker.test(text)
+    );
+}
+
+function isMcnNextTarget(): boolean {
+    return (
+        workspace
+            .getConfiguration('sfmcLanguageServer')
+            .get<string>('targetPlatform', 'engagement') === 'next'
     );
 }
 
@@ -90,6 +106,16 @@ function detectAndSwitchLanguage(doc: TextDocument): void {
 
     // Switch to sfmc for any HTML containing SFMC content (AMPscript markers or SSJS blocks).
     if (matchesAny(text, AMPSCRIPT_MARKERS)) {
+        languages.setTextDocumentLanguage(doc, 'sfmc');
+        return;
+    }
+
+    // MCN Handlebars: `{!$...}` bindings always, `{{...}}` mustaches only under
+    // the Marketing Cloud Next target (see marker comments above).
+    if (
+        HANDLEBARS_BINDING_MARKER.test(text) ||
+        (isMcnNextTarget() && HANDLEBARS_MUSTACHE_MARKER.test(text))
+    ) {
         languages.setTextDocumentLanguage(doc, 'sfmc');
         return;
     }

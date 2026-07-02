@@ -60,7 +60,11 @@ connection.onInitialize((parameters: InitializeParams) => {
             },
             hoverProvider: true,
             signatureHelpProvider: {
-                triggerCharacters: ['(', ','],
+                // '(' and ',' drive AMPscript/SSJS paren calls; ' ' is required
+                // for MCN Handlebars helpers, whose arguments are whitespace-
+                // separated inside `{{ }}` (e.g. `{{substring value 0 3}}`) and
+                // therefore never hit a paren/comma trigger.
+                triggerCharacters: ['(', ',', ' '],
             },
             codeActionProvider: true,
             definitionProvider: true,
@@ -210,23 +214,29 @@ documents.onDidClose((e) => {
 // ---------------------------------------------------------------------------
 // Code Actions
 // ---------------------------------------------------------------------------
-connection.onCodeAction((parameters): CodeAction[] => {
+connection.onCodeAction(async (parameters): Promise<CodeAction[]> => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return [];
+    const settings = await getDocumentSettings(document.uri);
     const doc = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
-    return sfmcLanguageService.getCodeActions(doc, parameters.context.diagnostics) as CodeAction[];
+    return sfmcLanguageService.getCodeActions(
+        doc,
+        parameters.context.diagnostics,
+        settings
+    ) as CodeAction[];
 });
 
 // ---------------------------------------------------------------------------
 // Completions
 // ---------------------------------------------------------------------------
-connection.onCompletion((parameters: TextDocumentPositionParams) => {
+connection.onCompletion(async (parameters: TextDocumentPositionParams) => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return [];
+    const settings = await getDocumentSettings(document.uri);
     const doc = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
@@ -234,7 +244,8 @@ connection.onCompletion((parameters: TextDocumentPositionParams) => {
     };
     const sfmcItems = sfmcLanguageService.getCompletions(
         doc,
-        parameters.position
+        parameters.position,
+        settings
     ) as import('vscode-languageserver').CompletionItem[];
 
     // For ampscript docs: delegate to TS service if cursor is inside a SSJS region
@@ -274,9 +285,10 @@ connection.onCompletionResolve((item) => {
 // ---------------------------------------------------------------------------
 // Hover
 // ---------------------------------------------------------------------------
-connection.onHover((parameters) => {
+connection.onHover(async (parameters) => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return null;
+    const settings = await getDocumentSettings(document.uri);
     const doc = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
@@ -286,7 +298,7 @@ connection.onHover((parameters) => {
         start: { line: parameters.position.line, character: 0 },
         end: { line: parameters.position.line + 1, character: 0 },
     });
-    const sfmcHover = sfmcLanguageService.getHover(doc, line, parameters.position);
+    const sfmcHover = sfmcLanguageService.getHover(doc, line, parameters.position, settings);
     const inSsjsRegion =
         doc.languageId === 'ssjs' ||
         (doc.languageId === 'ampscript' &&
@@ -303,9 +315,10 @@ connection.onHover((parameters) => {
 // ---------------------------------------------------------------------------
 // Signature Help
 // ---------------------------------------------------------------------------
-connection.onSignatureHelp((parameters) => {
+connection.onSignatureHelp(async (parameters) => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return null;
+    const settings = await getDocumentSettings(document.uri);
     const doc = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
@@ -325,7 +338,7 @@ connection.onSignatureHelp((parameters) => {
     if (inSsjsCtx) {
         return getSsjsSignatureHelp(document.uri, parameters.position);
     }
-    return sfmcLanguageService.getSignatureHelp(doc, textUpToCursor);
+    return sfmcLanguageService.getSignatureHelp(doc, textUpToCursor, settings);
 });
 
 // ---------------------------------------------------------------------------

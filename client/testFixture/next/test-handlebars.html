@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+    <head>
+        <title>MCN Handlebars — valid usage smoke fixture</title>
+    </head>
+    <!--
+        Open this file with sfmcLanguageServer.targetPlatform = "next"
+        (the .vscode/settings.json in this folder sets it for you).
+
+        The document should auto-switch to the "sfmc" language and expose
+        MCN Handlebars completions, hover, and signature help. Nothing in
+        this file should raise a diagnostic — see test-handlebars-unsupported.html
+        for constructs that MUST be flagged.
+
+        NOTE: the Handlebars parser scans this whole file, so avoid writing
+        literal mustache tokens inside HTML comments (they would parse as code).
+
+        Manual checks:
+          - Type an open mustache, then a helper prefix -> helper completions appear
+          - Type an open binding (bang-dollar) -> built-in binding completions appear
+          - Hover a helper or a binding -> markdown docs popup
+          - Signature help inside a helper call -> parameter hints
+    -->
+    <body>
+        <!-- Built-in data bindings (always MCN, platform-independent) -->
+        <p>Mailing address: {!$organization.Address}</p>
+        <p>
+            <a href="{!$link.EmailAddressOptOutUrl}">Unsubscribe</a> |
+            <a href="{!$link.PreferenceCenterUrl}">Manage preferences</a>
+        </p>
+
+        {{! Handlebars comment — should be highlighted as a comment }}
+        {{!-- long-form Handlebars comment with a }} inside it --}}
+
+        <!-- Simple output + string / text helpers -->
+        <h1>{{uppercase contact.firstName}}</h1>
+        <p>{{properCase contact.lastName}}</p>
+        <p>{{lowercase contact.email}}</p>
+        <p>{{trim contact.note}}</p>
+        <p>{{substring contact.phone 0 3}}</p>
+        <p>{{concat contact.firstName " " contact.lastName}}</p>
+        <p>{{replace contact.slug "-" " "}}</p>
+
+        <!-- Fallback + formatting helpers with hash arguments -->
+        <p>{{fallback contact.nickname contact.firstName "friend"}}</p>
+        <p>{{formatNumber order.total minimumFractionDigits=2}}</p>
+        <p>{{formatCurrency order.total currency="EUR"}}</p>
+        <p>{{format order.createdAt pattern="yyyy-MM-dd"}}</p>
+
+        <!-- Date / time helpers -->
+        <p>Today: {{now}}</p>
+        <p>Renewal: {{dateAdd subscription.startDate 1 "years"}}</p>
+        <p>Days left: {{dateDiff now subscription.endDate "days"}}</p>
+
+        <!-- Math helpers (subexpressions exercise nested calls) -->
+        <p>{{add order.subtotal order.tax}}</p>
+        <p>{{multiply (add order.subtotal order.tax) 1.0}}</p>
+        <p>{{modulo order.itemCount 2}}</p>
+        <p>{{random 1 100}}</p>
+
+        <!-- #each block with block parameters |item index| -->
+        {{#each order.items as |item index|}}
+            <div>
+                <span>{{add index 1}}.</span>
+                <span>{{item.name}}</span>
+                <span>{{formatCurrency item.price currency="EUR"}}</span>
+                {{#if @first}}<em>(top pick)</em>{{/if}}
+                {{#unless @last}}<hr />{{/unless}}
+            </div>
+        {{/each}}
+
+        <!-- #if / else if / else with comparison helpers as subexpressions -->
+        {{#if (equals contact.status "active")}}
+            <p>Welcome back!</p>
+        {{else if (compare order.total ">" 100)}}
+            <p>You unlocked free shipping.</p>
+        {{else}}
+            <p>Keep shopping.</p>
+        {{/if}}
+
+        <!-- Logical helpers -->
+        {{#if (and contact.optedIn (not contact.bounced))}}
+            <p>Newsletter is on.</p>
+        {{/if}}
+        {{#if (or contact.isVip (compare order.total ">=" 500))}}
+            <p>Priority support.</p>
+        {{/if}}
+
+        <!-- #with re-scopes the context; @root reaches the top level -->
+        {{#with contact.address}}
+            <address>
+                {{street}}, {{city}} {{zip}}
+                (for {{@root.contact.firstName}})
+            </address>
+        {{/with}}
+
+        <!-- isEmpty guard + literals (string, number, boolean) -->
+        {{#if (isEmpty order.items)}}
+            <p>Your cart is empty.</p>
+        {{else}}
+            <p>{{length order.items}} item(s), gift={{iif order.isGift true false}}</p>
+        {{/if}}
+
+        <!-- Collection helpers: filter, map, sort, slice, flatten, lookup, get -->
+        {{#each (sort (filter order.items "inStock" true) "price") as |item|}}
+            <li>{{item.name}}</li>
+        {{/each}}
+        <p>First three: {{slice order.items 0 3}}</p>
+        <p>Names: {{map order.items "name"}}</p>
+        <p>Flat: {{flatten order.groupedItems}}</p>
+        <p>By key: {{lookup order.byId "sku-123"}}</p>
+        <p>Nested: {{get order "customer.email"}}</p>
+        <p>JSONPath: {{jsonPath order "$.items[0].name"}}</p>
+
+        <!-- Content + personalization helpers -->
+        <div>{{getContentBlock "Default Footer"}}</div>
+        <div>{{personalizationResult contact.recommendationId}}</div>
+
+        <!-- set / hash produce values consumed by later expressions -->
+        {{set "greeting" (concat "Hi " contact.firstName)}}
+        <p>{{greeting}}</p>
+    </body>
+</html>

@@ -67,6 +67,7 @@ Set **`sfmcLanguageServer.targetPlatform`** to `"next"` (default: `"engagement"`
 - **Error** for any AMPscript function not available in Marketing Cloud Next (41 of 150 functions are supported). Example: `InsertDE`, `AttachFile`, `ContentArea` → `"InsertDE is not supported in Marketing Cloud Next."`
 - **Information** for supported functions with behavioral differences (`FormatDate`, `Lookup`, `StringToDate`) — the note is shown in the Problems panel at the call site so you can act on it before deploying
 - **Error** on any `<script runat="server">` block — SSJS is not supported in Marketing Cloud Next
+- **MCN Handlebars** support activates: validation, completions, hover, signature help, and code actions for `{{...}}` mustaches and `{!$...}` built-in bindings. Binding hovers link to the Salesforce Developers documentation.
 
 **Hover cards** always show the MCN support line regardless of the setting: `"Supported in Marketing Cloud Next (API v67.0+)"` or `"Not supported in Marketing Cloud Next"`, so you can check at a glance without switching modes.
 
@@ -228,13 +229,13 @@ GTL uses `{{ }}` delimiters and is a thin wrapper around AMPscript. The extensio
 
 ## Status Bar
 
-A compact `sfmc` entry appears in the VS Code status bar (bottom-right) as soon as the extension activates:
+A compact entry appears in the VS Code status bar (bottom-right) as soon as the extension activates. Its label reflects the active `sfmcLanguageServer.targetPlatform`: **`sfmc-e`** for Engagement and **`sfmc-next`** for Marketing Cloud Next.
 
 - **Spinner** while the language server is starting up.
 - **Check mark** once the server is running and ready.
 - **Error icon** if the server stops or fails.
 - **Click** to open the language server output channel.
-- **Hover** for a tooltip with a **Show Output** link, live server status, active trace level (if enabled), and a quick **Settings** link to jump directly to the extension settings.
+- **Hover** for a tooltip with a **Show Output** link, live server status, active trace level (if enabled), a quick **Settings** link, and an **MCE Mode** / **MCNext Mode** line that opens Settings filtered to the `targetPlatform` option. The label and tooltip update automatically when the setting changes.
 
 ## Model Context Protocol (MCP) for AI Assistants
 

@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+    <head>
+        <title>GTL (Guide Template Language) — engagement-only smoke fixture</title>
+    </head>
+    <!--
+        GTL is gated to the ENGAGEMENT target platform.
+
+        Checklist item 12 (GTL under engagement):
+          - Keep sfmcLanguageServer.targetPlatform = "engagement" (the default).
+          - This balanced template must produce NO diagnostics.
+          - Typing an open mustache inside the body offers AMPscript/GTL
+            completions (hundreds of entries), NOT the 51 Handlebars helpers.
+
+        Checklist item 13 (GTL suppressed under next):
+          - Switch sfmcLanguageServer.targetPlatform to "next".
+          - The GTL blocks below are no longer understood as GTL; the MCN
+            Handlebars parser takes over and reports syntax errors instead
+            (e.g. on the datasource / switch / case / default tags, which do
+            not exist in MCN Handlebars). This proves the two are mutually
+            exclusive.
+
+        NOTE: literal GTL block tokens are kept out of this comment on purpose —
+        the GTL validator scans the whole document, so tokens in comments would
+        be parsed as real blocks.
+    -->
+    <body>
+        <!-- Balanced datasource + each + if/else + switch/case/default -->
+        {{.datasource rows type="Content" order="Name asc"}}
+            {{#each rows}}
+                {{#if Name}}
+                    <h2>{{Name}}</h2>
+                {{else}}
+                    <h2>Untitled</h2>
+                {{/if}}
+
+                {{#switch Status}}
+                    {{#case "A"}}<span>Active</span>
+                    {{#case "P"}}<span>Pending</span>
+                    {{#default}}<span>Unknown</span>
+                {{/switch}}
+            {{/each}}
+        {{/.datasource}}
+    </body>
+</html>

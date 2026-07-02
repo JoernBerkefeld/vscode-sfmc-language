@@ -72,6 +72,33 @@ suite('SFMC HTML auto-detection — individual marker variants', () => {
         const lang = await waitForLanguage(documentUri, 'sfmc');
         assert.strictEqual(lang, 'sfmc', 'marker-script-runat.html should be detected as sfmc');
     });
+
+    test('{!$...} MCN Handlebars binding → sfmc (platform-independent)', async () => {
+        const documentUri = getDocumentUri('marker-hbs-binding.html');
+        await activate(documentUri);
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(
+            lang,
+            'sfmc',
+            'marker-hbs-binding.html with a {!$...} binding should be detected as sfmc'
+        );
+    });
+
+    test('bare {{...}} mustache stays html under default (engagement) target', async () => {
+        const documentUri = getDocumentUri('marker-hbs-mustache.html');
+        await activate(documentUri);
+        // Default targetPlatform is "engagement"; a bare {{...}} mustache is shared
+        // by many template engines and must NOT hijack the document.
+        await sleep(3000);
+        const doc = vscode.workspace.textDocuments.find(
+            (d) => d.uri.toString() === documentUri.toString()
+        );
+        assert.strictEqual(
+            doc?.languageId,
+            'html',
+            `Expected {{...}}-only HTML to stay html under engagement, got '${doc?.languageId}'`
+        );
+    });
 });
 
 suite('SFMC HTML auto-detection', () => {

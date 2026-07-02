@@ -1,0 +1,155 @@
+{
+  "MCN Handlebars Each Loop": {
+    "prefix": "hbs-each",
+    "body": [
+      "{{#each ${1:items} as |${2:item} ${3:index}|}}",
+      "  $0",
+      "{{/each}}"
+    ],
+    "description": "MCN Handlebars #each block – iterate a collection with block params"
+  },
+  "MCN Handlebars If": {
+    "prefix": "hbs-if",
+    "body": [
+      "{{#if ${1:condition}}}",
+      "  $0",
+      "{{/if}}"
+    ],
+    "description": "MCN Handlebars #if block – render content when the condition is truthy"
+  },
+  "MCN Handlebars If/Else": {
+    "prefix": "hbs-ifelse",
+    "body": [
+      "{{#if ${1:condition}}}",
+      "  $2",
+      "{{else}}",
+      "  $0",
+      "{{/if}}"
+    ],
+    "description": "MCN Handlebars #if/else block – render one branch based on a condition"
+  },
+  "MCN Handlebars Unless": {
+    "prefix": "hbs-unless",
+    "body": [
+      "{{#unless ${1:condition}}}",
+      "  $0",
+      "{{/unless}}"
+    ],
+    "description": "MCN Handlebars #unless block – render content when the condition is falsy"
+  },
+  "MCN Handlebars With": {
+    "prefix": "hbs-with",
+    "body": [
+      "{{#with ${1:object}}}",
+      "  $0",
+      "{{/with}}"
+    ],
+    "description": "MCN Handlebars #with block – change the evaluation context to an object"
+  },
+  "MCN Handlebars Repeat": {
+    "prefix": "hbs-repeat",
+    "body": [
+      "{{#repeat ${1:count}}}",
+      "  $0",
+      "{{/repeat}}"
+    ],
+    "description": "MCN Handlebars #repeat block – render the body a fixed number of times"
+  },
+  "MCN Handlebars Set": {
+    "prefix": "hbs-set",
+    "body": [
+      "{{#set ${1:name}=${2:value}}}",
+      "  $0",
+      "{{/set}}"
+    ],
+    "description": "MCN Handlebars #set block – assign a value available within the block"
+  },
+  "MCN Handlebars Output": {
+    "prefix": "hbs-out",
+    "body": [
+      "{{${1:value}}}"
+    ],
+    "description": "MCN Handlebars expression – output a value"
+  },
+  "MCN Handlebars Comment": {
+    "prefix": "hbs-comment",
+    "body": [
+      "{{!-- ${1:comment} --}}"
+    ],
+    "description": "MCN Handlebars comment – not rendered in output"
+  },
+  "MCN Handlebars Fallback": {
+    "prefix": "hbs-fallback",
+    "body": [
+      "{{fallback ${1:value} \"${2:default}\"}}"
+    ],
+    "description": "MCN Handlebars fallback helper – use a default when the value is empty"
+  },
+  "MCN Handlebars Format": {
+    "prefix": "hbs-format",
+    "body": [
+      "{{format ${1:value} \"${2:formatString}\"}}"
+    ],
+    "description": "MCN Handlebars format helper – format a value with a format string"
+  },
+  "MCN Handlebars Format Currency": {
+    "prefix": "hbs-formatcurrency",
+    "body": [
+      "{{formatCurrency ${1:number} \"${2:en-US}\"}}"
+    ],
+    "description": "MCN Handlebars formatCurrency helper – format a number as currency"
+  },
+  "MCN Handlebars Format Number": {
+    "prefix": "hbs-formatnumber",
+    "body": [
+      "{{formatNumber ${1:number} \"${2:N2}\" \"${3:en-US}\"}}"
+    ],
+    "description": "MCN Handlebars formatNumber helper – format a number with a format type"
+  },
+  "MCN Handlebars Equals": {
+    "prefix": "hbs-equals",
+    "body": [
+      "{{#if (equals ${1:value1} ${2:value2})}}",
+      "  $0",
+      "{{/if}}"
+    ],
+    "description": "MCN Handlebars equals helper – compare two values inside a condition"
+  },
+  "MCN Handlebars Compare": {
+    "prefix": "hbs-compare",
+    "body": [
+      "{{#if (compare ${1:left} \"${2:>}\" ${3:right})}}",
+      "  $0",
+      "{{/if}}"
+    ],
+    "description": "MCN Handlebars compare helper – compare two values with an operator"
+  },
+  "MCN Handlebars Query": {
+    "prefix": "hbs-query",
+    "body": [
+      "{{query \"${1:DataExtensionName}\" \"${2:rows}\"}}"
+    ],
+    "description": "MCN Handlebars query helper – retrieve rows from a data source"
+  },
+  "MCN Handlebars Query First": {
+    "prefix": "hbs-queryfirst",
+    "body": [
+      "{{queryFirst \"${1:DataExtensionName}\" \"${2:row}\"}}"
+    ],
+    "description": "MCN Handlebars queryFirst helper – retrieve the first matching row"
+  },
+  "MCN Handlebars Get Content Block": {
+    "prefix": "hbs-getcontentblock",
+    "body": [
+      "{{getContentBlock \"${1:key}\"}}"
+    ],
+    "description": "MCN Handlebars getContentBlock helper – include a content block by key"
+  },
+  "MCN Handlebars Personalization Binding": {
+    "prefix": "hbs-binding",
+    "body": [
+      "{!\\$${1:organization.Address}}"
+    ],
+    "description": "MCN Handlebars personalization binding – {!$...} reserved merge field"
+  }
+}

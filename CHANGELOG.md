@@ -2,6 +2,25 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.8.0] - 2026-07-02
+
+### Added
+
+- **MCN Handlebars language support** now reaches the editor: validation, completions, hover, signature help, and code actions for `{{...}}` mustaches and `{!$...}` built-in bindings (powered by `sfmc-language-lsp` 2.x). Handlebars intelligence activates when `sfmcLanguageServer.targetPlatform` is set to `next`.
+- **MCN Handlebars snippets** for the `ampscript` and `sfmc` languages (`snippets/mcn-handlebars.snippets.json`).
+- **Target-platform status bar item** now reflects the active `targetPlatform`: it shows `sfmc-e` for Engagement and `sfmc-next` for Next, and its tooltip adds an *MCE Mode* / *MCNext Mode* line that opens Settings pre-filtered to `@ext:joernberkefeld.sfmc-language targetplatform`. The item refreshes automatically when the setting changes.
+- Syntax highlighting for the combined `sfmc` grammar now covers MCN Handlebars mustaches and bindings.
+
+### Changed
+
+- Signature help now also triggers on space, so parameter hints appear while typing arguments to a Handlebars helper.
+- Binding hovers include a **Salesforce Developers** documentation link.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^1.10.2` to `^2.0.1` (MCN Handlebars language service, binding hover doc link, parameterless-helper `@return` formatting).
+- Bump `handlebars-data` (bundled via the language server) to `0.2.0` (built-in bindings carry `docUrl`).
+
 ## [2.7.1] - 2026-06-25
 
 ### Fixed

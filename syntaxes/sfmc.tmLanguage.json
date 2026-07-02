@@ -3,6 +3,134 @@
 	"name": "SFMC",
 	"scopeName": "text.html.sfmc",
 	"patterns": [
+		{ "include": "#handlebars-comment-block" },
+		{ "include": "#handlebars-comment-inline" },
+		{ "include": "#handlebars-binding" },
+		{ "include": "#handlebars-expression" },
 		{ "include": "text.html.ampscript" }
-	]
+	],
+	"repository": {
+		"handlebars-comment-block": {
+			"begin": "\\{\\{!--",
+			"end": "--\\}\\}",
+			"name": "comment.block.handlebars",
+			"beginCaptures": { "0": { "name": "punctuation.definition.comment.begin.handlebars" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.comment.end.handlebars" } }
+		},
+		"handlebars-comment-inline": {
+			"begin": "\\{\\{!",
+			"end": "\\}\\}",
+			"name": "comment.block.handlebars",
+			"beginCaptures": { "0": { "name": "punctuation.definition.comment.begin.handlebars" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.comment.end.handlebars" } }
+		},
+		"handlebars-binding": {
+			"match": "(\\{!\\$)([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*)(\\})",
+			"name": "meta.binding.handlebars",
+			"captures": {
+				"1": { "name": "punctuation.definition.binding.begin.handlebars" },
+				"2": { "name": "variable.language.binding.handlebars" },
+				"3": { "name": "punctuation.definition.binding.end.handlebars" }
+			}
+		},
+		"handlebars-expression": {
+			"begin": "(\\{\\{)([#/>^]|\\{)?\\s*",
+			"end": "(\\}{2,3})",
+			"beginCaptures": {
+				"1": { "name": "punctuation.definition.template.begin.handlebars" },
+				"2": { "name": "keyword.control.handlebars" }
+			},
+			"endCaptures": {
+				"1": { "name": "punctuation.definition.template.end.handlebars" }
+			},
+			"name": "meta.template.expression.handlebars",
+			"patterns": [
+				{ "include": "#handlebars-block-params" },
+				{ "include": "#handlebars-helper-name" },
+				{ "include": "#handlebars-internals" }
+			]
+		},
+		"handlebars-helper-name": {
+			"match": "(?<=\\{\\{[#/>^]?)\\s*([A-Za-z_][\\w-]*)(?=\\s|\\}|$)",
+			"captures": {
+				"1": { "name": "entity.name.function.handlebars" }
+			}
+		},
+		"handlebars-block-params": {
+			"begin": "(as)\\s*(\\|)",
+			"end": "(\\|)",
+			"beginCaptures": {
+				"1": { "name": "keyword.control.as.handlebars" },
+				"2": { "name": "punctuation.definition.block-param.begin.handlebars" }
+			},
+			"endCaptures": {
+				"1": { "name": "punctuation.definition.block-param.end.handlebars" }
+			},
+			"patterns": [
+				{
+					"match": "[A-Za-z_]\\w*",
+					"name": "variable.parameter.block.handlebars"
+				}
+			]
+		},
+		"handlebars-internals": {
+			"patterns": [
+				{ "include": "#handlebars-hash-arg" },
+				{ "include": "#handlebars-data-variable" },
+				{ "include": "#handlebars-subexpression" },
+				{ "include": "#handlebars-string-double" },
+				{ "include": "#handlebars-string-single" },
+				{ "include": "#handlebars-numeric" },
+				{ "include": "#handlebars-boolean" },
+				{ "include": "#handlebars-path" }
+			]
+		},
+		"handlebars-subexpression": {
+			"begin": "\\(",
+			"end": "\\)",
+			"beginCaptures": { "0": { "name": "punctuation.definition.subexpression.begin.handlebars" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.subexpression.end.handlebars" } },
+			"patterns": [
+				{ "include": "#handlebars-helper-name" },
+				{ "include": "#handlebars-internals" }
+			]
+		},
+		"handlebars-hash-arg": {
+			"match": "([A-Za-z_][\\w-]*)\\s*(=)",
+			"captures": {
+				"1": { "name": "variable.parameter.hash.handlebars" },
+				"2": { "name": "keyword.operator.assignment.handlebars" }
+			}
+		},
+		"handlebars-data-variable": {
+			"match": "@[A-Za-z_]\\w*",
+			"name": "variable.language.data.handlebars"
+		},
+		"handlebars-string-double": {
+			"begin": "\"",
+			"end": "\"",
+			"name": "string.quoted.double.handlebars",
+			"beginCaptures": { "0": { "name": "punctuation.definition.string.begin.handlebars" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.string.end.handlebars" } }
+		},
+		"handlebars-string-single": {
+			"begin": "'",
+			"end": "'",
+			"name": "string.quoted.single.handlebars",
+			"beginCaptures": { "0": { "name": "punctuation.definition.string.begin.handlebars" } },
+			"endCaptures": { "0": { "name": "punctuation.definition.string.end.handlebars" } }
+		},
+		"handlebars-numeric": {
+			"match": "(?<![\\w@.])-?\\b\\d+(\\.\\d+)?\\b",
+			"name": "constant.numeric.handlebars"
+		},
+		"handlebars-boolean": {
+			"match": "\\b(true|false|null|undefined)\\b",
+			"name": "constant.language.handlebars"
+		},
+		"handlebars-path": {
+			"match": "[A-Za-z_][\\w-]*(?:\\.[A-Za-z_][\\w-]*)*",
+			"name": "variable.other.handlebars"
+		}
+	}
 }

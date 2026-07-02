@@ -13,8 +13,18 @@ const EXT_ID = 'sfmc-language';
 const PUBLISHER = 'joernberkefeld';
 const CMD_SHOW_OUTPUT = `${EXT_ID}.showOutput`;
 
-/** Label shown in the status bar in all states. */
-const LABEL = 'sfmc';
+/** Settings search query used to reveal the targetPlatform setting. */
+const TARGET_PLATFORM_QUERY = `@ext:${PUBLISHER}.${EXT_ID} targetPlatform`;
+
+/**
+ * Read the configured target platform (workspace/user scope).
+ * @returns 'next' when Marketing Cloud Next is selected, otherwise 'engagement'.
+ */
+function getTargetPlatform(): 'engagement' | 'next' {
+    return workspace.getConfiguration('sfmcLanguageServer').get<string>('targetPlatform') === 'next'
+        ? 'next'
+        : 'engagement';
+}
 
 /** VS Code codicons used for each lifecycle state. */
 const ICONS = {
@@ -51,6 +61,12 @@ export class SfmcStatusBar {
                 } else {
                     this.setState('loading');
                 }
+            }),
+            // Reflect targetPlatform changes (label + tooltip mode line) live.
+            workspace.onDidChangeConfiguration((event) => {
+                if (event.affectsConfiguration('sfmcLanguageServer.targetPlatform')) {
+                    this.refresh();
+                }
             })
         );
     }
@@ -62,7 +78,8 @@ export class SfmcStatusBar {
 
     private refresh(): void {
         const icon = ICONS[this.state];
-        this.item.text = `${icon} ${LABEL}`;
+        const label = getTargetPlatform() === 'next' ? 'sfmc-next' : 'sfmc-e';
+        this.item.text = `${icon} ${label}`;
         this.item.tooltip = this.buildTooltip();
     }
 
@@ -82,6 +99,14 @@ export class SfmcStatusBar {
             md.appendMarkdown('$(loading~spin) Language server starting…\n\n');
         } else if (this.state === 'ready') {
             md.appendMarkdown('$(check) Language server ready\n\n');
+
+            const modeLabel = getTargetPlatform() === 'next' ? 'MCNext Mode' : 'MCE Mode';
+            const targetPlatformUri =
+                `command:workbench.action.openSettings?` +
+                encodeURIComponent(JSON.stringify(TARGET_PLATFORM_QUERY));
+            md.appendMarkdown(
+                `[$(target) ${modeLabel}](${targetPlatformUri} "Change target platform in settings")\n\n`
+            );
 
             const trace = workspace
                 .getConfiguration('sfmcLanguageServer')
