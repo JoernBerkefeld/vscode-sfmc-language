@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as assert from 'node:assert';
-import { getDocUri as getDocumentUri, activate } from './helper';
+import { getDocumentUri, activate } from './helper';
 
 /**
  * Helper that waits until `doc.languageId` transitions to the expected value,
@@ -17,18 +17,23 @@ async function waitForLanguage(
 ): Promise<string> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-        const doc = vscode.workspace.textDocuments.find(
+        const document = vscode.workspace.textDocuments.find(
             (d) => d.uri.toString() === documentUri.toString()
         );
-        if (doc?.languageId === expectedLanguage) return expectedLanguage;
+        if (document?.languageId === expectedLanguage) return expectedLanguage;
         await sleep(200);
     }
-    const doc = vscode.workspace.textDocuments.find(
+    const document = vscode.workspace.textDocuments.find(
         (d) => d.uri.toString() === documentUri.toString()
     );
-    return doc?.languageId ?? 'unknown';
+    return document?.languageId ?? 'unknown';
 }
 
+/**
+ * Resolve to a promise after the given delay.
+ * @param ms - delay in milliseconds
+ * @returns a promise that resolves after the delay
+ */
 function sleep(ms: number) {
     return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
@@ -90,13 +95,13 @@ suite('SFMC HTML auto-detection — individual marker variants', () => {
         // Default targetPlatform is "engagement"; a bare {{...}} mustache is shared
         // by many template engines and must NOT hijack the document.
         await sleep(3000);
-        const doc = vscode.workspace.textDocuments.find(
+        const document = vscode.workspace.textDocuments.find(
             (d) => d.uri.toString() === documentUri.toString()
         );
         assert.strictEqual(
-            doc?.languageId,
+            document?.languageId,
             'html',
-            `Expected {{...}}-only HTML to stay html under engagement, got '${doc?.languageId}'`
+            `Expected {{...}}-only HTML to stay html under engagement, got '${document?.languageId}'`
         );
     });
 });
@@ -151,14 +156,14 @@ suite('SFMC HTML auto-detection', () => {
         await activate(documentUri);
         // Give the extension time to process the document; language must NOT change.
         await sleep(3000);
-        const doc = vscode.workspace.textDocuments.find(
+        const document = vscode.workspace.textDocuments.find(
             (d) => d.uri.toString() === documentUri.toString()
         );
         assert.ok(
-            doc?.languageId !== 'ampscript' &&
-                doc?.languageId !== 'ssjs' &&
-                doc?.languageId !== 'sfmc',
-            `Expected plain HTML file to stay as html, got '${doc?.languageId}'`
+            document?.languageId !== 'ampscript' &&
+                document?.languageId !== 'ssjs' &&
+                document?.languageId !== 'sfmc',
+            `Expected plain HTML file to stay as html, got '${document?.languageId}'`
         );
     });
 });

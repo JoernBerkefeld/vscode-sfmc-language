@@ -6,9 +6,9 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ExtensionContext, Uri, ViewColumn, WebviewPanel, window } from 'vscode';
 
-import { compareSemver, escapeHtml, markdownToHtml, parseChangelogEntry } from './whatsNewCore';
+import { compareSemver, escapeHtml, markdownToHtml, parseChangelogEntry } from './whats-new-core';
 
-export { compareSemver, markdownToHtml, parseChangelogEntry } from './whatsNewCore';
+export { compareSemver, markdownToHtml, parseChangelogEntry } from './whats-new-core';
 
 /** Synced so users don't see duplicate prompts across machines (see VS Code globalState docs). */
 export const WHATS_NEW_VERSION_KEY = 'whatsNew.lastShownVersion';
@@ -17,15 +17,27 @@ const PANEL_VIEW_TYPE = 'sfmcLanguage.whatsNew';
 
 let panel: WebviewPanel | undefined;
 
+/**
+ * Generate a random 32-character nonce for the webview Content-Security-Policy.
+ * @returns a random alphanumeric nonce string
+ */
 function getNonce(): string {
     let t = '';
     const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 32; i++) {
+    for (let index = 0; index < 32; index++) {
         t += c.charAt(Math.floor(Math.random() * c.length));
     }
     return t;
 }
 
+/**
+ * Build the full HTML document for the What's New webview panel.
+ * @param bodyHtml - the rendered changelog body HTML
+ * @param title - the panel title
+ * @param nonce - the CSP nonce applied to inline style/script
+ * @param cspSource - the webview CSP source for allowed resources
+ * @returns the complete HTML document string
+ */
 function buildWhatsNewHtml(
     bodyHtml: string,
     title: string,
@@ -77,6 +89,12 @@ function buildWhatsNewHtml(
 </html>`;
 }
 
+/**
+ * Open (or reveal) the What's New webview panel for the current version.
+ * @param context - the VS Code extension context
+ * @param extensionDisplayName - the display name shown in the panel title
+ * @returns a promise that resolves once the panel has been shown
+ */
 export async function showWhatsNewPanel(
     context: ExtensionContext,
     extensionDisplayName: string
@@ -131,8 +149,8 @@ export async function checkAndShowWhatsNew(
         return;
     }
 
-    const msg = `What's new in ${extensionDisplayName} v${current}`;
-    const choice = await window.showInformationMessage(msg, "Show What's New", 'Later');
+    const message = `What's new in ${extensionDisplayName} v${current}`;
+    const choice = await window.showInformationMessage(message, "Show What's New", 'Later');
     if (choice === "Show What's New") {
         await showWhatsNewPanel(context, extensionDisplayName);
     }

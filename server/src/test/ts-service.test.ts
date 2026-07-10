@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
 /**
- * tsService.test.ts — standalone Node.js unit tests for the embedded
+ * ts-service.test.ts — standalone Node.js unit tests for the embedded
  * TypeScript language service.
  *
- * Run with:  npx ts-node --project tsconfig.json src/test/tsService.test.ts
- * Or compile + run:  npx tsc --ignoreDeprecations 6.0 && node out/test/tsService.test.js
+ * Run with:  npx ts-node --project tsconfig.json src/test/ts-service.test.ts
+ * Or compile + run:  npx tsc --ignoreDeprecations 6.0 && node out/test/ts-service.test.js
  *
  * No VS Code runtime required — pure Node.js / TypeScript.
  */
@@ -19,7 +19,7 @@ import {
     getSsjsSignatureHelp,
     getSsjsDefinition,
     getSsjsReferences,
-} from '../tsService';
+} from '../ts-service';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -29,19 +29,24 @@ let testCounter = 0;
 let passCount = 0;
 let failCount = 0;
 
-function test(name: string, fn: () => void | Promise<void>): void {
+/**
+ * Register and run a single lightweight test case, tracking pass/fail counts.
+ * @param name - the test description
+ * @param function_ - the test body (may be async)
+ */
+function test(name: string, function_: () => void | Promise<void>): void {
     testCounter++;
-    const idx = testCounter;
+    const index = testCounter;
     Promise.resolve()
-        .then(fn)
+        .then(function_)
         .then(() => {
             passCount++;
-            console.log(`  ✓ [${idx}] ${name}`);
+            console.log(`  ✓ [${index}] ${name}`);
         })
-        .catch((ex: unknown) => {
+        .catch((error: unknown) => {
             failCount++;
-            const msg = ex instanceof Error ? ex.message : String(ex);
-            console.error(`  ✗ [${idx}] ${name}\n      ${msg}`);
+            const message = error instanceof Error ? error.message : String(error);
+            console.error(`  ✗ [${index}] ${name}\n      ${message}`);
         });
 }
 
@@ -61,9 +66,30 @@ const URI_WSPROXY = 'file:///test-wsproxy.ssjs';
 const URI_PLATFORM = 'file:///test-platform.ssjs';
 
 // Coordinate helper: column 0 of the last line of a code string
+/**
+ * Compute the position at the end of the last line of a code string.
+ * @param code - the source string
+ * @returns an LSP-style position at the end of the final line
+ */
 function endOf(code: string) {
     const lines = code.split('\n');
     return { line: lines.length - 1, character: lines.at(-1)!.length };
+}
+
+// Extract plain text from an LSP Hover regardless of contents shape
+/**
+ * Extract plain text from an LSP Hover regardless of its contents shape.
+ * @param hover - the hover object to read
+ * @param hover.contents - the hover contents (string or MarkupContent)
+ * @returns the hover text as a plain string
+ */
+function hoverText(hover: { contents: unknown }): string {
+    const { contents } = hover;
+    if (typeof contents === 'string') return contents;
+    if (contents && typeof contents === 'object' && 'value' in contents) {
+        return String((contents as { value: unknown }).value);
+    }
+    return '';
 }
 
 // ---------------------------------------------------------------------------
@@ -152,7 +178,7 @@ test('Completions after "Platform." include Function, Variable, Response, Reques
     const code = 'Platform.';
     updateSsjsDocument(URI_PLATFORM, code);
     const items = getSsjsCompletions(URI_PLATFORM, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('Function'), 'Should include Function');
     assert.ok(labels.has('Variable'), 'Should include Variable');
     assert.ok(labels.has('Response'), 'Should include Response');
@@ -163,7 +189,7 @@ test('Completions after "Platform.Function." include GUID and ParseJSON', () => 
     const code = 'Platform.Function.';
     updateSsjsDocument(URI_PLATFORM, code);
     const items = getSsjsCompletions(URI_PLATFORM, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('GUID'), 'Should include GUID');
     assert.ok(labels.has('ParseJSON'), 'Should include ParseJSON');
     assert.ok(labels.has('Lookup'), 'Should include Lookup');
@@ -174,7 +200,7 @@ test('Completions after "Platform.Response." include Write and Redirect', () => 
     const code = 'Platform.Response.';
     updateSsjsDocument(URI_PLATFORM, code);
     const items = getSsjsCompletions(URI_PLATFORM, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('Write'), 'Should include Write');
     assert.ok(labels.has('Redirect'), 'Should include Redirect');
     assert.ok(labels.has('ContentType'), 'Should include ContentType property');
@@ -184,7 +210,7 @@ test('Completions after "Platform.Request." include GetPostData and Method', () 
     const code = 'Platform.Request.';
     updateSsjsDocument(URI_PLATFORM, code);
     const items = getSsjsCompletions(URI_PLATFORM, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('GetPostData'), 'Should include GetPostData');
     assert.ok(labels.has('Method'), 'Should include Method property');
     assert.ok(labels.has('ClientIP'), 'Should include ClientIP property');
@@ -201,7 +227,7 @@ test('Completions after "de." include Rows and Fields', () => {
     );
     updateSsjsDocument(URI_DE, code);
     const items = getSsjsCompletions(URI_DE, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('Rows'), 'Should include Rows');
     assert.ok(labels.has('Fields'), 'Should include Fields');
 });
@@ -214,7 +240,7 @@ test('Completions after "de.Rows." include Lookup, Add, Remove', () => {
     ].join('\n');
     updateSsjsDocument(URI_DE, code);
     const items = getSsjsCompletions(URI_DE, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('Lookup'), 'Should include Lookup');
     assert.ok(labels.has('Add'), 'Should include Add');
     assert.ok(labels.has('Remove'), 'Should include Remove');
@@ -229,7 +255,7 @@ test('Completions after "de.Fields." include Add and Retrieve', () => {
     ].join('\n');
     updateSsjsDocument(URI_DE, code);
     const items = getSsjsCompletions(URI_DE, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('Add'), 'Should include Add');
     assert.ok(labels.has('Retrieve'), 'Should include Retrieve');
 });
@@ -243,7 +269,7 @@ test('Completions after "new Script.Util." include WSProxy, HttpRequest, HttpGet
     const code = 'new Script.Util.';
     updateSsjsDocument(URI_WSPROXY, code);
     const items = getSsjsCompletions(URI_WSPROXY, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('WSProxy'), 'Should include WSProxy');
     assert.ok(labels.has('HttpRequest'), 'Should include HttpRequest');
     assert.ok(labels.has('HttpGet'), 'Should include HttpGet');
@@ -253,7 +279,7 @@ test('Completions after "api." include WSProxy instance methods', () => {
     const code = ['var api = new Script.Util.WSProxy();', 'api.'].join('\n');
     updateSsjsDocument(URI_WSPROXY, code);
     const items = getSsjsCompletions(URI_WSPROXY, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('retrieve'), 'Should include retrieve');
     assert.ok(labels.has('createItem'), 'Should include createItem');
     assert.ok(labels.has('setBatchSize'), 'Should include setBatchSize');
@@ -266,7 +292,7 @@ test('Completions after "req." include HttpRequest instance methods', () => {
     );
     updateSsjsDocument(URI_WSPROXY, code);
     const items = getSsjsCompletions(URI_WSPROXY, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('send'), 'Should include send');
     assert.ok(labels.has('setHeader'), 'Should include setHeader');
 });
@@ -281,12 +307,12 @@ test('Hover over Platform returns type info', () => {
     updateSsjsDocument(URI_PLATFORM, code);
     // Hover at "Platform" (offset 0)
     const hover = getSsjsHover(URI_PLATFORM, { line: 0, character: 3 });
-    assert.ok(hover !== null, 'Should return hover info over Platform');
+    assert.ok(hover !== undefined, 'Should return hover info over Platform');
 });
 
-test('Hover returns null for unknown URI', () => {
+test('Hover returns undefined for unknown URI', () => {
     const hover = getSsjsHover('file:///nonexistent.ssjs', { line: 0, character: 0 });
-    assert.strictEqual(hover, null);
+    assert.strictEqual(hover, undefined);
 });
 
 test('Hover contents has markdown kind', () => {
@@ -310,7 +336,7 @@ test('Completions still include deprecated ContentArea function', () => {
     const code = 'Content';
     updateSsjsDocument(URI_DEPRECATED, code);
     const items = getSsjsCompletions(URI_DEPRECATED, { line: 0, character: code.length });
-    const labels = items.map((i) => i.label);
+    const labels = items.map((index) => index.label);
     assert.ok(
         labels.some((l) => l === 'ContentArea' || l === 'ContentAreaByName'),
         `Expected ContentArea or ContentAreaByName in completions, got: ${labels.join(', ')}`
@@ -322,13 +348,8 @@ test('Hover for deprecated ContentArea mentions deprecated', () => {
     updateSsjsDocument(URI_DEPRECATED, code);
     // Hover over "ContentArea" (character 3 is inside the word)
     const hover = getSsjsHover(URI_DEPRECATED, { line: 0, character: 3 });
-    if (hover !== null) {
-        const text =
-            typeof hover.contents === 'string'
-                ? hover.contents
-                : 'value' in hover.contents
-                  ? hover.contents.value
-                  : '';
+    if (hover) {
+        const text = hoverText(hover);
         assert.ok(
             text.toLowerCase().includes('deprecated'),
             `Hover text should mention deprecated, got: ${text}`
@@ -342,13 +363,8 @@ test('@remarks tag renders without "remarks:" label prefix (Bug #2b)', () => {
     const code = 'BeginImpressionRegion(';
     updateSsjsDocument(URI_DEPRECATED, code);
     const hover = getSsjsHover(URI_DEPRECATED, { line: 0, character: 3 });
-    if (hover !== null) {
-        const text =
-            typeof hover.contents === 'string'
-                ? hover.contents
-                : 'value' in hover.contents
-                  ? hover.contents.value
-                  : '';
+    if (hover) {
+        const text = hoverText(hover);
         assert.ok(
             !text.includes('*remarks:*'),
             `Hover text should not include "*remarks:*" label prefix, got: ${text}`
@@ -368,7 +384,7 @@ test('Completions include HTTP.Get', () => {
     const code = 'HTTP.';
     updateSsjsDocument(URI_HTTP, code);
     const items = getSsjsCompletions(URI_HTTP, { line: 0, character: code.length });
-    const labels = items.map((i) => i.label);
+    const labels = items.map((index) => index.label);
     assert.ok(
         labels.includes('Get') || labels.includes('get'),
         `Expected Get in HTTP completions, got: ${labels.join(', ')}`
@@ -380,13 +396,8 @@ test('Hover for HTTP.Get mentions requiresCoreLoad', () => {
     updateSsjsDocument(URI_HTTP, code);
     // Hover over "Get" — starts at character 5
     const hover = getSsjsHover(URI_HTTP, { line: 0, character: 6 });
-    if (hover !== null) {
-        const text =
-            typeof hover.contents === 'string'
-                ? hover.contents
-                : 'value' in hover.contents
-                  ? hover.contents.value
-                  : '';
+    if (hover) {
+        const text = hoverText(hover);
         assert.ok(
             text.toLowerCase().includes('platform.load') ||
                 text.toLowerCase().includes('requirescoreload') ||
@@ -406,7 +417,7 @@ test('Completions after string literal include String methods', () => {
     const code = 'var s = "hello"; s.';
     updateSsjsDocument(URI_BASIC, code);
     const items = getSsjsCompletions(URI_BASIC, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('toUpperCase'), 'Should include toUpperCase');
     assert.ok(labels.has('indexOf'), 'Should include indexOf');
     assert.ok(labels.has('split'), 'Should include split');
@@ -416,7 +427,7 @@ test('Completions after array include Array methods', () => {
     const code = 'var arr = [1, 2, 3]; arr.';
     updateSsjsDocument(URI_BASIC, code);
     const items = getSsjsCompletions(URI_BASIC, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('push'), 'Should include push');
     assert.ok(labels.has('pop'), 'Should include pop');
     assert.ok(labels.has('join'), 'Should include join');
@@ -426,7 +437,7 @@ test('Completions after "Math." include abs, floor, PI', () => {
     const code = 'Math.';
     updateSsjsDocument(URI_BASIC, code);
     const items = getSsjsCompletions(URI_BASIC, endOf(code));
-    const labels = new Set(items.map((i) => i.label));
+    const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('abs'), 'Should include abs');
     assert.ok(labels.has('floor'), 'Should include floor');
     assert.ok(labels.has('PI'), 'Should include PI constant');
@@ -469,13 +480,8 @@ test('@param tags render in native TypeScript style "@param `name` — desc"', (
     updateSsjsDocument(URI_JSDOC, code);
     // Hover over "Lookup" — starts at character 18
     const hover = getSsjsHover(URI_JSDOC, { line: 0, character: 20 });
-    if (hover !== null) {
-        const text =
-            typeof hover.contents === 'string'
-                ? hover.contents
-                : 'value' in hover.contents
-                  ? hover.contents.value
-                  : '';
+    if (hover) {
+        const text = hoverText(hover);
         // Should use "@param `name` — desc" format, not the "*param:*" fallback
         assert.ok(
             !text.includes('*param:*'),
@@ -494,13 +500,8 @@ test('ssjs.guide reference link present in hover for Platform.Function.Lookup', 
     const code = 'Platform.Function.Lookup(';
     updateSsjsDocument(URI_JSDOC, code);
     const hover = getSsjsHover(URI_JSDOC, { line: 0, character: 20 });
-    if (hover !== null) {
-        const text =
-            typeof hover.contents === 'string'
-                ? hover.contents
-                : 'value' in hover.contents
-                  ? hover.contents.value
-                  : '';
+    if (hover) {
+        const text = hoverText(hover);
         assert.ok(
             text.includes('ssjs.guide') || text.includes('ssjs.guide reference'),
             `Hover text should include ssjs.guide reference link, got: ${text}`
@@ -512,13 +513,8 @@ test('@example tag renders as "@example" header + fenced javascript code block',
     const code = 'Platform.Function.Lookup(';
     updateSsjsDocument(URI_JSDOC, code);
     const hover = getSsjsHover(URI_JSDOC, { line: 0, character: 20 });
-    if (hover !== null) {
-        const text =
-            typeof hover.contents === 'string'
-                ? hover.contents
-                : 'value' in hover.contents
-                  ? hover.contents.value
-                  : '';
+    if (hover) {
+        const text = hoverText(hover);
         if (text.includes('@example')) {
             assert.ok(
                 text.includes('```javascript') || text.includes('```'),
@@ -534,18 +530,18 @@ test('@example tag renders as "@example" header + fenced javascript code block',
 
 const URI_SIG = 'file:///sigHelp.ssjs';
 
-test('getSsjsSignatureHelp returns null when not inside a function call', () => {
+test('getSsjsSignatureHelp returns undefined when not inside a function call', () => {
     const code = 'var x = 1;';
     updateSsjsDocument(URI_SIG, code);
     const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: 5 });
-    assert.strictEqual(result, null);
+    assert.strictEqual(result, undefined);
 });
 
 test('getSsjsSignatureHelp returns signature for Platform.Function call', () => {
     const code = 'Platform.Function.Lookup(';
     updateSsjsDocument(URI_SIG, code);
     const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: 25 });
-    if (result !== null) {
+    if (result) {
         assert.ok(result.signatures.length > 0, 'Should have at least one signature');
         const sig = result.signatures[0];
         assert.ok(sig.label.length > 0, 'Signature label should not be empty');
@@ -557,7 +553,7 @@ test('getSsjsSignatureHelp activeParameter advances on comma', () => {
     const code = 'Platform.Function.Lookup("deName", ';
     updateSsjsDocument(URI_SIG, code);
     const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: code.length });
-    if (result !== null) {
+    if (result) {
         assert.strictEqual(
             result.activeParameter,
             1,
@@ -570,7 +566,7 @@ test('getSsjsSignatureHelp parameter labels are numeric spans inside sig label',
     const code = 'Platform.Function.Lookup(';
     updateSsjsDocument(URI_SIG, code);
     const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: 25 });
-    if (result !== null && result.signatures.length > 0) {
+    if (result && result.signatures.length > 0) {
         const sig = result.signatures[0];
         if (sig.parameters && sig.parameters.length > 0) {
             const label = sig.parameters[0].label;
@@ -581,8 +577,11 @@ test('getSsjsSignatureHelp parameter labels are numeric spans inside sig label',
             if (Array.isArray(label)) {
                 const [start, end] = label as [number, number];
                 assert.ok(start >= 0 && end > start, 'Parameter span should have valid start/end');
-                const paramText = sig.label.slice(start, end);
-                assert.ok(paramText.length > 0, 'Parameter span should resolve to non-empty text');
+                const parameterText = sig.label.slice(start, end);
+                assert.ok(
+                    parameterText.length > 0,
+                    'Parameter span should resolve to non-empty text'
+                );
             }
         }
     }
@@ -929,13 +928,16 @@ test('Find all references on a top-level function returns declaration + all call
     ].join('\n');
     updateSsjsDocument(URI_POLY, code);
     // Cursor on the declaration name `buildKey` (line 0).
-    const refs = getSsjsReferences(URI_POLY, { line: 0, character: 'function '.length });
-    assert.ok(refs.length >= 3, `Expected >= 3 references (decl + 2 calls), got ${refs.length}`);
+    const references = getSsjsReferences(URI_POLY, { line: 0, character: 'function '.length });
     assert.ok(
-        refs.every((r) => r.uri === URI_POLY),
+        references.length >= 3,
+        `Expected >= 3 references (decl + 2 calls), got ${references.length}`
+    );
+    assert.ok(
+        references.every((r) => r.uri === URI_POLY),
         'All references should be in the same document'
     );
-    const lines = refs.map((r) => r.range.start.line).toSorted((x, y) => x - y);
+    const lines = references.map((r) => r.range.start.line).toSorted((x, y) => x - y);
     assert.deepStrictEqual(lines, [0, 3, 4], `Expected references on lines 0,3,4, got ${lines}`);
 });
 
@@ -950,14 +952,14 @@ test('Find all references on a polyfilled method includes the prototype assignme
     updateSsjsDocument(URI_POLY, code);
     // Cursor on a usage of `.startsWith` (line 3).
     const usageCol = code.split('\n')[3].indexOf('startsWith');
-    const refs = getSsjsReferences(URI_POLY, { line: 3, character: usageCol });
-    assert.ok(refs.length > 0, 'Expected references for the polyfilled method');
+    const references = getSsjsReferences(URI_POLY, { line: 3, character: usageCol });
+    assert.ok(references.length > 0, 'Expected references for the polyfilled method');
     assert.ok(
-        refs.every((r) => r.uri === URI_POLY),
+        references.every((r) => r.uri === URI_POLY),
         'All references should be in the same document'
     );
     // The prototype assignment is on line 0; usages on lines 3 and 4.
-    const lines = new Set(refs.map((r) => r.range.start.line));
+    const lines = new Set(references.map((r) => r.range.start.line));
     assert.ok(
         lines.has(0),
         `Expected the prototype assignment (line 0) in references, got ${[...lines]}`
@@ -967,8 +969,8 @@ test('Find all references on a polyfilled method includes the prototype assignme
 
 test('Find all references returns empty for an unknown identifier', () => {
     updateSsjsDocument(URI_POLY, 'var x = somethingUndeclared;');
-    const refs = getSsjsReferences(URI_POLY, { line: 0, character: 8 });
-    assert.strictEqual(refs.length, 0, 'Expected no references for an unknown identifier');
+    const references = getSsjsReferences(URI_POLY, { line: 0, character: 8 });
+    assert.strictEqual(references.length, 0, 'Expected no references for an unknown identifier');
 });
 
 test('Closing document clears global declarations so stale names do not leak', () => {

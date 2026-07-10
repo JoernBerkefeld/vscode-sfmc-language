@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as assert from 'node:assert';
-import { getDocUri as getDocumentUri, activate } from './helper';
+import { getDocumentUri, activate } from './helper';
 
 suite('AMPscript Completions', () => {
     const documentUri = getDocumentUri('completion.amp');

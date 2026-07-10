@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
 import * as assert from 'node:assert';
-import { getDocUri as getDocumentUri, activate } from './helper';
+import { getDocumentUri, activate } from './helper';
 
 suite('Handlebars (.hbs) — MCN intelligence', () => {
     const documentUri = getDocumentUri('test-handlebars.hbs');
 
     test('.hbs keeps the built-in handlebars language id', async () => {
         await activate(documentUri);
-        const doc = vscode.workspace.textDocuments.find(
+        const document = vscode.workspace.textDocuments.find(
             (d) => d.uri.toString() === documentUri.toString()
         );
         assert.strictEqual(
-            doc?.languageId,
+            document?.languageId,
             'handlebars',
             'Expected .hbs to use VS Code built-in handlebars language, not a custom one'
         );

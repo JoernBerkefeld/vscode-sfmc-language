@@ -22,8 +22,8 @@ import {
     ServerOptions,
     TransportKind,
 } from 'vscode-languageclient/node';
-import { SfmcStatusBar } from './statusBar';
-import { checkAndShowWhatsNew, showWhatsNewPanel } from './whatsNew';
+import { SfmcStatusBar } from './status-bar';
+import { checkAndShowWhatsNew, showWhatsNewPanel } from './whats-new';
 
 let client: LanguageClient;
 
@@ -36,6 +36,10 @@ export const CONFLICTING_EXTENSIONS = [
 
 export const SUPPRESS_KEY = 'suppressConflictWarning';
 
+/**
+ * Warn the user when a known conflicting extension is installed alongside this one.
+ * @param context - the extension context used to persist the suppression flag
+ */
 function checkConflictingExtensions(context: ExtensionContext): void {
     const settingSuppressed = workspace
         .getConfiguration('sfmcLanguageServer')
@@ -45,8 +49,8 @@ function checkConflictingExtensions(context: ExtensionContext): void {
     }
 
     const active = CONFLICTING_EXTENSIONS.filter(
-        (ext) => extensions.getExtension(ext.id)?.isActive
-    ).map((ext) => ext.name);
+        (extension) => extensions.getExtension(extension.id)?.isActive
+    ).map((extension) => extension.name);
 
     if (active.length === 0) return;
 
@@ -79,12 +83,22 @@ const AMPSCRIPT_MARKERS: (string | RegExp)[] = [
 const HANDLEBARS_BINDING_MARKER = /\{!\$[A-Za-z0-9_.]/;
 const HANDLEBARS_MUSTACHE_MARKER = /\{\{[#/!{>]?\s*[A-Za-z@]/;
 
+/**
+ * Test whether the text contains any of the given string or RegExp markers.
+ * @param text - the text to search
+ * @param markers - string or RegExp markers to look for
+ * @returns true if any marker matches
+ */
 function matchesAny(text: string, markers: (string | RegExp)[]): boolean {
     return markers.some((marker) =>
         typeof marker === 'string' ? text.includes(marker) : marker.test(text)
     );
 }
 
+/**
+ * Whether the configured target platform is Marketing Cloud Next.
+ * @returns true when `sfmcLanguageServer.targetPlatform` is `next`
+ */
 function isMcnNextTarget(): boolean {
     return (
         workspace
@@ -93,20 +107,25 @@ function isMcnNextTarget(): boolean {
     );
 }
 
-function detectAndSwitchLanguage(doc: TextDocument): void {
+/**
+ * Switch a document's language ID to the appropriate SFMC dialect based on its
+ * path and content (SSJS files, AMPscript/SSJS HTML, and MCN Handlebars).
+ * @param document - the text document to inspect and possibly re-language
+ */
+function detectAndSwitchLanguage(document: TextDocument): void {
     // Force .ssjs files to use the ssjs language ID even when VS Code or user settings
     // have mapped *.ssjs to javascript (configurationDefaults can be overridden by user settings).
-    if (doc.uri.path.endsWith('.ssjs') && doc.languageId !== 'ssjs') {
-        languages.setTextDocumentLanguage(doc, 'ssjs');
+    if (document.uri.path.endsWith('.ssjs') && document.languageId !== 'ssjs') {
+        languages.setTextDocumentLanguage(document, 'ssjs');
         return;
     }
 
-    if (doc.languageId !== 'html') return;
-    const text = doc.getText();
+    if (document.languageId !== 'html') return;
+    const text = document.getText();
 
     // Switch to sfmc for any HTML containing SFMC content (AMPscript markers or SSJS blocks).
     if (matchesAny(text, AMPSCRIPT_MARKERS)) {
-        languages.setTextDocumentLanguage(doc, 'sfmc');
+        languages.setTextDocumentLanguage(document, 'sfmc');
         return;
     }
 
@@ -116,11 +135,16 @@ function detectAndSwitchLanguage(doc: TextDocument): void {
         HANDLEBARS_BINDING_MARKER.test(text) ||
         (isMcnNextTarget() && HANDLEBARS_MUSTACHE_MARKER.test(text))
     ) {
-        languages.setTextDocumentLanguage(doc, 'sfmc');
+        languages.setTextDocumentLanguage(document, 'sfmc');
         return;
     }
 }
 
+/**
+ * Activate the extension: start the language client, wire up language detection,
+ * and register the What's New and conflict-detection features.
+ * @param context - the VS Code extension context
+ */
 export function activate(context: ExtensionContext) {
     const serverModule = context.asAbsolutePath(path.join('server', 'out', 'server.js'));
 
@@ -165,8 +189,8 @@ export function activate(context: ExtensionContext) {
     new SfmcStatusBar(context, client);
 
     // Detect AMPscript in already-open HTML documents
-    for (const doc of workspace.textDocuments) {
-        detectAndSwitchLanguage(doc);
+    for (const document of workspace.textDocuments) {
+        detectAndSwitchLanguage(document);
     }
 
     // Detect SFMC content in HTML documents: on open and on content change (e.g. pasting)
@@ -206,6 +230,10 @@ export function activate(context: ExtensionContext) {
     }
 }
 
+/**
+ * Deactivate the extension by stopping the language client, if running.
+ * @returns a promise that resolves when the client has stopped, or undefined
+ */
 export function deactivate(): Thenable<void> | undefined {
     if (!client) {
         return undefined;

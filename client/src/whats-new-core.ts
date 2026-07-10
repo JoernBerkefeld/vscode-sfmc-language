@@ -11,12 +11,12 @@
 export function compareSemver(a: string, b: string): number {
     const pa = a.split('.').map((p) => Number.parseInt(p, 10) || 0);
     const pb = b.split('.').map((p) => Number.parseInt(p, 10) || 0);
-    const len = Math.max(pa.length, pb.length);
-    for (let i = 0; i < len; i++) {
-        const da = pa[i] ?? 0;
-        const db = pb[i] ?? 0;
-        if (da > db) return 1;
-        if (da < db) return -1;
+    const length = Math.max(pa.length, pb.length);
+    for (let index = 0; index < length; index++) {
+        const da = pa[index] ?? 0;
+        const database = pb[index] ?? 0;
+        if (da > database) return 1;
+        if (da < database) return -1;
     }
     return 0;
 }
@@ -25,32 +25,47 @@ export function compareSemver(a: string, b: string): number {
  * Extract the changelog body for a given version (Keep a Changelog style: ## [x.y.z]).
  * @param changelog - full CHANGELOG.md content
  * @param version - semver version string to look up
- * @returns the changelog body for that version, or null if not found
+ * @returns the changelog body for that version, or undefined if not found
  */
-export function parseChangelogEntry(changelog: string, version: string): string | null {
+export function parseChangelogEntry(changelog: string, version: string): string | undefined {
     const escaped = version.replaceAll(/[.*+?^${}()|[\]\\]/g, (ch) => `\\${ch}`);
     const re = new RegExp(String.raw`^## \[${escaped}\]` + String.raw`[^\n]*\n`, 'm');
     const match = changelog.match(re);
     if (!match || match.index === undefined) {
-        return null;
+        return undefined;
     }
     const start = match.index + match[0].length;
     const rest = changelog.slice(start);
-    const nextIdx = rest.search(/^## \[/m);
-    const body = nextIdx === -1 ? rest : rest.slice(0, nextIdx);
+    const nextIndex = rest.search(/^## \[/m);
+    const body = nextIndex === -1 ? rest : rest.slice(0, nextIndex);
     return body.trim();
 }
 
+/**
+ * Escape HTML-special characters so a raw string can be embedded in markup.
+ * @param s - the raw string to escape
+ * @returns the HTML-escaped string
+ */
 export function escapeHtml(s: string): string {
     return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
+/**
+ * Convert inline markdown (bold, code) in an already HTML-escaped string to HTML.
+ * @param escaped - an HTML-escaped string containing inline markdown
+ * @returns the string with inline markdown replaced by HTML tags
+ */
 function inlineMarkdown(escaped: string): string {
     let s = escaped.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     s = s.replaceAll(/`([^`]+)`/g, '<code>$1</code>');
     return s;
 }
 
+/**
+ * Render a single markdown chunk (paragraphs and unordered lists) to HTML.
+ * @param chunk - the markdown chunk to render
+ * @returns the rendered HTML for that chunk
+ */
 function renderMarkdownChunk(chunk: string): string {
     const lines = chunk.split(/\r?\n/);
     const out: string[] = [];

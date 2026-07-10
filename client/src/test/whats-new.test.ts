@@ -1,5 +1,5 @@
 import * as assert from 'node:assert';
-import { compareSemver, markdownToHtml, parseChangelogEntry } from '../whatsNewCore';
+import { compareSemver, markdownToHtml, parseChangelogEntry } from '../whats-new-core';
 
 suite('whatsNew', () => {
     test('parseChangelogEntry extracts section for version and stops at next header', () => {
@@ -10,8 +10,8 @@ suite('whatsNew', () => {
         assert.ok(!section?.includes('Old'), 'should not include next version');
     });
 
-    test('parseChangelogEntry returns null when version missing', () => {
-        assert.strictEqual(parseChangelogEntry('## [1.0.0]\n\nHi', '2.0.0'), null);
+    test('parseChangelogEntry returns undefined when version missing', () => {
+        assert.strictEqual(parseChangelogEntry('## [1.0.0]\n\nHi', '2.0.0'), undefined);
     });
 
     test('compareSemver orders major.minor.patch', () => {

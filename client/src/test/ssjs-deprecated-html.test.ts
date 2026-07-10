@@ -5,10 +5,15 @@
  */
 import * as vscode from 'vscode';
 import * as assert from 'node:assert';
-import { getDocUri as getDocumentUri, activate } from './helper';
+import { getDocumentUri, activate } from './helper';
 
 const SETTLE_MS = 3000;
 
+/**
+ * Resolve to a promise after the given delay.
+ * @param ms - delay in milliseconds
+ * @returns a promise that resolves after the delay
+ */
 function sleep(ms: number) {
     return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }

@@ -5,7 +5,7 @@ import { activate } from './helper';
 
 suite('Conflict detection — static data', () => {
     test('CONFLICTING_EXTENSIONS contains xnerd.ampscript-language', () => {
-        const ids = CONFLICTING_EXTENSIONS.map((e) => e.id);
+        const ids = CONFLICTING_EXTENSIONS.map((entry) => entry.id);
         assert.ok(
             ids.includes('xnerd.ampscript-language'),
             'xnerd.ampscript-language must be listed as a conflicting extension'
@@ -13,7 +13,7 @@ suite('Conflict detection — static data', () => {
     });
 
     test('CONFLICTING_EXTENSIONS contains FiB.beautyAmp', () => {
-        const ids = CONFLICTING_EXTENSIONS.map((e) => e.id);
+        const ids = CONFLICTING_EXTENSIONS.map((entry) => entry.id);
         assert.ok(
             ids.includes('FiB.beautyAmp'),
             'FiB.beautyAmp must be listed as a conflicting extension'
@@ -49,16 +49,16 @@ suite('Conflict detection — static data', () => {
 suite('Conflict detection — VS Code integration', () => {
     suiteSetup(async () => {
         // Ensure the extension is active before running integration tests
-        const ext = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
-        if (ext && !ext.isActive) {
-            await ext.activate();
+        const extension = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
+        if (extension && !extension.isActive) {
+            await extension.activate();
         }
     });
 
     test('suppressConflictWarning setting is registered and defaults to false', async () => {
         // activate() waits for the extension to be fully active
-        const { getDocUri } = await import('./helper');
-        await activate(getDocUri('test-ampscript.amp'));
+        const { getDocumentUri } = await import('./helper');
+        await activate(getDocumentUri('test-ampscript.amp'));
 
         const config = vscode.workspace.getConfiguration('sfmcLanguageServer');
         const value = config.get<boolean>('suppressConflictWarning');
@@ -67,31 +67,31 @@ suite('Conflict detection — VS Code integration', () => {
 
     test('conflicting extensions are not active in the test host', () => {
         for (const entry of CONFLICTING_EXTENSIONS) {
-            const ext = vscode.extensions.getExtension(entry.id);
+            const extension = vscode.extensions.getExtension(entry.id);
             assert.ok(
-                !ext || !ext.isActive,
+                !extension || !extension.isActive,
                 `Conflicting extension "${entry.id}" must not be active in the test environment`
             );
         }
     });
 
     test('extension does not bundle an extensionPack (standalone extension)', () => {
-        const ext = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
-        assert.ok(ext, 'sfmc-language extension must be present');
+        const extension = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
+        assert.ok(extension, 'sfmc-language extension must be present');
         // This extension is standalone. Users who want a curated set of SFMC
         // extensions should install one of the dedicated *-extension-pack extensions,
         // so this manifest must not declare its own extensionPack.
         assert.strictEqual(
-            ext.packageJSON?.extensionPack,
+            extension.packageJSON?.extensionPack,
             undefined,
             'sfmc-language must not declare an extensionPack'
         );
     });
 
     test('mcpServerDefinitionProviders includes sfmcLanguageMcp', () => {
-        const ext = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
-        assert.ok(ext, 'sfmc-language extension must be present');
-        const providers = ext.packageJSON?.contributes?.mcpServerDefinitionProviders;
+        const extension = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
+        assert.ok(extension, 'sfmc-language extension must be present');
+        const providers = extension.packageJSON?.contributes?.mcpServerDefinitionProviders;
         assert.ok(Array.isArray(providers), 'mcpServerDefinitionProviders must be an array');
         const ids = providers.map((p: { id?: string }) => p.id);
         assert.ok(
@@ -101,9 +101,10 @@ suite('Conflict detection — VS Code integration', () => {
     });
 
     test('sfmc-language.showOutput command is contributed in the manifest', () => {
-        const ext = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
-        assert.ok(ext, 'sfmc-language extension must be present');
-        const contributed: { command: string }[] = ext.packageJSON?.contributes?.commands ?? [];
+        const extension = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
+        assert.ok(extension, 'sfmc-language extension must be present');
+        const contributed: { command: string }[] =
+            extension.packageJSON?.contributes?.commands ?? [];
         assert.ok(Array.isArray(contributed), 'contributes.commands must be an array');
         const ids = contributed.map((c) => c.command);
         assert.ok(
@@ -113,8 +114,8 @@ suite('Conflict detection — VS Code integration', () => {
     });
 
     test('sfmc-language.showOutput command is registered at runtime', async () => {
-        const { activate, getDocUri } = await import('./helper');
-        await activate(getDocUri('test-ampscript.amp'));
+        const { activate, getDocumentUri } = await import('./helper');
+        await activate(getDocumentUri('test-ampscript.amp'));
         const allCommands = await vscode.commands.getCommands(true);
         assert.ok(
             allCommands.includes('sfmc-language.showOutput'),
@@ -123,9 +124,10 @@ suite('Conflict detection — VS Code integration', () => {
     });
 
     test('sfmc-language.showWhatsNew command is contributed in the manifest', () => {
-        const ext = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
-        assert.ok(ext, 'sfmc-language extension must be present');
-        const contributed: { command: string }[] = ext.packageJSON?.contributes?.commands ?? [];
+        const extension = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
+        assert.ok(extension, 'sfmc-language extension must be present');
+        const contributed: { command: string }[] =
+            extension.packageJSON?.contributes?.commands ?? [];
         const ids = contributed.map((c) => c.command);
         assert.ok(
             ids.includes('sfmc-language.showWhatsNew'),
@@ -134,8 +136,8 @@ suite('Conflict detection — VS Code integration', () => {
     });
 
     test('sfmc-language.showWhatsNew command is registered at runtime', async () => {
-        const { activate, getDocUri } = await import('./helper');
-        await activate(getDocUri('test-ampscript.amp'));
+        const { activate, getDocumentUri } = await import('./helper');
+        await activate(getDocumentUri('test-ampscript.amp'));
         const allCommands = await vscode.commands.getCommands(true);
         assert.ok(
             allCommands.includes('sfmc-language.showWhatsNew'),

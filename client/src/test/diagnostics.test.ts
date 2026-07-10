@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as assert from 'node:assert';
-import { getDocUri as getDocumentUri, activate } from './helper';
+import { getDocumentUri, activate } from './helper';
 
 suite('AMPscript Diagnostics', () => {
     const documentUri = getDocumentUri('diagnostics.amp');
@@ -96,6 +96,11 @@ suite('AMPscript Invalid Syntax Diagnostics', () => {
     });
 });
 
+/**
+ * Resolve to a promise after the given delay.
+ * @param ms - delay in milliseconds
+ * @returns a promise that resolves after the delay
+ */
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }

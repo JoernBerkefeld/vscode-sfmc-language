@@ -8,15 +8,25 @@
  */
 import * as vscode from 'vscode';
 import * as assert from 'node:assert';
-import { getDocUri as getDocumentUri, activate } from './helper';
+import { getDocumentUri, activate } from './helper';
 
 const SETTLE_MS = 3000;
 const COMPLETIONS_SETTLE_MS = 8000;
 
+/**
+ * Resolve to a promise after the given delay.
+ * @param ms - delay in milliseconds
+ * @returns a promise that resolves after the delay
+ */
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Extract the plain-text label from a completion item.
+ * @param item - the completion item to read the label from
+ * @returns the item's label string
+ */
 function labelOf(item: vscode.CompletionItem): string {
     return typeof item.label === 'string' ? item.label : item.label.label;
 }
@@ -38,7 +48,7 @@ suite('SSJS-in-HTML TypeScript Service — Completions', () => {
             new vscode.Position(19, 25) // inside "Platform.Function"
         )) as vscode.CompletionList;
 
-        const labels = new Set(list.items.map(labelOf));
+        const labels = new Set(list.items.map((item) => labelOf(item)));
         assert.ok(labels.has('Function'), 'Should include Function');
         assert.ok(labels.has('Variable'), 'Should include Variable');
         assert.ok(labels.has('Response'), 'Should include Response');
@@ -54,7 +64,7 @@ suite('SSJS-in-HTML TypeScript Service — Completions', () => {
             new vscode.Position(19, 29) // after "Platform.Function."
         )) as vscode.CompletionList;
 
-        const labels = new Set(list.items.map(labelOf));
+        const labels = new Set(list.items.map((item) => labelOf(item)));
         assert.ok(labels.has('GUID'), 'Should include GUID');
         assert.ok(labels.has('ParseJSON'), 'Should include ParseJSON');
         assert.ok(labels.has('Lookup'), 'Should include Lookup');
@@ -68,7 +78,7 @@ suite('SSJS-in-HTML TypeScript Service — Completions', () => {
             new vscode.Position(10, 15) // after "de."
         )) as vscode.CompletionList;
 
-        const labels = new Set(list.items.map(labelOf));
+        const labels = new Set(list.items.map((item) => labelOf(item)));
         assert.ok(labels.has('Rows'), 'Should include Rows');
         assert.ok(labels.has('Fields'), 'Should include Fields');
     });
@@ -81,7 +91,7 @@ suite('SSJS-in-HTML TypeScript Service — Completions', () => {
             new vscode.Position(16, 19) // after "api."
         )) as vscode.CompletionList;
 
-        const labels = new Set(list.items.map(labelOf));
+        const labels = new Set(list.items.map((item) => labelOf(item)));
         assert.ok(labels.has('retrieve'), 'Should include retrieve');
         assert.ok(labels.has('createItem'), 'Should include createItem');
         assert.ok(labels.has('setBatchSize'), 'Should include setBatchSize');
@@ -95,7 +105,7 @@ suite('SSJS-in-HTML TypeScript Service — Completions', () => {
             new vscode.Position(25, 19) // inside "round", after "Math."
         )) as vscode.CompletionList;
 
-        const labels = new Set(list.items.map(labelOf));
+        const labels = new Set(list.items.map((item) => labelOf(item)));
         assert.ok(labels.has('abs'), 'Should include abs');
         assert.ok(labels.has('floor'), 'Should include floor');
         assert.ok(labels.has('PI'), 'Should include PI');
@@ -109,7 +119,7 @@ suite('SSJS-in-HTML TypeScript Service — Completions', () => {
             new vscode.Position(28, 20) // after "guid."
         )) as vscode.CompletionList;
 
-        const labels = new Set(list.items.map(labelOf));
+        const labels = new Set(list.items.map((item) => labelOf(item)));
         assert.ok(labels.has('toUpperCase'), 'Should include toUpperCase');
         assert.ok(labels.has('indexOf'), 'Should include indexOf');
         assert.ok(labels.has('split'), 'Should include split');
@@ -205,10 +215,11 @@ suite('SSJS-in-HTML TypeScript Service — Signature Help', () => {
             return; // No signature help available — acceptable in CI
         }
 
-        const doc = sigHelp.signatures[0].documentation;
-        if (!doc) return;
+        const document = sigHelp.signatures[0].documentation;
+        if (!document) return;
 
-        const text = typeof doc === 'string' ? doc : (doc as vscode.MarkdownString).value;
+        const text =
+            typeof document === 'string' ? document : (document as vscode.MarkdownString).value;
         assert.ok(
             text.includes('ssjs.guide'),
             `Signature documentation should include ssjs.guide reference, got: ${text}`

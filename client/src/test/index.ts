@@ -2,6 +2,10 @@ import path from 'node:path';
 import Mocha from 'mocha';
 import { glob } from 'glob';
 
+/**
+ * Discover and run the Mocha test suite for the extension integration tests.
+ * @returns a promise that resolves when all tests pass, or rejects on failure
+ */
 export function run(): Promise<void> {
     const mocha = new Mocha({
         ui: 'tdd',
@@ -24,9 +28,9 @@ export function run(): Promise<void> {
                     }
                 });
             });
-        } catch (ex) {
-            console.error(ex);
-            throw ex;
+        } catch (error) {
+            console.error(error);
+            throw error;
         }
     });
 }

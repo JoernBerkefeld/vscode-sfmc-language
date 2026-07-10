@@ -31,7 +31,7 @@ import {
     getSsjsSignatureHelp,
     getSsjsDefinition as getSsjsTsDefinition,
     getSsjsReferences as getSsjsTsReferences,
-} from './tsService';
+} from './ts-service';
 
 // ---------------------------------------------------------------------------
 // Connection & Document Manager
@@ -104,11 +104,16 @@ connection.onDidChangeConfiguration((change) => {
         globalSettings =
             (change.settings.sfmcLanguageServer as SfmcSettings | null) ?? defaultSettings;
     }
-    for (const doc of documents.all()) {
-        void sendDiagnosticsForDocument(doc.uri);
+    for (const document of documents.all()) {
+        void sendDiagnosticsForDocument(document.uri);
     }
 });
 
+/**
+ * Resolve the effective settings for a document, caching per-resource results.
+ * @param resource - the document URI to resolve settings for
+ * @returns a promise resolving to the settings for that document
+ */
 function getDocumentSettings(resource: string): Thenable<SfmcSettings> {
     if (!hasConfigurationCapability) {
         return Promise.resolve(globalSettings);
@@ -141,6 +146,11 @@ function isHandlebarsDocument(document: TextDocument): boolean {
     return document.languageId === 'handlebars' || document.uri.toLowerCase().endsWith('.hbs');
 }
 
+/**
+ * Map a document to the language the SFMC language service should treat it as.
+ * @param document - the text document to classify
+ * @returns 'ssjs' for SSJS documents, otherwise 'ampscript' (also used for Handlebars)
+ */
 function getDocumentLanguage(document: TextDocument): 'ampscript' | 'ssjs' {
     if (document.languageId === 'ssjs') return 'ssjs';
     if (document.languageId === 'ampscript' || document.languageId === 'sfmc') return 'ampscript';
@@ -170,6 +180,11 @@ function effectiveSettings(document: TextDocument, settings: SfmcSettings): Sfmc
 // Pull diagnostics are skipped by vscode-languageclient when the document is not
 // in a visible tab, which breaks extension tests and some editor scenarios.
 // ---------------------------------------------------------------------------
+/**
+ * Compute and publish diagnostics for a document (SFMC LSP + embedded SSJS TS).
+ * @param uri - the document URI to validate and publish diagnostics for
+ * @returns a promise that resolves once diagnostics have been sent
+ */
 async function sendDiagnosticsForDocument(uri: string): Promise<void> {
     const document = documents.get(uri);
     if (!document) {
@@ -178,27 +193,27 @@ async function sendDiagnosticsForDocument(uri: string): Promise<void> {
     }
     const settings = await getDocumentSettings(document.uri);
     const effective = effectiveSettings(document, settings);
-    const doc = {
+    const document_ = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
-    const sfmcDiags = sfmcLanguageService.validate(doc, effective);
+    const sfmcDiags = sfmcLanguageService.validate(document_, effective);
     let ssjsDiags: import('vscode-languageserver').Diagnostic[] = [];
     let tsDiags: import('vscode-languageserver').Diagnostic[] = [];
-    if (doc.languageId === 'ssjs') {
+    if (document_.languageId === 'ssjs') {
         tsDiags = getSsjsDiagnostics(uri);
-    } else if (doc.languageId === 'ampscript') {
-        const regions = getSsjsRegions(doc.text);
+    } else if (document_.languageId === 'ampscript') {
+        const regions = getSsjsRegions(document_.text);
         if (regions.length > 0) {
             // Run SSJS-specific validators (requiresCoreLoad, deprecated, etc.) on the
             // extracted content — positions map 1:1 to the original HTML file.
-            const ssjsDoc = {
-                text: extractSsjsContent(doc.text, regions),
+            const ssjsDocument = {
+                text: extractSsjsContent(document_.text, regions),
                 languageId: 'ssjs' as const,
-                uri: doc.uri,
+                uri: document_.uri,
             };
-            ssjsDiags = sfmcLanguageService.validate(ssjsDoc, effective);
+            ssjsDiags = sfmcLanguageService.validate(ssjsDocument, effective);
             tsDiags = getSsjsDiagnostics(uri).filter((d) =>
                 isInSsjsRegion(regions, document.offsetAt(d.range.start))
             );
@@ -207,6 +222,10 @@ async function sendDiagnosticsForDocument(uri: string): Promise<void> {
     connection.sendDiagnostics({ uri, diagnostics: [...sfmcDiags, ...ssjsDiags, ...tsDiags] });
 }
 
+/**
+ * Keep the embedded TypeScript virtual file in sync with the document's SSJS.
+ * @param document - the text document whose SSJS content should be synced
+ */
 function syncSsjsVirtualFile(document: TextDocument): void {
     const lang = getDocumentLanguage(document);
     const text = document.getText();
@@ -222,23 +241,23 @@ function syncSsjsVirtualFile(document: TextDocument): void {
     }
 }
 
-documents.onDidOpen((e) => {
-    syncSsjsVirtualFile(e.document);
-    void sendDiagnosticsForDocument(e.document.uri);
+documents.onDidOpen((event) => {
+    syncSsjsVirtualFile(event.document);
+    void sendDiagnosticsForDocument(event.document.uri);
 });
 
-documents.onDidChangeContent((e) => {
-    syncSsjsVirtualFile(e.document);
-    void sendDiagnosticsForDocument(e.document.uri);
+documents.onDidChangeContent((event) => {
+    syncSsjsVirtualFile(event.document);
+    void sendDiagnosticsForDocument(event.document.uri);
 });
 
-documents.onDidClose((e) => {
-    documentSettings.delete(e.document.uri);
-    const lang = getDocumentLanguage(e.document);
+documents.onDidClose((event) => {
+    documentSettings.delete(event.document.uri);
+    const lang = getDocumentLanguage(event.document);
     if (lang === 'ssjs' || lang === 'ampscript') {
-        removeSsjsDocument(e.document.uri);
+        removeSsjsDocument(event.document.uri);
     }
-    connection.sendDiagnostics({ uri: e.document.uri, diagnostics: [] });
+    connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] });
 });
 
 // ---------------------------------------------------------------------------
@@ -248,13 +267,13 @@ connection.onCodeAction(async (parameters): Promise<CodeAction[]> => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return [];
     const settings = await getDocumentSettings(document.uri);
-    const doc = {
+    const document_ = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
     return sfmcLanguageService.getCodeActions(
-        doc,
+        document_,
         parameters.context.diagnostics,
         effectiveSettings(document, settings)
     ) as CodeAction[];
@@ -267,22 +286,22 @@ connection.onCompletion(async (parameters: TextDocumentPositionParams) => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return [];
     const settings = await getDocumentSettings(document.uri);
-    const doc = {
+    const document_ = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
     const sfmcItems = sfmcLanguageService.getCompletions(
-        doc,
+        document_,
         parameters.position,
         effectiveSettings(document, settings)
     ) as import('vscode-languageserver').CompletionItem[];
 
     // For ampscript docs: delegate to TS service if cursor is inside a SSJS region
     const isInSsjsContext =
-        doc.languageId === 'ssjs' ||
-        (doc.languageId === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(doc.text), document.offsetAt(parameters.position)));
+        document_.languageId === 'ssjs' ||
+        (document_.languageId === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(document_.text), document.offsetAt(parameters.position)));
     if (!isInSsjsContext) return sfmcItems;
 
     const { items: tsItems, isMemberCompletion } = getSsjsCompletionInfo(
@@ -303,8 +322,8 @@ connection.onCompletion(async (parameters: TextDocumentPositionParams) => {
         return tsItems.length <= 50 ? tsItems : [];
     }
     // Top-level: SFMC catalog first, TS fills in anything not already present.
-    const sfmcLabels = new Set(sfmcItems.map((i) => i.label));
-    const merged = [...sfmcItems, ...tsItems.filter((i) => !sfmcLabels.has(i.label))];
+    const sfmcLabels = new Set(sfmcItems.map((index) => index.label));
+    const merged = [...sfmcItems, ...tsItems.filter((index) => !sfmcLabels.has(index.label))];
     return merged;
 });
 
@@ -317,9 +336,9 @@ connection.onCompletionResolve((item) => {
 // ---------------------------------------------------------------------------
 connection.onHover(async (parameters) => {
     const document = documents.get(parameters.textDocument.uri);
-    if (!document) return null;
+    if (!document) return;
     const settings = await getDocumentSettings(document.uri);
-    const doc = {
+    const document_ = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
         uri: document.uri,
@@ -329,15 +348,15 @@ connection.onHover(async (parameters) => {
         end: { line: parameters.position.line + 1, character: 0 },
     });
     const sfmcHover = sfmcLanguageService.getHover(
-        doc,
+        document_,
         line,
         parameters.position,
         effectiveSettings(document, settings)
     );
     const inSsjsRegion =
-        doc.languageId === 'ssjs' ||
-        (doc.languageId === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(doc.text), document.offsetAt(parameters.position)));
+        document_.languageId === 'ssjs' ||
+        (document_.languageId === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(document_.text), document.offsetAt(parameters.position)));
     if (!inSsjsRegion) return sfmcHover;
     const tsHover = getSsjsHover(document.uri, parameters.position);
     // TS hover now carries full docs (description, @param, @returns, @example, ssjs.guide link)
@@ -352,9 +371,9 @@ connection.onHover(async (parameters) => {
 // ---------------------------------------------------------------------------
 connection.onSignatureHelp(async (parameters) => {
     const document = documents.get(parameters.textDocument.uri);
-    if (!document) return null;
+    if (!document) return;
     const settings = await getDocumentSettings(document.uri);
-    const doc = {
+    const document_ = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
         uri: document.uri,
@@ -366,15 +385,15 @@ connection.onSignatureHelp(async (parameters) => {
     // TypeScript signature help provides correct parameter spans for highlighting
     // TypeScript covers both SFMC catalog functions and locally-defined user
     // functions (they are in the virtual file). No SFMC LSP fallback for SSJS.
-    const inSsjsCtx =
-        doc.languageId === 'ssjs' ||
-        (doc.languageId === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(doc.text), document.offsetAt(parameters.position)));
-    if (inSsjsCtx) {
+    const inSsjsContext =
+        document_.languageId === 'ssjs' ||
+        (document_.languageId === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(document_.text), document.offsetAt(parameters.position)));
+    if (inSsjsContext) {
         return getSsjsSignatureHelp(document.uri, parameters.position);
     }
     return sfmcLanguageService.getSignatureHelp(
-        doc,
+        document_,
         textUpToCursor,
         effectiveSettings(document, settings)
     );
@@ -383,16 +402,16 @@ connection.onSignatureHelp(async (parameters) => {
 // ---------------------------------------------------------------------------
 // Go to Definition
 // ---------------------------------------------------------------------------
-connection.onDefinition((parameters: DefinitionParams): Location | Location[] | null => {
+connection.onDefinition((parameters: DefinitionParams): Location | Location[] | undefined => {
     const document = documents.get(parameters.textDocument.uri);
-    if (!document) return null;
-    const defLang = getDocumentLanguage(document);
-    const defText = document.getText();
-    const inSsjsForDef =
-        defLang === 'ssjs' ||
-        (defLang === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(defText), document.offsetAt(parameters.position)));
-    if (!inSsjsForDef) return null;
+    if (!document) return undefined;
+    const definitionLang = getDocumentLanguage(document);
+    const definitionText = document.getText();
+    const inSsjsForDefinition =
+        definitionLang === 'ssjs' ||
+        (definitionLang === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(definitionText), document.offsetAt(parameters.position)));
+    if (!inSsjsForDefinition) return undefined;
 
     // Prefer the embedded TypeScript language service: it resolves top-level
     // functions, locals, object members, and prototype-polyfilled methods —
@@ -412,37 +431,37 @@ connection.onDefinition((parameters: DefinitionParams): Location | Location[] | 
     // Extract the identifier at the cursor
     const beforeCursor = line.slice(0, parameters.position.character + 1);
     const wordMatch = beforeCursor.match(/[\w$]+$/);
-    if (!wordMatch) return null;
+    if (!wordMatch) return undefined;
     const word = wordMatch[0];
 
-    const doc = {
+    const document_ = {
         text: document.getText(),
         languageId: 'ssjs' as const,
         uri: document.uri,
     };
-    const location = sfmcLanguageService.getDefinition(doc, word);
-    if (!location) return null;
+    const location = sfmcLanguageService.getDefinition(document_, word);
+    if (!location) return undefined;
     return { uri: document.uri, range: location.range };
 });
 
 // ---------------------------------------------------------------------------
 // Find All References
 // ---------------------------------------------------------------------------
-connection.onReferences((parameters: ReferenceParams): Location[] | null => {
+connection.onReferences((parameters: ReferenceParams): Location[] | undefined => {
     const document = documents.get(parameters.textDocument.uri);
-    if (!document) return null;
-    const refLang = getDocumentLanguage(document);
-    const refText = document.getText();
-    const inSsjsForRef =
-        refLang === 'ssjs' ||
-        (refLang === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(refText), document.offsetAt(parameters.position)));
-    if (!inSsjsForRef) return null;
+    if (!document) return undefined;
+    const referenceLang = getDocumentLanguage(document);
+    const referenceText = document.getText();
+    const inSsjsForReference =
+        referenceLang === 'ssjs' ||
+        (referenceLang === 'ampscript' &&
+            isInSsjsRegion(getSsjsRegions(referenceText), document.offsetAt(parameters.position)));
+    if (!inSsjsForReference) return undefined;
 
     // The embedded TypeScript language service resolves references for top-level
     // functions, locals, object members, and prototype-polyfilled methods.
     const tsLocations = getSsjsTsReferences(document.uri, parameters.position);
-    return tsLocations.length > 0 ? tsLocations : null;
+    return tsLocations.length > 0 ? tsLocations : undefined;
 });
 
 // ---------------------------------------------------------------------------
@@ -507,14 +526,14 @@ function extractSsjsContent(text: string, regions: SsjsRegion[]): string {
     const out: string[] = [];
     let pos = 0;
     for (const region of regions) {
-        for (let i = pos; i < region.start; i++) {
-            out.push(text[i] === '\n' ? '\n' : ' ');
+        for (let index = pos; index < region.start; index++) {
+            out.push(text[index] === '\n' ? '\n' : ' ');
         }
         out.push(text.slice(region.start, region.end));
         pos = region.end;
     }
-    for (let i = pos; i < text.length; i++) {
-        out.push(text[i] === '\n' ? '\n' : ' ');
+    for (let index = pos; index < text.length; index++) {
+        out.push(text[index] === '\n' ? '\n' : ' ');
     }
     return out.join('');
 }
