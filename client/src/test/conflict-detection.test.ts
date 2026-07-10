@@ -75,20 +75,17 @@ suite('Conflict detection — VS Code integration', () => {
         }
     });
 
-    test('extensionPack entries are present in the extension manifest', () => {
+    test('extension does not bundle an extensionPack (standalone extension)', () => {
         const ext = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
         assert.ok(ext, 'sfmc-language extension must be present');
-        const pack: string[] = ext.packageJSON?.extensionPack ?? [];
-        assert.ok(Array.isArray(pack), 'extensionPack must be an array');
-        const expected = [
-            'Accenture-oss.sfmc-devtools-vscode',
-            'dbaeumer.vscode-eslint',
-            'editorconfig.editorconfig',
-            'esbenp.prettier-vscode',
-        ];
-        for (const id of expected) {
-            assert.ok(pack.includes(id), `extensionPack should include "${id}"`);
-        }
+        // This extension is standalone. Users who want a curated set of SFMC
+        // extensions should install one of the dedicated *-extension-pack extensions,
+        // so this manifest must not declare its own extensionPack.
+        assert.strictEqual(
+            ext.packageJSON?.extensionPack,
+            undefined,
+            'sfmc-language must not declare an extensionPack'
+        );
     });
 
     test('mcpServerDefinitionProviders includes sfmcLanguageMcp', () => {

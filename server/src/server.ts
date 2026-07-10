@@ -129,11 +129,40 @@ function getDocumentSettings(resource: string): Thenable<SfmcSettings> {
 // ---------------------------------------------------------------------------
 // Language Detection
 // ---------------------------------------------------------------------------
+
+/**
+ * True when the document is a Handlebars file. `.hbs` uses VS Code's built-in
+ * `handlebars` language id (HTML + Handlebars). Handlebars is Marketing Cloud
+ * Next-only, so these documents always run in MCN mode (see effectiveSettings).
+ * @param document - the text document to test
+ * @returns true if the document is Handlebars (by language id or .hbs extension)
+ */
+function isHandlebarsDocument(document: TextDocument): boolean {
+    return document.languageId === 'handlebars' || document.uri.toLowerCase().endsWith('.hbs');
+}
+
 function getDocumentLanguage(document: TextDocument): 'ampscript' | 'ssjs' {
     if (document.languageId === 'ssjs') return 'ssjs';
     if (document.languageId === 'ampscript' || document.languageId === 'sfmc') return 'ampscript';
     if (document.uri.toLowerCase().endsWith('.ssjs')) return 'ssjs';
+    // Handlebars intelligence lives on the ampscript path in sfmc-language-lsp.
     return 'ampscript';
+}
+
+/**
+ * Return settings adjusted for the given document. Handlebars documents always
+ * target Marketing Cloud Next so their MCN Handlebars intelligence (validation,
+ * completions, hover, signature help, code actions) is available regardless of
+ * the user's `sfmcLanguageServer.targetPlatform` setting.
+ * @param document - the text document being processed
+ * @param settings - the resolved settings for the document
+ * @returns settings with `targetPlatform: 'next'` forced for Handlebars docs
+ */
+function effectiveSettings(document: TextDocument, settings: SfmcSettings): SfmcSettings {
+    if (isHandlebarsDocument(document)) {
+        return { ...settings, targetPlatform: 'next' };
+    }
+    return settings;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,12 +177,13 @@ async function sendDiagnosticsForDocument(uri: string): Promise<void> {
         return;
     }
     const settings = await getDocumentSettings(document.uri);
+    const effective = effectiveSettings(document, settings);
     const doc = {
         text: document.getText(),
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
-    const sfmcDiags = sfmcLanguageService.validate(doc, settings);
+    const sfmcDiags = sfmcLanguageService.validate(doc, effective);
     let ssjsDiags: import('vscode-languageserver').Diagnostic[] = [];
     let tsDiags: import('vscode-languageserver').Diagnostic[] = [];
     if (doc.languageId === 'ssjs') {
@@ -168,7 +198,7 @@ async function sendDiagnosticsForDocument(uri: string): Promise<void> {
                 languageId: 'ssjs' as const,
                 uri: doc.uri,
             };
-            ssjsDiags = sfmcLanguageService.validate(ssjsDoc, settings);
+            ssjsDiags = sfmcLanguageService.validate(ssjsDoc, effective);
             tsDiags = getSsjsDiagnostics(uri).filter((d) =>
                 isInSsjsRegion(regions, document.offsetAt(d.range.start))
             );
@@ -226,7 +256,7 @@ connection.onCodeAction(async (parameters): Promise<CodeAction[]> => {
     return sfmcLanguageService.getCodeActions(
         doc,
         parameters.context.diagnostics,
-        settings
+        effectiveSettings(document, settings)
     ) as CodeAction[];
 });
 
@@ -245,7 +275,7 @@ connection.onCompletion(async (parameters: TextDocumentPositionParams) => {
     const sfmcItems = sfmcLanguageService.getCompletions(
         doc,
         parameters.position,
-        settings
+        effectiveSettings(document, settings)
     ) as import('vscode-languageserver').CompletionItem[];
 
     // For ampscript docs: delegate to TS service if cursor is inside a SSJS region
@@ -298,7 +328,12 @@ connection.onHover(async (parameters) => {
         start: { line: parameters.position.line, character: 0 },
         end: { line: parameters.position.line + 1, character: 0 },
     });
-    const sfmcHover = sfmcLanguageService.getHover(doc, line, parameters.position, settings);
+    const sfmcHover = sfmcLanguageService.getHover(
+        doc,
+        line,
+        parameters.position,
+        effectiveSettings(document, settings)
+    );
     const inSsjsRegion =
         doc.languageId === 'ssjs' ||
         (doc.languageId === 'ampscript' &&
@@ -338,7 +373,11 @@ connection.onSignatureHelp(async (parameters) => {
     if (inSsjsCtx) {
         return getSsjsSignatureHelp(document.uri, parameters.position);
     }
-    return sfmcLanguageService.getSignatureHelp(doc, textUpToCursor, settings);
+    return sfmcLanguageService.getSignatureHelp(
+        doc,
+        textUpToCursor,
+        effectiveSettings(document, settings)
+    );
 });
 
 // ---------------------------------------------------------------------------

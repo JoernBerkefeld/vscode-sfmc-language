@@ -140,9 +140,16 @@ export function activate(context: ExtensionContext) {
             { scheme: 'untitled', language: 'sfmc' },
             { scheme: 'file', language: 'ssjs' },
             { scheme: 'untitled', language: 'ssjs' },
+            // .hbs files use VS Code's built-in `handlebars` language (HTML +
+            // Handlebars). We attach the LSP so MCN Handlebars intelligence works
+            // there without hijacking the native language id.
+            { scheme: 'file', language: 'handlebars' },
+            { scheme: 'untitled', language: 'handlebars' },
         ],
         synchronize: {
-            fileEvents: workspace.createFileSystemWatcher('**/*.{ampscript,amp,ssjs}'),
+            fileEvents: workspace.createFileSystemWatcher(
+                '**/*.{ampscript,amp,ssjs,hbs,handlebars}'
+            ),
         },
     };
 

@@ -26,7 +26,9 @@
     "server-side javascript",
     "multi-root ready",
     "mcp",
-    "model context protocol"
+    "model context protocol",
+    "handlebars",
+    "engagement"
   ],
   "icon": "resources/images/vscode-sfmc-language-white256.png",
   "galleryBanner": {
@@ -40,16 +42,10 @@
     "onLanguage:ampscript",
     "onLanguage:sfmc",
     "onLanguage:ssjs",
+    "onLanguage:handlebars",
     "onStartupFinished"
   ],
   "main": "./client/out/extension",
-  "extensionPack": [
-    "Accenture-oss.sfmc-devtools-vscode",
-    "dbaeumer.vscode-eslint",
-    "editorconfig.editorconfig",
-    "esbenp.prettier-vscode",
-    "joernberkefeld.sfmc-data"
-  ],
   "contributes": {
     "languages": [
       {
@@ -168,7 +164,8 @@
         "markdown",
         "ampscript",
         "ssjs",
-        "sfmc"
+        "sfmc",
+        "handlebars"
       ]
     },
     "configuration": {
@@ -216,7 +213,7 @@
           "scope": "resource",
           "type": "boolean",
           "default": false,
-          "description": "Suppress LSP diagnostics that are already covered by eslint-plugin-sfmc rules (e.g. AMPscript unknown function, arity, enum value, smart quotes, comment syntax; SSJS unavailable/broken or polyfillable ECMAScript methods covered by the ssjs/no-unavailable-method rule). Use this when both the language server and ESLint are active to avoid duplicate warnings. Diagnostics unique to the LSP (delimiter balance, IF/ENDIF/FOR/NEXT balance, GTL, MCN compatibility) are always shown."
+          "description": "Suppress LSP diagnostics that are already covered by eslint-plugin-sfmc rules (e.g. AMPscript unknown function, arity, enum value, smart quotes, comment syntax; SSJS unavailable/broken or polyfillable ECMAScript methods, missing/outdated Platform.Load, and unsupported ES6+ syntax). Use this when both the language server and ESLint are active to avoid duplicate warnings. Diagnostics unique to the LSP (delimiter balance, IF/ENDIF/FOR/NEXT balance, GTL, MCN compatibility) are always shown."
         }
       }
     },
@@ -250,7 +247,7 @@
     "dev:sync-ssjs-data": "node -e \"const {execSync}=require('child_process');const {cpSync}=require('fs');execSync('node scripts/generate-dts.mjs',{cwd:'../ssjs-data',stdio:'inherit'});cpSync('../ssjs-data/dist','server/node_modules/ssjs-data/dist',{recursive:true});console.log('ssjs-data/dist regenerated + synced from local source')\"",
     "dev:sync-handlebars-data": "node -e \"const {cpSync}=require('fs');cpSync('../handlebars-data/src','server/node_modules/handlebars-data/src',{recursive:true});console.log('handlebars-data/src synced from local source')\"",
     "dev:sync-ampscript-data": "node -e \"const {cpSync}=require('fs');cpSync('../ampscript-data/src','server/node_modules/ampscript-data/src',{recursive:true});console.log('ampscript-data/src synced from local source')\"",
-    "compile": "npm run clean && tsc -b && npm run copy-globals",
+    "compile": "npm run clean && tsc -b && npm run esbuild-server -- --sourcemap && npm run copy-globals",
     "watch": "tsc -b -w",
     "dev": "npm run compile && code --extensionDevelopmentPath=. ./client/testFixture",
     "package": "npx @vscode/vsce package --no-dependencies",
@@ -287,7 +284,7 @@
     "undici-types": "^8.1.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^2.0.1"
+    "sfmc-language-lsp": "^3.0.1"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [

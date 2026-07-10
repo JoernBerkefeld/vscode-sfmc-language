@@ -1,19 +1,19 @@
 # SFMC Language Service for VS Code
 
-A Visual Studio Code extension providing comprehensive language support for **Salesforce Marketing Cloud Engagement** — **AMPscript**, **SSJS** (Server-Side JavaScript), and **GTL** (Guide Template Language). HTML files containing SFMC content are auto-detected and switched to the combined **SFMC (AMPscript / SSJS)** language, giving you full IntelliSense without any manual file-type changes.
+A Visual Studio Code extension providing comprehensive language support for **Salesforce Marketing Cloud Engagement** and **Marketing Cloud Next** — **AMPscript**, **SSJS** (Server-Side JavaScript), **GTL** (Guide Template Language), and **MCN Handlebars**. HTML files containing SFMC content are auto-detected and switched to the combined **SFMC (AMPscript / SSJS)** language, and `.hbs` (Handlebars) files receive always-on Marketing Cloud Next intelligence — all without any manual file-type changes.
 
 ## Feature Overview
 
-| Feature | AMPscript (`.amp`) | SSJS (`.ssjs`) | SFMC HTML (`.html`) |
-| -------------------------------- | :----------------: | :------------: | :-----------------: |
-| Syntax highlighting | ✓ | ✓ | ✓ (auto-detected) |
-| Auto-completion | ✓ | ✓ | ✓ |
-| Hover / IntelliSense | ✓ | ✓ | ✓ |
-| Signature help | ✓ | ✓ | ✓ |
-| Go-to definition | — | ✓ | ✓ |
-| Diagnostics / errors | ✓ | ✓ | ✓ |
-| Variable resolution | planned | ✓ | ✓ |
-| Snippets | 36 | 18 | via sfmc language |
+| Feature | AMPscript (`.amp`) | SSJS (`.ssjs`) | SFMC HTML (`.html`) | Handlebars (`.hbs`) |
+| -------------------------------- | :----------------: | :------------: | :-----------------: | :-----------------: |
+| Syntax highlighting | ✓ | ✓ | ✓ (auto-detected) | ✓ (built-in) |
+| Auto-completion | ✓ | ✓ | ✓ | ✓ |
+| Hover / IntelliSense | ✓ | ✓ | ✓ | ✓ |
+| Signature help | ✓ | ✓ | ✓ | ✓ |
+| Go-to definition | — | ✓ | ✓ | — |
+| Diagnostics / errors | ✓ | ✓ | ✓ | ✓ |
+| Variable resolution | planned | ✓ | ✓ | — |
+| Snippets | 36 | 18 | via sfmc language | via handlebars |
 
 **Variable resolution** means the language service infers the concrete type (and where possible, the value) held in a variable. Hovering over a local variable reveals its resolved type rather than a generic `any`. This is fully available in SSJS and planned for AMPscript in a future release.
 
@@ -227,6 +227,20 @@ GTL uses `{{ }}` delimiters and is a thin wrapper around AMPscript. The extensio
 | `gtlattrval` | AttributeValue via GTL |
 | `gtlformatdate` | Date formatting via GTL |
 
+## Handlebars (`.hbs`) — Marketing Cloud Next
+
+`.hbs` files use VS Code's built-in **Handlebars** language (HTML plus Handlebars), so syntax highlighting works out of the box — no custom language is registered by this extension. On top of that, the extension attaches its language server to Handlebars documents and provides **MCN Handlebars** intelligence for the Salesforce Marketing Cloud Next template engine.
+
+Because Handlebars is a Marketing Cloud Next-only feature, `.hbs` files are **always** treated as `targetPlatform: "next"` regardless of the `sfmcLanguageServer.targetPlatform` setting. You get the same MCN Handlebars support that Engagement HTML files only receive when the setting is switched to `"next"`.
+
+**What you get in `.hbs` files:**
+
+- **Completions** for MCN Handlebars helpers inside `{{ ... }}` mustaches and for built-in `{!$...}` data bindings
+- **Hover** documentation for helpers and bindings, with links to the Salesforce Developers documentation
+- **Signature help** for helper arguments — MCN helper arguments are whitespace-separated (e.g. `{{substring value 0 3}}`), so hints appear as you type spaces
+- **Diagnostics** for unsupported Handlebars constructs (partials, decorators, and built-in helpers absent from MCN's locked-down engine)
+- **Code actions** / quick fixes for MCN Handlebars diagnostics
+
 ## Status Bar
 
 A compact entry appears in the VS Code status bar (bottom-right) as soon as the extension activates. Its label reflects the active `sfmcLanguageServer.targetPlatform`: **`sfmc-e`** for Engagement and **`sfmc-next`** for Marketing Cloud Next.
@@ -251,11 +265,12 @@ This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/m
 ## File Types
 
 | File pattern | Language | Notes |
-| --------------------------------- | --------------------------- | --------------------------------------------- |
+| --------------------------------- | --------------------------- | ----------------------------------------------------- |
 | `*.ampscript`, `*.amp` | AMPscript | Always |
 | `*.ssjs` | SSJS | Always |
 | `*.html` containing SFMC content | SFMC (AMPscript / SSJS) | Auto-detected on open and on paste |
 | `*.html` without SFMC content | html (unchanged) | Extension does not touch plain HTML |
+| `*.hbs` | Handlebars (built-in) | MCN Handlebars intelligence, always in `next` mode |
 
 ## Installation
 
@@ -276,7 +291,7 @@ This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/m
 1. Open the `vscode-sfmc-language` folder in VS Code
 2. Run `npm install` and `npm run compile`
 3. Press `F5` and choose **Launch Client**
-4. Open a `.ampscript`, `.amp`, or `.ssjs` file in the Extension Development Host
+4. Open a `.ampscript`, `.amp`, `.ssjs`, or `.hbs` file in the Extension Development Host
 
 ## Configuration
 
