@@ -29,7 +29,8 @@ function sleep(ms: number) {
  * @returns the item's label string
  */
 function labelOf(item: vscode.CompletionItem): string {
-    return typeof item.label === 'string' ? item.label : item.label.label;
+    const { label } = item;
+    return typeof label === 'string' ? label : label.label;
 }
 
 suite('SSJS TypeScript Service — Completions', () => {
@@ -157,7 +158,7 @@ suite('SSJS TypeScript Service — Diagnostics', () => {
             (d) =>
                 d.source === 'sfmc-ts' &&
                 d.severity === vscode.DiagnosticSeverity.Error &&
-                (d.range.start.line === 6 || d.range.start.line === 9 || d.range.start.line === 15)
+                [6, 9, 15].includes(d.range.start.line)
         );
         assert.strictEqual(
             tsDiagErrors.length,

@@ -39,8 +39,12 @@ import {
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
 
-let hasConfigurationCapability = false;
-let hasWorkspaceFolderCapability = false;
+// Mutable server capabilities, kept on a holder object so handlers can update
+// them without reassigning a top-level variable (unicorn/no-top-level-assignment-in-function).
+const capabilityState = {
+    hasConfigCapability: false,
+    hasWorkspaceFolderCapability: false,
+};
 
 // ---------------------------------------------------------------------------
 // Initialization
@@ -48,8 +52,8 @@ let hasWorkspaceFolderCapability = false;
 connection.onInitialize((parameters: InitializeParams) => {
     const capabilities = parameters.capabilities;
 
-    hasConfigurationCapability = !!capabilities.workspace?.configuration;
-    hasWorkspaceFolderCapability = !!capabilities.workspace?.workspaceFolders;
+    capabilityState.hasConfigCapability = !!capabilities.workspace?.configuration;
+    capabilityState.hasWorkspaceFolderCapability = !!capabilities.workspace?.workspaceFolders;
 
     const result: InitializeResult = {
         capabilities: {
@@ -71,7 +75,7 @@ connection.onInitialize((parameters: InitializeParams) => {
             referencesProvider: true,
         },
     };
-    if (hasWorkspaceFolderCapability) {
+    if (capabilityState.hasWorkspaceFolderCapability) {
         result.capabilities.workspace = {
             workspaceFolders: { supported: true },
         };
@@ -80,10 +84,10 @@ connection.onInitialize((parameters: InitializeParams) => {
 });
 
 connection.onInitialized(() => {
-    if (hasConfigurationCapability) {
+    if (capabilityState.hasConfigCapability) {
         connection.client.register(DidChangeConfigurationNotification.type);
     }
-    if (hasWorkspaceFolderCapability) {
+    if (capabilityState.hasWorkspaceFolderCapability) {
         connection.workspace.onDidChangeWorkspaceFolders(() => {
             connection.console.log('Workspace folder change event received.');
         });
@@ -94,14 +98,16 @@ connection.onInitialized(() => {
 // Settings
 // ---------------------------------------------------------------------------
 const defaultSettings: SfmcSettings = { maxNumberOfProblems: 100 };
-let globalSettings: SfmcSettings = defaultSettings;
+// Holder so the global fallback settings can be replaced without reassigning a
+// top-level variable inside a handler (unicorn/no-top-level-assignment-in-function).
+const settingsState: { globalSettings: SfmcSettings } = { globalSettings: defaultSettings };
 const documentSettings = new Map<string, Thenable<SfmcSettings>>();
 
 connection.onDidChangeConfiguration((change) => {
-    if (hasConfigurationCapability) {
+    if (capabilityState.hasConfigCapability) {
         documentSettings.clear();
     } else {
-        globalSettings =
+        settingsState.globalSettings =
             (change.settings.sfmcLanguageServer as SfmcSettings | null) ?? defaultSettings;
     }
     for (const document of documents.all()) {
@@ -114,18 +120,19 @@ connection.onDidChangeConfiguration((change) => {
  * @param resource - the document URI to resolve settings for
  * @returns a promise resolving to the settings for that document
  */
-function getDocumentSettings(resource: string): Thenable<SfmcSettings> {
-    if (!hasConfigurationCapability) {
-        return Promise.resolve(globalSettings);
+async function getDocumentSettings(resource: string): Promise<SfmcSettings> {
+    if (!capabilityState.hasConfigCapability) {
+        return settingsState.globalSettings;
     }
     let result = documentSettings.get(resource);
     if (!result) {
-        result = connection.workspace
-            .getConfiguration({
+        result = (async (): Promise<SfmcSettings> => {
+            const config = (await connection.workspace.getConfiguration({
                 scopeUri: resource,
                 section: 'sfmcLanguageServer',
-            })
-            .then((cfg: SfmcSettings | null) => cfg ?? defaultSettings);
+            })) as SfmcSettings | null;
+            return config ?? defaultSettings;
+        })();
         documentSettings.set(resource, result);
     }
     return result;
@@ -353,11 +360,11 @@ connection.onHover(async (parameters) => {
         parameters.position,
         effectiveSettings(document, settings)
     );
-    const inSsjsRegion =
+    const isInSsjsForHover =
         document_.languageId === 'ssjs' ||
         (document_.languageId === 'ampscript' &&
             isInSsjsRegion(getSsjsRegions(document_.text), document.offsetAt(parameters.position)));
-    if (!inSsjsRegion) return sfmcHover;
+    if (!isInSsjsForHover) return sfmcHover;
     const tsHover = getSsjsHover(document.uri, parameters.position);
     // TS hover now carries full docs (description, @param, @returns, @example, ssjs.guide link)
     // so it is self-sufficient.  The SFMC LSP hover is used only as a fallback for symbols
@@ -385,11 +392,11 @@ connection.onSignatureHelp(async (parameters) => {
     // TypeScript signature help provides correct parameter spans for highlighting
     // TypeScript covers both SFMC catalog functions and locally-defined user
     // functions (they are in the virtual file). No SFMC LSP fallback for SSJS.
-    const inSsjsContext =
+    const isInSsjsContext =
         document_.languageId === 'ssjs' ||
         (document_.languageId === 'ampscript' &&
             isInSsjsRegion(getSsjsRegions(document_.text), document.offsetAt(parameters.position)));
-    if (inSsjsContext) {
+    if (isInSsjsContext) {
         return getSsjsSignatureHelp(document.uri, parameters.position);
     }
     return sfmcLanguageService.getSignatureHelp(
@@ -407,11 +414,11 @@ connection.onDefinition((parameters: DefinitionParams): Location | Location[] | 
     if (!document) return undefined;
     const definitionLang = getDocumentLanguage(document);
     const definitionText = document.getText();
-    const inSsjsForDefinition =
+    const isInSsjsForDefinition =
         definitionLang === 'ssjs' ||
         (definitionLang === 'ampscript' &&
             isInSsjsRegion(getSsjsRegions(definitionText), document.offsetAt(parameters.position)));
-    if (!inSsjsForDefinition) return undefined;
+    if (!isInSsjsForDefinition) return undefined;
 
     // Prefer the embedded TypeScript language service: it resolves top-level
     // functions, locals, object members, and prototype-polyfilled methods —
@@ -452,11 +459,11 @@ connection.onReferences((parameters: ReferenceParams): Location[] | undefined =>
     if (!document) return undefined;
     const referenceLang = getDocumentLanguage(document);
     const referenceText = document.getText();
-    const inSsjsForReference =
+    const isInSsjsForReference =
         referenceLang === 'ssjs' ||
         (referenceLang === 'ampscript' &&
             isInSsjsRegion(getSsjsRegions(referenceText), document.offsetAt(parameters.position)));
-    if (!inSsjsForReference) return undefined;
+    if (!isInSsjsForReference) return undefined;
 
     // The embedded TypeScript language service resolves references for top-level
     // functions, locals, object members, and prototype-polyfilled methods.

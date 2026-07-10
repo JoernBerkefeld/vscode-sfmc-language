@@ -19,9 +19,10 @@ suite('AMPscript Completions', () => {
         assert.ok(actualCompletionList.items.length > 0, 'Should return completions');
 
         const functionNames = new Set(
-            actualCompletionList.items.map((index) =>
-                typeof index.label === 'string' ? index.label : index.label.label
-            )
+            actualCompletionList.items.map((item) => {
+                const { label } = item;
+                return typeof label === 'string' ? label : label.label;
+            })
         );
         assert.ok(functionNames.has('Lookup'), 'Should include Lookup function');
         assert.ok(functionNames.has('LookupRows'), 'Should include LookupRows function');
@@ -40,9 +41,10 @@ suite('AMPscript Completions', () => {
         )) as vscode.CompletionList;
 
         const labels = new Set(
-            actualCompletionList.items.map((index) =>
-                typeof index.label === 'string' ? index.label : index.label.label
-            )
+            actualCompletionList.items.map((item) => {
+                const { label } = item;
+                return typeof label === 'string' ? label : label.label;
+            })
         );
         assert.ok(labels.has('var'), 'Should include var keyword');
         assert.ok(labels.has('set'), 'Should include set keyword');
@@ -60,12 +62,13 @@ suite('AMPscript Completions', () => {
         )) as vscode.CompletionList;
 
         // Ignore word-based suggestions from other fixtures; only count our Function items.
-        const ampFunctions = actualCompletionList.items.filter((index) => {
-            const label = typeof index.label === 'string' ? index.label : index.label.label;
-            const detail = typeof index.detail === 'string' ? index.detail : '';
+        const ampFunctions = actualCompletionList.items.filter((item) => {
+            const rawLabel = item.label;
+            const label = typeof rawLabel === 'string' ? rawLabel : rawLabel.label;
+            const detail = typeof item.detail === 'string' ? item.detail : '';
             return (
                 label === 'Lookup' &&
-                index.kind === vscode.CompletionItemKind.Function &&
+                item.kind === vscode.CompletionItemKind.Function &&
                 /^\([^)]+\)/.test(detail)
             );
         });

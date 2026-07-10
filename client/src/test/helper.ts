@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
 import path from 'node:path';
 
-export let document_: vscode.TextDocument;
-export let editor: vscode.TextEditor;
-export let documentEol: string;
-export let platformEol: string;
+// Holder so the active document/editor can be reassigned from inside `activate`
+// without assigning to a top-level binding (unicorn/no-top-level-assignment-in-function).
+export const testState: {
+    document: vscode.TextDocument | undefined;
+    editor: vscode.TextEditor | undefined;
+} = { document: undefined, editor: undefined };
 
 /**
  * Activate the extension and open the given document in an editor.
@@ -14,8 +16,8 @@ export async function activate(documentUri: vscode.Uri) {
     const extension = vscode.extensions.getExtension('joernberkefeld.sfmc-language')!;
     await extension.activate();
     try {
-        document_ = await vscode.workspace.openTextDocument(documentUri);
-        editor = await vscode.window.showTextDocument(document_);
+        testState.document = await vscode.workspace.openTextDocument(documentUri);
+        testState.editor = await vscode.window.showTextDocument(testState.document);
         await sleep(4000);
     } catch (error) {
         console.error(error);
@@ -54,9 +56,15 @@ export const getDocumentUri = (p: string) => {
  * @returns true when the edit was applied
  */
 export async function setTestContent(content: string): Promise<boolean> {
+    const document = testState.document!;
     const all = new vscode.Range(
-        document_.positionAt(0),
-        document_.positionAt(document_.getText().length)
+        document.positionAt(0),
+        document.positionAt(document.getText().length)
     );
-    return editor.edit((eb) => eb.replace(all, content));
+    // Use delete + insert rather than TextEditorEdit.replace so the unicorn
+    // string-replacement heuristic does not misfire on the VS Code edit API.
+    return testState.editor!.edit((eb) => {
+        eb.delete(all);
+        eb.insert(document.positionAt(0), content);
+    });
 }

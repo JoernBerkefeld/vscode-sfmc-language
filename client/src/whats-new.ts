@@ -15,7 +15,9 @@ export const WHATS_NEW_VERSION_KEY = 'whatsNew.lastShownVersion';
 
 const PANEL_VIEW_TYPE = 'sfmcLanguage.whatsNew';
 
-let panel: WebviewPanel | undefined;
+// Holder object so the singleton panel can be reassigned without a top-level
+// variable assignment inside a function (unicorn/no-top-level-assignment-in-function).
+const panelState: { panel: WebviewPanel | undefined } = { panel: undefined };
 
 /**
  * Generate a random 32-character nonce for the webview Content-Security-Policy.
@@ -115,21 +117,28 @@ export async function showWhatsNewPanel(
     const title = `What's New — ${extensionDisplayName} v${version}`;
     const nonce = getNonce();
 
-    if (panel) {
-        panel.title = title;
-        panel.webview.html = buildWhatsNewHtml(bodyHtml, title, nonce, panel.webview.cspSource);
-        panel.reveal(ViewColumn.Active);
+    if (panelState.panel) {
+        const existing = panelState.panel;
+        existing.title = title;
+        existing.webview.html = buildWhatsNewHtml(
+            bodyHtml,
+            title,
+            nonce,
+            existing.webview.cspSource
+        );
+        existing.reveal(ViewColumn.Active);
         return;
     }
 
-    panel = window.createWebviewPanel(PANEL_VIEW_TYPE, title, ViewColumn.Active, {
+    const panel = window.createWebviewPanel(PANEL_VIEW_TYPE, title, ViewColumn.Active, {
         enableScripts: false,
         retainContextWhenHidden: true,
         localResourceRoots: [Uri.file(context.extensionPath)],
     });
+    panelState.panel = panel;
     panel.webview.html = buildWhatsNewHtml(bodyHtml, title, nonce, panel.webview.cspSource);
     panel.onDidDispose(() => {
-        panel = undefined;
+        panelState.panel = undefined;
     });
 }
 

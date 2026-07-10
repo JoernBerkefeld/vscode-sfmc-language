@@ -118,7 +118,9 @@ function setVirtualFile(name: string, content: string): void {
 // ambient declarations derived from ESLint-style /* global NAME */ comments.
 // ---------------------------------------------------------------------------
 
-let documentCounter = 0;
+// Holder so the counter can be bumped without reassigning a top-level variable
+// inside a function (unicorn/no-top-level-assignment-in-function).
+const counters = { document: 0 };
 const uriToVirtualName = new Map<string, string>();
 const uriToGlobalsName = new Map<string, string>();
 const uriToPolyfillsName = new Map<string, string>();
@@ -131,7 +133,8 @@ const uriToPolyfillsName = new Map<string, string>();
 function virtualNameForUri(uri: string): string {
     let name = uriToVirtualName.get(uri);
     if (!name) {
-        name = `__doc_${documentCounter++}.js`;
+        name = `__doc_${counters.document}.js`;
+        counters.document += 1;
         uriToVirtualName.set(uri, name);
     }
     return name;
@@ -216,10 +219,10 @@ function parseGlobalCommentDeclarations(text: string): string {
     let match: RegExpExecArray | null;
     while ((match = GLOBAL_COMMENT.exec(text)) !== null) {
         // Body may use commas and/or whitespace as separators.
-        for (const part of match[1].split(/[\s,]+/)) {
-            if (!part) continue;
+        const parts = match[1].split(/[\s,]+/);
+        for (const part of parts) {
             // Strip optional :readonly / :writable qualifier.
-            const name = part.split(':')[0].trim();
+            const name = part ? part.split(':', 1)[0].trim() : '';
             if (name && IDENT.test(name)) {
                 names.add(name);
             }
@@ -316,7 +319,7 @@ function parsePolyfillDeclarations(text: string): string {
                       .map((p) =>
                           p
                               .replace(/^\.\.\./, '')
-                              .split('=')[0]
+                              .split('=', 1)[0]
                               .trim()
                       )
                       .filter((p) => /^[$A-Z_a-z][\w$]*$/.test(p));
@@ -357,16 +360,16 @@ function parsePolyfillDeclarations(text: string): string {
     for (const [iface, { typeParams, methods }] of membersByIface) {
         const memberLines: string[] = [];
         for (const [name, { params, jsdoc, paramTypes, optionalParams, returnType }] of methods) {
-            if (jsdoc) memberLines.push(indentLines(jsdoc, '    '));
+            if (jsdoc) memberLines.push(indentLines(jsdoc, ' '.repeat(4)));
             // Use the JSDoc `@param {Type}` / `@returns {Type}` annotations when
             // present so hover reports the documented types instead of `any`.
             // A parameter marked optional in JSDoc (`[name]`) emits `name?: type`;
             // every parameter after an optional one must also be optional in TS.
-            let sawOptional = false;
+            let isSawOptional = false;
             const parameterString = params
                 .map((p) => {
-                    const optional = sawOptional || optionalParams.has(p);
-                    if (optional) sawOptional = true;
+                    const optional = isSawOptional || optionalParams.has(p);
+                    if (optional) isSawOptional = true;
                     return `${p}${optional ? '?' : ''}: ${paramTypes.get(p) ?? 'any'}`;
                 })
                 .join(', ');
@@ -435,18 +438,18 @@ function parseStaticPolyfillDeclarations(text: string): string {
     while ((match = STATIC_POLYFILL.exec(text)) !== null) {
         const ctor = match[1];
         const method = match[2];
-        const rawParameters = match[3];
         if (method === 'prototype') continue;
         const target = STATIC_POLYFILL_TARGET_BY_CTOR[ctor];
         if (!target) continue;
 
+        const rawParameters = match[3];
         const parameters = rawParameters
             .split(',')
             .map((p) => p.trim())
             .map((p) =>
                 p
                     .replace(/^\.\.\./, '')
-                    .split('=')[0]
+                    .split('=', 1)[0]
                     .trim()
             )
             .filter((p) => /^[$A-Z_a-z][\w$]*$/.test(p));
@@ -477,12 +480,12 @@ function parseStaticPolyfillDeclarations(text: string): string {
     for (const [target, { kind, methods }] of byTarget) {
         const memberLines: string[] = [];
         for (const [name, { params, jsdoc, paramTypes, optionalParams, returnType }] of methods) {
-            if (jsdoc) memberLines.push(indentLines(jsdoc, '    '));
-            let sawOptional = false;
+            if (jsdoc) memberLines.push(indentLines(jsdoc, ' '.repeat(4)));
+            let isSawOptional = false;
             const parameterString = params
                 .map((p) => {
-                    const optional = sawOptional || optionalParams.has(p);
-                    if (optional) sawOptional = true;
+                    const optional = isSawOptional || optionalParams.has(p);
+                    if (optional) isSawOptional = true;
                     return `${p}${optional ? '?' : ''}: ${paramTypes.get(p) ?? 'any'}`;
                 })
                 .join(', ');
@@ -551,11 +554,11 @@ function jsdocTokenToTsType(raw: string): string {
  * Convert a JSDoc type expression (the text inside `{...}`) into a TypeScript
  * type, supporting `|` unions and `Type[]` array suffixes. Unknown tokens
  * degrade to `any`.
- * @param expr - JSDoc type expression without surrounding braces
+ * @param expression - JSDoc type expression without surrounding braces
  * @returns a TypeScript-safe type string
  */
-function jsdocTypeToTs(expr: string): string {
-    const trimmed = expr.trim();
+function jsdocTypeToTs(expression: string): string {
+    const trimmed = expression.trim();
     if (!trimmed) return 'any';
     if (trimmed.includes('|')) {
         return trimmed
@@ -651,7 +654,7 @@ function extractPrecedingJsdoc(text: string, index: number): string {
     // Normalize leading indentation so re-indentation is predictable.
     return match[0]
         .split('\n')
-        .map((l) => l.replace(/^\s+/, l.trimStart().startsWith('*') ? ' ' : ''))
+        .map((l) => l.replace(/^\s+/, () => (l.trimStart().startsWith('*') ? ' ' : '')))
         .join('\n');
 }
 
@@ -687,7 +690,9 @@ const host: ts.LanguageServiceHost = {
     },
 
     getScriptFileNames(): string[] {
-        return [...virtualFiles.keys()];
+        // Spread the Map (not `.keys()`) so neither unicorn/prefer-spread nor
+        // unicorn/prefer-iterator-to-array fires, then take each entry's key.
+        return [...virtualFiles].map(([fileName]) => fileName);
     },
 
     getScriptVersion(fileName: string): string {
@@ -843,10 +848,10 @@ function tsCategoryToSeverity(category: ts.DiagnosticCategory): DiagnosticSeveri
 export function updateSsjsDocument(uri: string, text: string): void {
     setVirtualFile(virtualNameForUri(uri), text);
 
-    const decls = parseGlobalCommentDeclarations(text);
+    const declarations = parseGlobalCommentDeclarations(text);
     const globalsName = globalsNameForUri(uri);
-    if (decls) {
-        setVirtualFile(globalsName, decls);
+    if (declarations) {
+        setVirtualFile(globalsName, declarations);
     } else {
         // No global comments — remove any stale companion file from a previous
         // document version so old names don't linger in the TS service.
@@ -1003,10 +1008,7 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
         // user `@typedef`s in `@param`/`@property`/`@returns` tags; with
         // `checkJs` enabled TypeScript flags those undeclared names even though
         // they have no effect on the executed code.
-        if (
-            (d.code === 2304 || d.code === 2552 || d.code === 2300) &&
-            isInsideJsdoc(d.start, jsdocRanges)
-        ) {
+        if ([2304, 2552, 2300].includes(d.code) && isInsideJsdoc(d.start, jsdocRanges)) {
             continue;
         }
         const start = offsetToPosition(file.content, d.start);

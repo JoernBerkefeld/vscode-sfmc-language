@@ -31,9 +31,10 @@ suite('Handlebars (.hbs) — MCN intelligence', () => {
         assert.ok(actualCompletionList.items.length > 0, 'Should return completions');
 
         const labels = new Set(
-            actualCompletionList.items.map((index) =>
-                typeof index.label === 'string' ? index.label : index.label.label
-            )
+            actualCompletionList.items.map((item) => {
+                const { label } = item;
+                return typeof label === 'string' ? label : label.label;
+            })
         );
         assert.ok(labels.has('uppercase'), 'Should include the uppercase Handlebars helper');
         assert.ok(

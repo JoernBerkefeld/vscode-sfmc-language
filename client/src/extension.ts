@@ -25,7 +25,9 @@ import {
 import { SfmcStatusBar } from './status-bar';
 import { checkAndShowWhatsNew, showWhatsNewPanel } from './whats-new';
 
-let client: LanguageClient;
+// Holder object so the running client can be shared between activate/deactivate
+// without a reassigned top-level variable (unicorn/no-top-level-assignment-in-function).
+const state: { client: LanguageClient | undefined } = { client: undefined };
 
 const EXTENSION_DISPLAY_NAME = 'SFMC Language Service';
 
@@ -39,8 +41,9 @@ export const SUPPRESS_KEY = 'suppressConflictWarning';
 /**
  * Warn the user when a known conflicting extension is installed alongside this one.
  * @param context - the extension context used to persist the suppression flag
+ * @returns a promise that resolves once any warning has been handled
  */
-function checkConflictingExtensions(context: ExtensionContext): void {
+async function checkConflictingExtensions(context: ExtensionContext): Promise<void> {
     const settingSuppressed = workspace
         .getConfiguration('sfmcLanguageServer')
         .get<boolean>('suppressConflictWarning', false);
@@ -59,13 +62,16 @@ function checkConflictingExtensions(context: ExtensionContext): void {
         'These can cause unpredictable formatting, syntax highlighting, and IntelliSense in AMPscript/HTML files. ' +
         'Consider disabling them.';
 
-    window.showWarningMessage(message, 'Open Extensions', "Don't Show Again").then((selection) => {
-        if (selection === 'Open Extensions') {
-            commands.executeCommand('workbench.extensions.action.showInstalledExtensions');
-        } else if (selection === "Don't Show Again") {
-            context.globalState.update(SUPPRESS_KEY, true);
-        }
-    });
+    const selection = await window.showWarningMessage(
+        message,
+        'Open Extensions',
+        "Don't Show Again"
+    );
+    if (selection === 'Open Extensions') {
+        void commands.executeCommand('workbench.extensions.action.showInstalledExtensions');
+    } else if (selection === "Don't Show Again") {
+        void context.globalState.update(SUPPRESS_KEY, true);
+    }
 }
 
 const AMPSCRIPT_MARKERS: (string | RegExp)[] = [
@@ -89,7 +95,7 @@ const HANDLEBARS_MUSTACHE_MARKER = /\{\{[#/!{>]?\s*[A-Za-z@]/;
  * @param markers - string or RegExp markers to look for
  * @returns true if any marker matches
  */
-function matchesAny(text: string, markers: (string | RegExp)[]): boolean {
+function hasAnyMarker(text: string, markers: (string | RegExp)[]): boolean {
     return markers.some((marker) =>
         typeof marker === 'string' ? text.includes(marker) : marker.test(text)
     );
@@ -124,7 +130,7 @@ function detectAndSwitchLanguage(document: TextDocument): void {
     const text = document.getText();
 
     // Switch to sfmc for any HTML containing SFMC content (AMPscript markers or SSJS blocks).
-    if (matchesAny(text, AMPSCRIPT_MARKERS)) {
+    if (hasAnyMarker(text, AMPSCRIPT_MARKERS)) {
         languages.setTextDocumentLanguage(document, 'sfmc');
         return;
     }
@@ -177,12 +183,13 @@ export function activate(context: ExtensionContext) {
         },
     };
 
-    client = new LanguageClient(
+    const client = new LanguageClient(
         'sfmcLanguageServer',
         'SFMC Language Server',
         serverOptions,
         clientOptions
     );
+    state.client = client;
 
     client.start();
 
@@ -201,7 +208,7 @@ export function activate(context: ExtensionContext) {
         })
     );
 
-    checkConflictingExtensions(context);
+    void checkConflictingExtensions(context);
 
     context.subscriptions.push(
         commands.registerCommand('sfmc-language.showWhatsNew', () =>
@@ -235,8 +242,8 @@ export function activate(context: ExtensionContext) {
  * @returns a promise that resolves when the client has stopped, or undefined
  */
 export function deactivate(): Thenable<void> | undefined {
-    if (!client) {
+    if (!state.client) {
         return undefined;
     }
-    return client.stop();
+    return state.client.stop();
 }

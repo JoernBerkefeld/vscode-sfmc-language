@@ -71,11 +71,6 @@ export class SfmcStatusBar {
         );
     }
 
-    setState(next: 'loading' | 'ready' | 'error'): void {
-        this.state = next;
-        this.refresh();
-    }
-
     private refresh(): void {
         const icon = ICONS[this.state];
         const label = getTargetPlatform() === 'next' ? 'sfmc-next' : 'sfmc-e';
@@ -129,5 +124,10 @@ export class SfmcStatusBar {
         );
 
         return md;
+    }
+
+    setState(next: 'loading' | 'ready' | 'error'): void {
+        this.state = next;
+        this.refresh();
     }
 }

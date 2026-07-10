@@ -25,9 +25,9 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-let testCounter = 0;
-let passCount = 0;
-let failCount = 0;
+// Holder so counters can be mutated from inside `test`/`process.on('exit')`
+// without reassigning top-level bindings (unicorn/no-top-level-assignment-in-function).
+const counters = { test: 0, pass: 0, fail: 0 };
 
 /**
  * Register and run a single lightweight test case, tracking pass/fail counts.
@@ -35,25 +35,27 @@ let failCount = 0;
  * @param function_ - the test body (may be async)
  */
 function test(name: string, function_: () => void | Promise<void>): void {
-    testCounter++;
-    const index = testCounter;
-    Promise.resolve()
-        .then(function_)
-        .then(() => {
-            passCount++;
+    counters.test += 1;
+    const index = counters.test;
+    void (async () => {
+        try {
+            await function_();
+            counters.pass += 1;
             console.log(`  ✓ [${index}] ${name}`);
-        })
-        .catch((error: unknown) => {
-            failCount++;
+        } catch (error: unknown) {
+            counters.fail += 1;
             const message = error instanceof Error ? error.message : String(error);
             console.error(`  ✗ [${index}] ${name}\n      ${message}`);
-        });
+        }
+    })();
 }
 
 // Flush at process exit
 process.on('exit', () => {
-    console.log(`\n${passCount + failCount} tests: ${passCount} passed, ${failCount} failed`);
-    if (failCount > 0) process.exitCode = 1;
+    console.log(
+        `\n${counters.pass + counters.fail} tests: ${counters.pass} passed, ${counters.fail} failed`
+    );
+    if (counters.fail > 0) process.exitCode = 1;
 });
 
 // ---------------------------------------------------------------------------
@@ -127,7 +129,7 @@ test('HTTP.Get return type exposes Content/Status (no 2339 on .Content)', () => 
     updateSsjsDocument(URI_BASIC, code);
     const diags = getSsjsDiagnostics(URI_BASIC);
     assert.ok(
-        !diags.some((d) => d.code === 2339),
+        diags.every((d) => d.code !== 2339),
         `Unexpected 2339 on HTTP.Get result members: ${JSON.stringify(diags)}`
     );
 });
@@ -140,7 +142,7 @@ test('HTTP.Post return type exposes StatusCode/Response (no 2339)', () => {
     updateSsjsDocument(URI_BASIC, code);
     const diags = getSsjsDiagnostics(URI_BASIC);
     assert.ok(
-        !diags.some((d) => d.code === 2339),
+        diags.every((d) => d.code !== 2339),
         `Unexpected 2339 on HTTP.Post result members: ${JSON.stringify(diags)}`
     );
 });
@@ -609,7 +611,7 @@ test('/* global DEBUG */ suppresses unknown-name diagnostic for DEBUG', () => {
     updateSsjsDocument(URI_GLOBALS, code);
     const diags = getSsjsDiagnostics(URI_GLOBALS);
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics after global comment, got: ${JSON.stringify(diags)}`
     );
 });
@@ -619,7 +621,7 @@ test('/* globals DEBUG, deKey */ suppresses diagnostics for both names', () => {
     updateSsjsDocument(URI_GLOBALS, code);
     const diags = getSsjsDiagnostics(URI_GLOBALS);
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics after globals comment, got: ${JSON.stringify(diags)}`
     );
 });
@@ -629,7 +631,7 @@ test('/* global DEBUG:readonly, deKey:writable */ qualifier form is accepted', (
     updateSsjsDocument(URI_GLOBALS, code);
     const diags = getSsjsDiagnostics(URI_GLOBALS);
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics with :qualifier form, got: ${JSON.stringify(diags)}`
     );
 });
@@ -640,7 +642,7 @@ test('Removing global comment from updated document restores diagnostic', () => 
     updateSsjsDocument(URI_GLOBALS, withComment);
     const diagsBefore = getSsjsDiagnostics(URI_GLOBALS);
     assert.ok(
-        !diagsBefore.some((d) => d.source === 'sfmc-ts'),
+        diagsBefore.every((d) => d.source !== 'sfmc-ts'),
         'Expected no diagnostics with global comment present'
     );
 
@@ -672,7 +674,7 @@ test('Array.prototype.forEach polyfill assignment produces no diagnostic', () =>
     updateSsjsDocument(URI_POLY, code);
     const diags = getSsjsDiagnostics(URI_POLY);
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics for forEach polyfill, got: ${JSON.stringify(diags)}`
     );
 });
@@ -690,7 +692,7 @@ test('Array.prototype.map polyfill assignment produces no diagnostic', () => {
     updateSsjsDocument(URI_POLY, code);
     const diags = getSsjsDiagnostics(URI_POLY);
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics for map polyfill, got: ${JSON.stringify(diags)}`
     );
 });
@@ -709,7 +711,7 @@ test('String.prototype.startsWith polyfill enables later use on a string', () =>
     updateSsjsDocument(URI_POLY, code);
     const diags = getSsjsDiagnostics(URI_POLY);
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics for startsWith polyfill + use, got: ${JSON.stringify(diags)}`
     );
 });
@@ -731,7 +733,7 @@ test('Removing a polyfill from an updated document restores the diagnostic', () 
     ].join('\n');
     updateSsjsDocument(URI_POLY, withPoly);
     assert.ok(
-        !getSsjsDiagnostics(URI_POLY).some((d) => d.source === 'sfmc-ts'),
+        getSsjsDiagnostics(URI_POLY).every((d) => d.source !== 'sfmc-ts'),
         'Expected clean diagnostics with polyfill present'
     );
 
@@ -795,15 +797,15 @@ test('Polyfilled method hover shows a method signature with parsed params + JSDo
     // Issue #1: param/return types come from the JSDoc, not `any`.
     assert.ok(
         value.includes('searchString: string'),
-        `Expected the @param {string} type in the signature, got: ${value}`
+        `Expected the @param string type in the signature, got: ${value}`
     );
     assert.ok(
         value.includes('position: number'),
-        `Expected the @param {number} type in the signature, got: ${value}`
+        `Expected the @param number type in the signature, got: ${value}`
     );
     assert.ok(
         /\)\s*:\s*boolean/.test(value),
-        `Expected the @returns {boolean} type in the signature, got: ${value}`
+        `Expected the @returns boolean type in the signature, got: ${value}`
     );
 });
 
@@ -831,15 +833,15 @@ test('Polyfilled method hover maps {Array} JSDoc to any[] and falls back to any 
     const value = (hover!.contents as { value: string }).value;
     assert.ok(
         value.includes('callbackFn: Function'),
-        `Expected the @param {Function} type in the signature, got: ${value}`
+        `Expected the @param Function type in the signature, got: ${value}`
     );
     assert.ok(
         value.includes('ctx: any'),
-        `Expected unknown JSDoc type {Client} to fall back to any, got: ${value}`
+        `Expected unknown JSDoc type Client to fall back to any, got: ${value}`
     );
     assert.ok(
         /\)\s*:\s*any\[\]/.test(value),
-        `Expected the @returns {Array} type to map to any[], got: ${value}`
+        `Expected the @returns Array type to map to any[], got: ${value}`
     );
 });
 
@@ -951,7 +953,7 @@ test('Find all references on a polyfilled method includes the prototype assignme
     ].join('\n');
     updateSsjsDocument(URI_POLY, code);
     // Cursor on a usage of `.startsWith` (line 3).
-    const usageCol = code.split('\n')[3].indexOf('startsWith');
+    const usageCol = code.split('\n', 4)[3].indexOf('startsWith');
     const references = getSsjsReferences(URI_POLY, { line: 3, character: usageCol });
     assert.ok(references.length > 0, 'Expected references for the polyfilled method');
     assert.ok(
@@ -980,7 +982,10 @@ test('Closing document clears global declarations so stale names do not leak', (
 
     // Confirm no diagnostic while open.
     const diagsOpen = getSsjsDiagnostics(URI_LEAK);
-    assert.ok(!diagsOpen.some((d) => d.source === 'sfmc-ts'), 'Should be clean while open');
+    assert.ok(
+        diagsOpen.every((d) => d.source !== 'sfmc-ts'),
+        'Should be clean while open'
+    );
 
     // Close the document.
     removeSsjsDocument(URI_LEAK);
@@ -1027,7 +1032,7 @@ test('Optional JSDoc param [name] emits an optional parameter so 1-arg calls are
     // No "Expected 2 arguments" diagnostic for the single-arg call.
     const diags = getSsjsDiagnostics(URI_OPT);
     assert.ok(
-        !diags.some((d) => d.code === 2554),
+        diags.every((d) => d.code !== 2554),
         `Expected no arity error for the optional param, got: ${JSON.stringify(diags)}`
     );
     removeSsjsDocument(URI_OPT);
@@ -1065,15 +1070,15 @@ test('Polyfill JSDoc referencing an undeclared/user type does not break the inte
     // errors inside the comments, and the Array.map merge must take effect so
     // `[1,2].map(...)` is valid (no 2339).
     assert.ok(
-        !diags.some((d) => d.code === 2300),
+        diags.every((d) => d.code !== 2300),
         `Expected no duplicate-identifier error, got: ${JSON.stringify(diags)}`
     );
     assert.ok(
-        !diags.some((d) => d.code === 2304 || d.code === 2552),
+        diags.every((d) => !(d.code === 2304 || d.code === 2552)),
         `Expected no cannot-find-name error inside JSDoc, got: ${JSON.stringify(diags)}`
     );
     assert.ok(
-        !diags.some((d) => d.code === 2339),
+        diags.every((d) => d.code !== 2339),
         `Expected the Array.map merge to apply (no property-does-not-exist), got: ${JSON.stringify(
             diags
         )}`
@@ -1115,11 +1120,11 @@ test('Array.isArray static polyfill assignment produces no diagnostic (2339)', (
     updateSsjsDocument(URI_STATIC, code);
     const diags = getSsjsDiagnostics(URI_STATIC);
     assert.ok(
-        !diags.some((d) => d.code === 2339),
+        diags.every((d) => d.code !== 2339),
         `Expected no "does not exist on ArrayConstructor" (2339) for Array.isArray polyfill, got: ${JSON.stringify(diags)}`
     );
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics for Array.isArray polyfill, got: ${JSON.stringify(diags)}`
     );
     removeSsjsDocument(URI_STATIC);
@@ -1145,11 +1150,11 @@ test('forEach polyfill callback invocation is callable (no 2349)', () => {
     updateSsjsDocument(URI_STATIC, code);
     const diags = getSsjsDiagnostics(URI_STATIC);
     assert.ok(
-        !diags.some((d) => d.code === 2349),
+        diags.every((d) => d.code !== 2349),
         `Expected no "not callable" (2349) for forEach callback invocation, got: ${JSON.stringify(diags)}`
     );
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics for forEach polyfill, got: ${JSON.stringify(diags)}`
     );
     removeSsjsDocument(URI_STATIC);
@@ -1179,11 +1184,11 @@ test('Array.prototype.map polyfill accepts a plain function callback (no 2769)',
     updateSsjsDocument(URI_STATIC, code);
     const diags = getSsjsDiagnostics(URI_STATIC);
     assert.ok(
-        !diags.some((d) => d.code === 2769),
+        diags.every((d) => d.code !== 2769),
         `Expected no "no overload matches" (2769) for map(function) call, got: ${JSON.stringify(diags)}`
     );
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics for map polyfill call, got: ${JSON.stringify(diags)}`
     );
     removeSsjsDocument(URI_STATIC);
@@ -1207,11 +1212,11 @@ test('Array.prototype.forEach polyfill accepts a plain function callback (no 276
     updateSsjsDocument(URI_STATIC, code);
     const diags = getSsjsDiagnostics(URI_STATIC);
     assert.ok(
-        !diags.some((d) => d.code === 2769),
+        diags.every((d) => d.code !== 2769),
         `Expected no "no overload matches" (2769) for forEach(function) call, got: ${JSON.stringify(diags)}`
     );
     assert.ok(
-        !diags.some((d) => d.source === 'sfmc-ts'),
+        diags.every((d) => d.source !== 'sfmc-ts'),
         `Expected no sfmc-ts diagnostics for forEach polyfill call, got: ${JSON.stringify(diags)}`
     );
     removeSsjsDocument(URI_STATIC);

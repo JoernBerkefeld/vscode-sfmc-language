@@ -9,8 +9,8 @@
  * @returns positive if a > b, negative if a < b, 0 if equal
  */
 export function compareSemver(a: string, b: string): number {
-    const pa = a.split('.').map((p) => Number.parseInt(p, 10) || 0);
-    const pb = b.split('.').map((p) => Number.parseInt(p, 10) || 0);
+    const pa = a.split('.').map((p) => Number(p) || 0);
+    const pb = b.split('.').map((p) => Number(p) || 0);
     const length = Math.max(pa.length, pb.length);
     for (let index = 0; index < length; index++) {
         const da = pa[index] ?? 0;
@@ -62,6 +62,15 @@ function inlineMarkdown(escaped: string): string {
 }
 
 /**
+ * Escape then apply inline markdown to a raw string in one step.
+ * @param text - the raw string to escape and render
+ * @returns the HTML-escaped string with inline markdown applied
+ */
+function renderInline(text: string): string {
+    return inlineMarkdown(escapeHtml(text));
+}
+
+/**
  * Render a single markdown chunk (paragraphs and unordered lists) to HTML.
  * @param chunk - the markdown chunk to render
  * @returns the rendered HTML for that chunk
@@ -69,35 +78,37 @@ function inlineMarkdown(escaped: string): string {
 function renderMarkdownChunk(chunk: string): string {
     const lines = chunk.split(/\r?\n/);
     const out: string[] = [];
-    let inUl = false;
+    let isInUl = false;
 
     const closeUl = () => {
-        if (inUl) {
-            out.push('</ul>');
-            inUl = false;
+        if (!isInUl) {
+            return;
         }
+
+        out.push('</ul>');
+        isInUl = false;
     };
 
     for (const line of lines) {
         const h3 = line.match(/^###\s+(.+)$/);
         if (h3) {
             closeUl();
-            out.push(`<h3>${inlineMarkdown(escapeHtml(h3[1]!.trim()))}</h3>`);
+            out.push(`<h3>${renderInline(h3[1]!.trim())}</h3>`);
             continue;
         }
         const h2 = line.match(/^##\s+(.+)$/);
         if (h2) {
             closeUl();
-            out.push(`<h2>${inlineMarkdown(escapeHtml(h2[1]!.trim()))}</h2>`);
+            out.push(`<h2>${renderInline(h2[1]!.trim())}</h2>`);
             continue;
         }
         const bullet = line.match(/^\s*-\s+(.+)$/);
         if (bullet) {
-            if (!inUl) {
+            if (!isInUl) {
                 out.push('<ul>');
-                inUl = true;
+                isInUl = true;
             }
-            out.push(`<li>${inlineMarkdown(escapeHtml(bullet[1]!.trim()))}</li>`);
+            out.push(`<li>${renderInline(bullet[1]!.trim())}</li>`);
             continue;
         }
         if (line.trim() === '') {
@@ -105,7 +116,7 @@ function renderMarkdownChunk(chunk: string): string {
             continue;
         }
         closeUl();
-        out.push(`<p>${inlineMarkdown(escapeHtml(line.trim()))}</p>`);
+        out.push(`<p>${renderInline(line.trim())}</p>`);
     }
     closeUl();
     return out.join('');
