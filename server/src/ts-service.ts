@@ -121,6 +121,12 @@ function setVirtualFile(name: string, content: string): void {
 // Holder so the counter can be bumped without reassigning a top-level variable
 // inside a function (unicorn/no-top-level-assignment-in-function).
 const counters = { document: 0 };
+// The document the language service is currently answering for. Only this
+// document's virtual files (plus the shared globals) are exposed to TypeScript
+// via getScriptFileNames, so top-level `var` declarations in *other* open SSJS
+// documents cannot collide with this one (which otherwise raises ts2403
+// "Subsequent variable declarations must have the same type").
+const activeDocument: { js: string | undefined } = { js: undefined };
 const uriToVirtualName = new Map<string, string>();
 const uriToGlobalsName = new Map<string, string>();
 const uriToPolyfillsName = new Map<string, string>();
@@ -138,6 +144,17 @@ function virtualNameForUri(uri: string): string {
         uriToVirtualName.set(uri, name);
     }
     return name;
+}
+
+/**
+ * Mark a document's virtual `.js` file as the one the language service should
+ * answer for. Only this document (plus the shared globals) is exposed via
+ * `getScriptFileNames`, isolating its top-level declarations from other open
+ * SSJS documents (prevents ts2403 cross-file `var` collisions).
+ * @param name - the active document's virtual `.js` filename, or undefined
+ */
+function setActiveDocument(name: string | undefined): void {
+    activeDocument.js = name;
 }
 
 /**
@@ -286,8 +303,11 @@ function parsePolyfillDeclarations(text: string): string {
     // built-in. Captures the constructor, the method name, and — when the value
     // is a function expression — its parameter list. The trailing function part
     // is optional so non-function polyfills still register the member.
+    // The canonical polyfill form ssjs-data ships uses a self-guard —
+    // `String.prototype.trim = String.prototype.trim || function (…)` — so
+    // tolerate an optional `<expr> ||` prefix between `=` and `function`.
     const POLYFILL =
-        /\b(Array|String|Number|Boolean|Object|Date|Function|RegExp)\s*\.\s*prototype\s*\.\s*([$A-Z_a-z][\w$]*)\s*(?:=\s*function\s*\*?\s*[$A-Z_a-z]*\s*\(([^)]*)\))?/g;
+        /\b(Array|String|Number|Boolean|Object|Date|Function|RegExp)\s*\.\s*prototype\s*\.\s*([$A-Z_a-z][\w$]*)\s*(?:=\s*(?:[$A-Z_a-z][\w$.]*\s*\|\|\s*)?function\s*\*?\s*[$A-Z_a-z]*\s*\(([^)]*)\))?/g;
 
     // Group method declarations per interface so each interface is merged once.
     interface PolyMethod {
@@ -418,8 +438,11 @@ const STATIC_POLYFILL_TARGET_BY_CTOR: Record<
 function parseStaticPolyfillDeclarations(text: string): string {
     // Match `Ctor.method = function (params)` where Ctor is a known built-in and
     // `method` is NOT `prototype` (those are handled by parsePolyfillDeclarations).
+    // The canonical polyfill form ssjs-data ships uses a self-guard —
+    // `Array.isArray = Array.isArray || function (…)` — so tolerate an optional
+    // `<expr> ||` prefix between `=` and `function` (e.g. `Array.isArray ||`).
     const STATIC_POLYFILL =
-        /\b(Array|Object|Number|String|Date|Math|JSON)\s*\.\s*([$A-Z_a-z][\w$]*)\s*=\s*function\s*\*?\s*[$A-Z_a-z]*\s*\(([^)]*)\)/g;
+        /\b(Array|Object|Number|String|Date|Math|JSON)\s*\.\s*([$A-Z_a-z][\w$]*)\s*=\s*(?:[$A-Z_a-z][\w$.]*\s*\|\|\s*)?function\s*\*?\s*[$A-Z_a-z]*\s*\(([^)]*)\)/g;
 
     interface StaticMethod {
         params: string[];
@@ -690,9 +713,25 @@ const host: ts.LanguageServiceHost = {
     },
 
     getScriptFileNames(): string[] {
-        // Spread the Map (not `.keys()`) so neither unicorn/prefer-spread nor
-        // unicorn/prefer-iterator-to-array fires, then take each entry's key.
-        return [...virtualFiles].map(([fileName]) => fileName);
+        // Expose only the shared globals plus the *active* document's own virtual
+        // files. Including every open SSJS document in one program makes their
+        // top-level `var` declarations collide in the shared global scope
+        // (ts2403). Scoping to the active document keeps each file isolated.
+        const active = activeDocument.js;
+        if (!active) {
+            // Spread the Map (not `.keys()`) so neither unicorn/prefer-spread nor
+            // unicorn/prefer-iterator-to-array fires, then take each entry's key.
+            return [...virtualFiles].map(([fileName]) => fileName);
+        }
+        const activeFiles = new Set([
+            GLOBALS_FILENAME,
+            active,
+            active.replace(/\.js$/, '.globals.d.ts'),
+            active.replace(/\.js$/, '.polyfills.d.ts'),
+        ]);
+        return [...virtualFiles]
+            .map(([fileName]) => fileName)
+            .filter((fileName) => activeFiles.has(fileName));
     },
 
     getScriptVersion(fileName: string): string {
@@ -879,6 +918,7 @@ export function removeSsjsDocument(uri: string): void {
     if (name) {
         virtualFiles.delete(name);
         uriToVirtualName.delete(uri);
+        if (activeDocument.js === name) setActiveDocument(undefined);
     }
     const globalsName = uriToGlobalsName.get(uri);
     if (globalsName) {
@@ -903,6 +943,7 @@ export function removeSsjsDocument(uri: string): void {
 export function getSsjsCompletions(uri: string, position: Position): CompletionItem[] {
     const name = uriToVirtualName.get(uri);
     if (!name) return [];
+    setActiveDocument(name);
     const file = virtualFiles.get(name);
     if (!file) return [];
 
@@ -947,6 +988,7 @@ export function getSsjsCompletionInfo(
 ): { items: CompletionItem[]; isMemberCompletion: boolean } {
     const name = uriToVirtualName.get(uri);
     if (!name) return { items: [], isMemberCompletion: false };
+    setActiveDocument(name);
     const file = virtualFiles.get(name);
     if (!file) return { items: [], isMemberCompletion: false };
 
@@ -985,6 +1027,7 @@ export function getSsjsCompletionInfo(
 export function getSsjsDiagnostics(uri: string): Diagnostic[] {
     const name = uriToVirtualName.get(uri);
     if (!name) return [];
+    setActiveDocument(name);
     const file = virtualFiles.get(name);
     if (!file) return [];
 
@@ -1064,6 +1107,7 @@ function isInsideJsdoc(offset: number, ranges: Array<[number, number]>): boolean
 export function getSsjsHover(uri: string, position: Position): Hover | undefined {
     const name = uriToVirtualName.get(uri);
     if (!name) return undefined;
+    setActiveDocument(name);
     const file = virtualFiles.get(name);
     if (!file) return undefined;
 
@@ -1142,6 +1186,7 @@ export function getSsjsDefinition(uri: string, position: Position): Location[] {
     const name = uriToVirtualName.get(uri);
     const file = name ? virtualFiles.get(name) : undefined;
     if (!name || !file) return [];
+    setActiveDocument(name);
 
     const offset = positionToOffset(file.content, position);
     let defs: readonly ts.DefinitionInfo[] | undefined;
@@ -1209,6 +1254,7 @@ export function getSsjsReferences(uri: string, position: Position): Location[] {
     const name = uriToVirtualName.get(uri);
     const file = name ? virtualFiles.get(name) : undefined;
     if (!name || !file) return [];
+    setActiveDocument(name);
 
     const offset = positionToOffset(file.content, position);
     let references: ts.ReferenceEntry[] | undefined;
@@ -1334,6 +1380,7 @@ export function getSsjsSignatureHelp(uri: string, position: Position): Signature
     const name = uriToVirtualName.get(uri);
     const file = name ? virtualFiles.get(name) : undefined;
     if (!name || !file) return undefined;
+    setActiveDocument(name);
 
     const offset = positionToOffset(file.content, position);
     let info: ts.SignatureHelpItems | undefined;

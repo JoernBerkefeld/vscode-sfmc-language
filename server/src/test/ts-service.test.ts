@@ -1221,3 +1221,77 @@ test('Array.prototype.forEach polyfill accepts a plain function callback (no 276
     );
     removeSsjsDocument(URI_STATIC);
 });
+
+test('Array.isArray self-guarded static polyfill (X = X || function) produces no 2339', () => {
+    // Canonical ssjs-data form ships a self-guard: `Array.isArray = Array.isArray
+    // || function (…)`. The polyfill parser must tolerate the `X ||` prefix or the
+    // static assignment is not registered and `Array.isArray(...)` raises 2339.
+    const code = [
+        'Array.isArray = Array.isArray || function (value) {',
+        "    return Object.prototype.toString.call(value) === '[object Array]';",
+        '};',
+        'var b = Array.isArray([1, 2, 3]);',
+    ].join('\n');
+    updateSsjsDocument(URI_STATIC, code);
+    const diags = getSsjsDiagnostics(URI_STATIC);
+    assert.ok(
+        diags.every((d) => d.code !== 2339),
+        `Expected no 2339 for self-guarded Array.isArray polyfill, got: ${JSON.stringify(diags)}`
+    );
+    assert.ok(
+        diags.every((d) => d.source !== 'sfmc-ts'),
+        `Expected no sfmc-ts diagnostics for self-guarded Array.isArray polyfill, got: ${JSON.stringify(diags)}`
+    );
+    removeSsjsDocument(URI_STATIC);
+});
+
+// ---------------------------------------------------------------------------
+// Suite: runtime built-ins (arguments) and cross-file isolation
+// ---------------------------------------------------------------------------
+console.log('Suite: runtime built-ins & isolation');
+
+test('arguments.length / arguments[i] type-check (no 2339 under noLib)', () => {
+    // Under noLib:true there is no lib.es5.d.ts, so `arguments` needs an ambient
+    // IArguments declaration in sfmc-globals.d.ts, else `arguments.length` raises
+    // "Property 'length' does not exist on type '{}'" (2339).
+    const uri = 'file:///test-arguments.ssjs';
+    const code = [
+        'function sum() {',
+        '    var total = 0;',
+        '    for (var i = 0; i < arguments.length; i++) {',
+        '        total += Number(arguments[i]);',
+        '    }',
+        '    return total;',
+        '}',
+    ].join('\n');
+    updateSsjsDocument(uri, code);
+    const diags = getSsjsDiagnostics(uri);
+    assert.ok(
+        diags.every((d) => d.code !== 2339),
+        `Expected no 2339 on arguments.length/arguments[i], got: ${JSON.stringify(diags)}`
+    );
+    removeSsjsDocument(uri);
+});
+
+test('top-level var of the same name in two documents does not collide (no 2403)', () => {
+    // Each open SSJS document must be its own program: exposing all documents in
+    // one TS program makes their top-level `var` declarations collide in the
+    // shared global scope ("Subsequent variable declarations must have the same
+    // type", 2403). getScriptFileNames scopes to the active document.
+    const uriA = 'file:///test-collide-a.ssjs';
+    const uriB = 'file:///test-collide-b.ssjs';
+    updateSsjsDocument(uriA, 'var result = "hello";');
+    updateSsjsDocument(uriB, 'var result = HTTP.Get("https://x");');
+    const diagsA = getSsjsDiagnostics(uriA);
+    const diagsB = getSsjsDiagnostics(uriB);
+    assert.ok(
+        diagsA.every((d) => d.code !== 2403),
+        `Doc A must not see doc B's 'result' (2403), got: ${JSON.stringify(diagsA)}`
+    );
+    assert.ok(
+        diagsB.every((d) => d.code !== 2403),
+        `Doc B must not see doc A's 'result' (2403), got: ${JSON.stringify(diagsB)}`
+    );
+    removeSsjsDocument(uriA);
+    removeSsjsDocument(uriB);
+});
