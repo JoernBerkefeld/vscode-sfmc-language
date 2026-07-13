@@ -209,11 +209,12 @@ String.prototype.startsWith = function (search) {
 var req = new Script.Util.HttpRequest("https://api.example.com");
 req.method = "POST";
 req.contentType = "application/json";
-req.emptyContentHandling = true;
+req.emptyContentHandling = 0;
 req.postData = Stringify({ a: 1 });
 var resp = req.send();
 var statusCode = resp.statusCode;
-var body = resp.content;
+// content is a CLR string — wrap with String() before use (ssjs/clr-content-access)
+var body = String(resp.content);
 
 // New: HttpGet has a smaller writable prop set (emptyContentHandling is numeric)
 var get = new Script.Util.HttpGet("https://api.example.com");
