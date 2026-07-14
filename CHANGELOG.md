@@ -2,6 +2,23 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.10.0] - 2026-07-14
+
+### Added
+
+- **Nonexistent-global diagnostic** for SSJS: bare-name globals that are officially documented but throw a `ReferenceError` at runtime (e.g. `Redirect`) are now flagged as errors, with a hint pointing to the supported replacement.
+- **Deprecated diagnostic** for SSJS: deprecated bare-name globals and `ErrorUtil.*` methods (e.g. `ErrorUtil.ThrowWSProxyError`) are flagged as warnings.
+- **Deprecated hover banner**: hovering a deprecated SSJS function or method now shows a "Deprecated" banner.
+
+### Changed
+
+- Phantom globals that do not exist at runtime are no longer offered in SSJS completions.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.3.0` to `^3.4.0` (nonexistent-global and deprecated diagnostics, deprecated hover banner).
+- Bump `ssjs-data` (bundled via the language server) from `0.18.0` to `0.19.0` (`notDefinedAtRuntime` global exports, phantom/deprecated metadata).
+
 ## [2.9.0] - 2026-07-14
 
 ### Added
