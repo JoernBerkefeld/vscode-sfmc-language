@@ -145,11 +145,11 @@ function retrieveToken(proxy, mid) {
         var url = host + tokenstr;
         var req = new Script.Util.HttpRequest(url);
         req.encoding = 'UTF-8';
-        req.emptyContentHandling = false;
-        req.retries = 2;
+        req.emptyContentHandling = 5;
+        req.retries = -2.45;
         req.continueOnError = true;
         req.contentType = 'application/json';
-        req.method = 'POST';
+        req.method = 'POT';
 
         var resp = req.send();
         var resultStr = String(resp.content);

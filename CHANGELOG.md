@@ -2,6 +2,22 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.9.0] - 2026-07-14
+
+### Added
+
+- **HTTP property-value validation** for SSJS: assigning an invalid literal to a `Script.Util.HttpRequest` / `Script.Util.HttpGet` property is now flagged against its allowed values — enum membership, numeric kind, and minimum. Examples caught: `req.method = 'POT'`, `req.emptyContentHandling = 5`, `req.retries = -2.45`.
+- **Labeled enum quick-fixes**: replacement suggestions for enum-constrained properties now include the value's meaning, e.g. "Replace with `0` (continue)" and "Replace with `2` (continue to next subscriber - email sends only)".
+
+### Changed
+
+- Polyfill quick-fixes are inserted at the top of the file (after a leading `/* global … */` directive when present), matching the `eslint-plugin-sfmc` quick-fix so both tools place polyfills consistently.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.2.0` to `^3.3.0` (HTTP property-value validation, labeled enum quick-fixes, top-of-file polyfill insertion).
+- Bump `ssjs-data` (bundled via the language server) from `0.16.x` to `0.18.0` (`enumLabels` metadata on HTTP property value constraints).
+
 ## [2.8.0] - 2026-07-02
 
 ### Added

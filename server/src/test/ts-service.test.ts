@@ -9,6 +9,8 @@
  * No VS Code runtime required — pure Node.js / TypeScript.
  */
 import * as assert from 'node:assert';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import {
     updateSsjsDocument,
     removeSsjsDocument,
@@ -1295,3 +1297,34 @@ test('top-level var of the same name in two documents does not collide (no 2403)
     removeSsjsDocument(uriA);
     removeSsjsDocument(uriB);
 });
+
+// ---------------------------------------------------------------------------
+// Suite: polyfill test fixtures (regression lock)
+// ---------------------------------------------------------------------------
+// Both bundled polyfill fixtures must be diagnostic-clean:
+//   - polyfills.ssjs             — minified bundle copied from ssjs.guide
+//   - polyfills-all-quickfix.ssjs — every ssjs-data polyfill as the quickfix inserts it
+// This locks in the fixes for the LSP marker regex (minified static polyfills),
+// the generated-.d.ts globals (NaN/Infinity/Number constants), the prototype
+// `this` typing (copyWithin/fill), and JSDoc ts8029 suppression. A future data
+// change that reintroduces any of those gaps fails here.
+console.log('Suite: polyfill fixtures');
+
+const FIXTURE_DIR = path.resolve(__dirname, '..', '..', '..', 'client', 'testFixture');
+const POLYFILL_FIXTURES = ['polyfills.ssjs', 'polyfills-all-quickfix.ssjs'];
+
+for (const fixture of POLYFILL_FIXTURES) {
+    test(`${fixture} produces no sfmc-ts diagnostics`, () => {
+        const text = readFileSync(path.join(FIXTURE_DIR, fixture), 'utf8');
+        const uri = `file:///${fixture}`;
+        updateSsjsDocument(uri, text);
+        const diags = getSsjsDiagnostics(uri);
+        const tsDiags = diags.filter((d) => d.source === 'sfmc-ts');
+        assert.strictEqual(
+            tsDiags.length,
+            0,
+            `Expected 0 sfmc-ts diagnostics in ${fixture}, got: ${JSON.stringify(tsDiags)}`
+        );
+        removeSsjsDocument(uri);
+    });
+}

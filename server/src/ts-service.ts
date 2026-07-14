@@ -379,6 +379,12 @@ function parsePolyfillDeclarations(text: string): string {
     const blocks: string[] = [];
     for (const [iface, { typeParams, methods }] of membersByIface) {
         const memberLines: string[] = [];
+        // The instance type of the interface being merged (e.g. `Array<T>`,
+        // `String`). Emitted as an explicit `this` parameter on each method so
+        // that under `noLib:true` a polyfill body reading `this.length` or doing
+        // `return this` (e.g. `Array.prototype.copyWithin` / `fill`) type-checks
+        // against the array/string instance rather than the function object.
+        const thisType = `${iface}${typeParams}`;
         for (const [name, { params, jsdoc, paramTypes, optionalParams, returnType }] of methods) {
             if (jsdoc) memberLines.push(indentLines(jsdoc, ' '.repeat(4)));
             // Use the JSDoc `@param {Type}` / `@returns {Type}` annotations when
@@ -393,7 +399,10 @@ function parsePolyfillDeclarations(text: string): string {
                     return `${p}${optional ? '?' : ''}: ${paramTypes.get(p) ?? 'any'}`;
                 })
                 .join(', ');
-            memberLines.push(`    ${name}(${parameterString}): ${returnType};`);
+            const signatureParameters = parameterString
+                ? `this: ${thisType}, ${parameterString}`
+                : `this: ${thisType}`;
+            memberLines.push(`    ${name}(${signatureParameters}): ${returnType};`);
         }
         blocks.push(`interface ${iface}${typeParams} {\n${memberLines.join('\n')}\n}`);
     }
@@ -1042,6 +1051,7 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
     }
 
     const jsdocRanges = jsdocCommentRanges(file.content);
+    const polyfillBodyRanges = prototypePolyfillBodyRanges(file.content);
 
     const results: Diagnostic[] = [];
     for (const d of tsDiags) {
@@ -1051,8 +1061,24 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
         // user `@typedef`s in `@param`/`@property`/`@returns` tags; with
         // `checkJs` enabled TypeScript flags those undeclared names even though
         // they have no effect on the executed code.
-        if ([2304, 2552, 2300].includes(d.code) && isInsideJsdoc(d.start, jsdocRanges)) {
+        // 8029: "JSDoc '@param' tag has name 'X', but there is no parameter with
+        // that name." Shipped polyfills document rest varargs collected via
+        // `arguments` with `@param {...*} [items]` (e.g. splice/bind), which have
+        // no matching named parameter — valid SSJS documentation, not an error.
+        if ([2304, 2552, 2300, 8029].includes(d.code) && isInsideJsdoc(d.start, jsdocRanges)) {
             continue;
+        }
+        // Suppress `this`-context errors inside self-guarded prototype-polyfill
+        // bodies. `X = X || function () { … this.length … return this }` loses the
+        // declared `this: any[]` contextual type through the `||`, producing
+        // ts2339 ("Property 'length' does not exist") and ts2322 ("Type 'this'
+        // is not assignable"). The bodies are valid SSJS polyfills.
+        if ((d.code === 2339 || d.code === 2322) && isInsideJsdoc(d.start, polyfillBodyRanges)) {
+            const text =
+                typeof d.messageText === 'string'
+                    ? d.messageText
+                    : flattenDiagnosticMessageText(d.messageText);
+            if (text.includes('this') || text.includes("'length'")) continue;
         }
         const start = offsetToPosition(file.content, d.start);
         const end = offsetToPosition(file.content, d.start + d.length);
@@ -1095,6 +1121,40 @@ function jsdocCommentRanges(text: string): Array<[number, number]> {
  */
 function isInsideJsdoc(offset: number, ranges: Array<[number, number]>): boolean {
     return ranges.some(([start, end]) => offset >= start && offset < end);
+}
+
+/**
+ * Compute the `[start, end)` offset ranges of every prototype-polyfill
+ * assignment body — `Ctor.prototype.method = [Ctor.prototype.method ||] function (…) { … }`.
+ *
+ * The self-guarded form (`X = X || function () {}`) defeats TypeScript's
+ * contextual `this` typing under `noLib:true`: the declared `this: any[]`
+ * parameter on the merged interface member does not flow into the function
+ * operand of the `||`, so a body reading `this.length` or doing `return this`
+ * raises spurious ts2339 / ts2322. These are known-good SSJS polyfills, so the
+ * `this`-related diagnostics inside their bodies are suppressed.
+ * @param text - full document text
+ * @returns an array of `[start, end)` offset tuples spanning each assignment body
+ */
+function prototypePolyfillBodyRanges(text: string): Array<[number, number]> {
+    const ranges: Array<[number, number]> = [];
+    // Match up to the opening `{` of the function body; then balance braces to
+    // find the matching close so the whole body is covered.
+    const re =
+        /\b(?:Array|String|Number|Boolean|Object|Date|Function|RegExp)\s*\.\s*prototype\s*\.\s*[$A-Z_a-z][\w$]*\s*=\s*(?:[$A-Z_a-z][\w$.]*\s*\|\|\s*)?function\s*\*?\s*[$A-Z_a-z]*\s*\([^)]*\)\s*\{/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+        const bodyOpen = m.index + m[0].length - 1;
+        let depth = 1;
+        let index = bodyOpen + 1;
+        for (; index < text.length && depth > 0; index++) {
+            const ch = text[index];
+            if (ch === '{') depth += 1;
+            else if (ch === '}') depth -= 1;
+        }
+        ranges.push([m.index, index]);
+    }
+    return ranges;
 }
 
 /**

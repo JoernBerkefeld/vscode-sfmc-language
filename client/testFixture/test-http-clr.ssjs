@@ -1,10 +1,11 @@
 // =============================================================================
 // F5 test fixture — HTTP response CLR diagnostics + quick-fixes
 // -----------------------------------------------------------------------------
-// Exercises the two rules shipped with sfmc-language-lsp 3.2.0 /
-// eslint-plugin-sfmc 4.2.0:
-//   1. ssjs/clr-content-access        (require-string-clr-content)
-//   2. ssjs/clr-header-access         (no-clr-header-access)
+// Exercises the HTTP-related rules shipped with sfmc-language-lsp /
+// eslint-plugin-sfmc:
+//   1. ssjs/clr-content-access          (require-string-clr-content)
+//   2. ssjs/clr-header-access           (no-clr-header-access)
+//   3. ssjs/invalid-http-property-value (ssjs-http-property-value)
 //
 // Both fire ONLY on a variable assigned from `.send()` on a
 // Script.Util.HttpRequest / Script.Util.HttpGet instance.
@@ -82,3 +83,41 @@ var raw = config.content;
 // ✅ OK — .headers on a plain object literal
 var fake = { headers: {} };
 var fakeCt = fake.headers["Content-Type"];
+
+// =============================================================================
+// HttpRequest / HttpGet property-value validation
+// -----------------------------------------------------------------------------
+// Rule: ssjs/invalid-http-property-value (LSP) / ssjs-http-property-value (ESLint)
+// Fires ONLY on a literal assigned to a writable property of a tracked
+// HttpRequest / HttpGet instance whose value violates its allowed enum/range.
+//
+// What to verify in the Extension Development Host:
+//   - Squiggle (Error) on every "❌ FAIL" line below.
+//   - No squiggle on any "✅ OK" line.
+//   - Quick-fix (Ctrl+.) on an enum violation offers each allowed value.
+// =============================================================================
+
+var vreq = new Script.Util.HttpRequest("https://api.example.com/data");
+
+// ✅ OK — valid enum / numeric values
+vreq.method = "POST";
+vreq.emptyContentHandling = 1;
+vreq.retries = 3;
+
+// ❌ FAIL — emptyContentHandling only allows 0, 1, 2
+vreq.emptyContentHandling = 5;
+
+// ❌ FAIL — retries must be a non-negative integer
+vreq.retries = -2.45;
+
+// ❌ FAIL — method must be one of GET, POST, PUT, PATCH, DELETE
+vreq.method = "POT";
+
+var vget = new Script.Util.HttpGet("https://api.example.com/cached");
+
+// ❌ FAIL — invalid emptyContentHandling on HttpGet instance
+vget.emptyContentHandling = 9;
+
+// ✅ OK — non-literal RHS is not statically checked
+var dynMethod = someMethod;
+vreq.method = dynMethod;
