@@ -2,6 +2,17 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.10.1] - 2026-07-17
+
+### Changed
+
+- Bare-name `Redirect` is now recognized as a runtime-verified SSJS Core global. It is offered in completions again and is no longer flagged as a nonexistent global. `ssjs-data` 0.20.0 verified on a CloudPage that `Redirect` exists after `Platform.Load("core")` when called in the same scope as the load (use `Platform.Response.Redirect` for scope-independent redirects).
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.4.0` to `^3.4.1`.
+- Bump `ssjs-data` (bundled via the language server) from `0.19.0` to `0.20.0` (verified WSProxy method metadata, `WspResult` type, runtime-verified `Redirect` global).
+
 ## [2.10.0] - 2026-07-14
 
 ### Added
