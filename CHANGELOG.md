@@ -2,6 +2,19 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.11.0] - 2026-07-22
+
+### Changed
+
+- Bare-name Core globals `Now`, `GUID`, `IsEmailAddress`, `IsPhoneNumber`, `BeginImpressionRegion`, and `EndImpressionRegion` are documented as first-class Core Library entries. Hover and completions reflect their runtime-verified return types (`Now` returns a genuine JavaScript `Date`; `EndImpressionRegion` returns `undefined`).
+- Corrected WSProxy method metadata: the obsolete `setBatchSize` method was removed; `getNextBatch` is the runtime-verified batch continuation method.
+- Verified return types for `DateTime.SystemDateToLocalDate` and `DateTime.LocalDateToSystemDate` (genuine JavaScript `Date` objects).
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.4.1` to `^3.5.0`.
+- Bump `ssjs-data` (bundled via the language server) from `0.20.0` to `0.21.0` (bare-name Core alias pages, verified `Date` return types, WSProxy method corrections).
+
 ## [2.10.1] - 2026-07-17
 
 ### Changed

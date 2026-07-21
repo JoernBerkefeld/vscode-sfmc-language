@@ -96,7 +96,7 @@ suite('SSJS TypeScript Service — Completions', () => {
         const labels = new Set(list.items.map((item) => labelOf(item)));
         assert.ok(labels.has('retrieve'), 'Should include retrieve');
         assert.ok(labels.has('createItem'), 'Should include createItem');
-        assert.ok(labels.has('setBatchSize'), 'Should include setBatchSize');
+        assert.ok(labels.has('getNextBatch'), 'Should include getNextBatch');
     });
 
     test('Math. → includes abs, floor, PI', async () => {

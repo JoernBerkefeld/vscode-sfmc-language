@@ -286,7 +286,7 @@ test('Completions after "api." include WSProxy instance methods', () => {
     const labels = new Set(items.map((index) => index.label));
     assert.ok(labels.has('retrieve'), 'Should include retrieve');
     assert.ok(labels.has('createItem'), 'Should include createItem');
-    assert.ok(labels.has('setBatchSize'), 'Should include setBatchSize');
+    assert.ok(labels.has('getNextBatch'), 'Should include getNextBatch');
     assert.ok(labels.has('setClientId'), 'Should include setClientId');
 });
 

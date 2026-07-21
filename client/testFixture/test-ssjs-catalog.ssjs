@@ -120,17 +120,17 @@ void (Platform.Function.InvokePerform({}, "method", [], {}));
 // Platform.Function.InvokeConfigure
 void (Platform.Function.InvokeConfigure({}, "method", [], {}));
 // Platform.Function.InvokeExecute
-void (Platform.Function.InvokeExecute({}, [], {}));
+void (Platform.Function.InvokeExecute({}, []));
 // Platform.Function.InvokeExtract
 void (Platform.Function.InvokeExtract({}, []));
 // Platform.Function.InvokeSchedule
-void (Platform.Function.InvokeSchedule({}, "action", {}));
+void (Platform.Function.InvokeSchedule({}, "action", {}, []));
 // Platform.Function.HTTPGet
-void (Platform.Function.HTTPGet("url", true));
+void (Platform.Function.HTTPGet("url"));
 // Platform.Function.HTTPPost
 void (Platform.Function.HTTPPost("url", "contentType", "payload"));
 // Platform.Function.ParseJSON
-void (Platform.Function.ParseJSON([]));
+void (Platform.Function.ParseJSON("jsonString"));
 // Platform.Function.RedirectTo
 void (Platform.Function.RedirectTo("url"));
 // Platform.Function.UrlEncode
@@ -240,7 +240,7 @@ void (ErrorUtil.ThrowWSProxyError({}));
 // HTTP.Get
 void (HTTP.Get("url"));
 // HTTP.Post
-void (HTTP.Post("url", "contentType", "payload", [], []));
+void (HTTP.Post("url", "contentType", "payload"));
 
 // ── Script.Util ──
 // new Script.Util.WSProxy
@@ -266,11 +266,9 @@ void (_wsproxy.performItem("objectType", {}, "action"));
 // <WSProxyInstance>.performBatch
 void (_wsproxy.performBatch("objectType", [], "action"));
 // <WSProxyInstance>.describe
-void (_wsproxy.describe("objectType"));
+void (_wsproxy.describe([]));
 // <WSProxyInstance>.execute
-void (_wsproxy.execute("objectType", "requestName"));
-// <WSProxyInstance>.setBatchSize
-void (_wsproxy.setBatchSize(1));
+void (_wsproxy.execute([], "requestName"));
 // <WSProxyInstance>.setClientId
 void (_wsproxy.setClientId({}));
 // <WSProxyInstance>.resetClientIds
@@ -450,9 +448,9 @@ void (Subscriber.Add({}));
 // Subscriber.Retrieve
 void (Subscriber.Retrieve({}));
 // Subscriber.Upsert
-void (Subscriber.Upsert({}));
+void (_subscriber.Upsert({}));
 // Subscriber.Statistics
-void (Subscriber.Statistics("subscriberKey"));
+void (_subscriber.Statistics());
 // Subscriber.Update
 void (_subscriber.Update({}));
 // Subscriber.Remove
@@ -491,10 +489,6 @@ void (_send.Remove());
 void (_send.CancelSend());
 // Send.Tracking.Retrieve
 void (Send.Tracking.Retrieve({}));
-// Send.Tracking.ClickRetrieve
-void (_sendTracking.ClickRetrieve({}));
-// Send.Tracking.TotalByIntervalRetrieve
-void (_sendTracking.TotalByIntervalRetrieve("type", "startDate", "endDate", "groupBy"));
 // Send.Definition.Init
 void (Send.Definition.Init("key"));
 // Send.Definition.Add
@@ -605,8 +599,8 @@ void (_str.toLocaleLowerCase());
 void (_str.toUpperCase());
 // String.prototype.concat
 void (_str.concat());
-// String.prototype.substr
-void (_str.substr());
+// String.prototype.localeCompare
+void (_str.localeCompare());
 // String.prototype.length
 void (_str.length);
 // Math.abs
@@ -655,8 +649,6 @@ void (Math.LN2);
 void (Math.LN10);
 // Math.LOG2E
 void (Math.LOG2E);
-// Math.LOG10E
-void (Math.LOG10E);
 // Math.SQRT2
 void (Math.SQRT2);
 // Math.SQRT1_2
@@ -667,8 +659,16 @@ void (_num.toFixed());
 void (_num.toExponential());
 // Number.prototype.toPrecision
 void (_num.toPrecision());
+// Number.prototype.toString
+void (_num.toString());
+// Number.prototype.valueOf
+void (_num.valueOf());
 // Object.prototype.hasOwnProperty
 void (_obj.hasOwnProperty());
+// Object.prototype.toString
+void (_obj.toString());
+// Object.prototype.valueOf
+void (_obj.valueOf());
 // Global.parseInt
 void (parseInt());
 // Global.parseFloat
@@ -677,6 +677,8 @@ void (parseFloat());
 void (isNaN());
 // Global.isFinite
 void (isFinite());
+// Global.eval
+void (eval());
 // Global.RegExp
 void (RegExp("pattern"));
 // RegExp.test
@@ -687,14 +689,20 @@ void (_re.exec("string"));
 void (_re.source);
 // RegExp.global
 void (_re.global);
-// RegExp.ignoreCase
-void (_re.ignoreCase);
-// RegExp.multiline
-void (_re.multiline);
 // RegExp.lastIndex
 void (_re.lastIndex);
 // Date.prototype.getFullYear
 void (_date.getFullYear());
+// Date.prototype.getMonth
+void (_date.getMonth());
+// Date.prototype.getDate
+void (_date.getDate());
+// Date.prototype.getHours
+void (_date.getHours());
+// Date.prototype.getTime
+void (_date.getTime());
+// Date.prototype.getTimezoneOffset
+void (_date.getTimezoneOffset());
 // Date.prototype.getMinutes
 void (_date.getMinutes());
 // Date.prototype.getSeconds
@@ -711,14 +719,44 @@ void (_date.toDateString());
 void (_date.toUTCString());
 // Date.prototype.valueOf
 void (_date.valueOf());
+// Date.prototype.getUTCFullYear
+void (_date.getUTCFullYear());
+// Date.prototype.getUTCMonth
+void (_date.getUTCMonth());
+// Date.prototype.getUTCDate
+void (_date.getUTCDate());
+// Date.prototype.getUTCDay
+void (_date.getUTCDay());
+// Date.prototype.getUTCHours
+void (_date.getUTCHours());
+// Date.prototype.getUTCMinutes
+void (_date.getUTCMinutes());
+// Date.prototype.getUTCSeconds
+void (_date.getUTCSeconds());
+// Date.prototype.getUTCMilliseconds
+void (_date.getUTCMilliseconds());
+// Date.prototype.toTimeString
+void (_date.toTimeString());
 // Date.UTC
 void (Date.UTC());
+// Date.parse
+void (Date.parse());
+// Date.now
+void (Date.now());
 // Object.defineProperty
 void (Object.defineProperty());
+// Object.getPrototypeOf
+void (Object.getPrototypeOf());
+// Function.prototype.call
+void (Function.prototype.call({}));
+// Function.prototype.apply
+void (Function.prototype.apply({}));
+// Function.prototype.toString
+void (Function.prototype.toString());
 
 // ── SSJS Global ──
 // String
-void (String({}));
+void (String());
 // Error
 void (new Error());
 // Base64Encode
@@ -737,20 +775,24 @@ void (BeginImpressionRegion("name"));
 void (EndImpressionRegion());
 // Now (alias of Platform.Function.Now)
 void (Now());
-// Redirect (alias of Platform.Response.Redirect)
+
+// ── SSJS Global ──
+// Redirect
 void (Redirect("url", true));
+
+// ── SSJS Global Alias ──
 // GUID (alias of Platform.Function.GUID)
 void (GUID());
 // IsEmailAddress (alias of Platform.Function.IsEmailAddress)
 void (IsEmailAddress("value"));
 // IsPhoneNumber (alias of Platform.Function.IsPhoneNumber)
 void (IsPhoneNumber("value"));
-// Write (alias of Platform.Response.Write)
-void (Write("content"));
-// Stringify (alias of Platform.Function.Stringify)
-void (Stringify({}));
 
 // ── SSJS Global ──
+// Write
+void (Write("text"));
+// Stringify
+void (Stringify({}));
 // Format
 void (Format("textToFormat", "formatCode"));
 
