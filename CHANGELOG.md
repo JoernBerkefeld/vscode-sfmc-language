@@ -2,6 +2,17 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.12.0] - 2026-07-23
+
+### Changed
+
+- SSJS diagnostics now reflect the refined ECMAScript builtin catalog from `ssjs-data` 0.22.0: `String.prototype.search` is treated as a present-but-unreliable builtin (surfaced via hover caveat and differs-from-docs note) rather than a polyfill-required member.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.5.0` to `^3.6.0`.
+- Bump `ssjs-data` (bundled via the language server) from `0.21.0` to `0.22.0` — ECMAScript builtin `isConfirmed` backfill (192 entries flagged runtime-verified), `POLYFILLABLE_METHODS` deduplication (7 duplicates removed), and differs-from-official-docs annotations.
+
 ## [2.11.0] - 2026-07-22
 
 ### Changed
