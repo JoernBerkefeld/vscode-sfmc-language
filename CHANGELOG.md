@@ -2,6 +2,21 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.13.0] - 2026-07-25
+
+### Added
+
+- New SSJS diagnostic that warns when you call a Core Library method which resolves and is callable but never takes effect on a live business unit. It covers both static calls such as `FilterDefinition.Update(...)` and instance calls on objects created via `Init(...)`, and currently flags the known non-functional methods on `Account`, `AccountUser`, `Portfolio`, `FilterDefinition`, `Send.Definition`, and `TriggeredSend`.
+
+### Changed
+
+- Hover for Core Library methods now surfaces the behaviour observed during live-account verification, including cases where the runtime disagrees with the official documentation.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.6.0` to `^3.7.0`.
+- Bump `ssjs-data` (bundled via the language server) from `0.22.0` to `1.0.0` — runtime verification of the Core library, the new `nonFunctionalAtRuntime` flag, 108 newly confirmed entries, and 27 previously blocked entries resolved.
+
 ## [2.12.0] - 2026-07-23
 
 ### Changed
