@@ -4,7 +4,7 @@
   "description": "Language support for Salesforce Marketing Cloud (Engagement and Next) — AMPscript, SSJS, and GTL. Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, snippets, and MCN compatibility checks.",
   "author": "Jörn Berkefeld",
   "license": "MIT",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/JoernBerkefeld/vscode-sfmc-language.git"
