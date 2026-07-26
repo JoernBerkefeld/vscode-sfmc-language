@@ -691,7 +691,7 @@ function polyfills() {
         /**
          *
          * @param {string} searchString what to search for
-         * @param {number} position where to start the search
+         * @param {number} [position] where to start the search
          * @returns {boolean} whether the string starts with the searchString
          */
         String.prototype.startsWith = function (searchString, position) {

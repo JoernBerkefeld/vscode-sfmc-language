@@ -125,13 +125,14 @@ var postResponse = HTTP.Post(
 // -----------------------------------------------------------------------------
 // Deprecated functions — expect @deprecated indicator in hover
 // -----------------------------------------------------------------------------
+Platform.Load("core", "1.1.5");
 
-// Deprecated: hover over ContentArea — should show @deprecated warning
-// New: ContentArea - deprecated, use ContentBlockByID or ContentBlockByName
+// Deprecated: ContentArea — expect hover Deprecated banner + ssjs/deprecated diagnostic
+// New: ContentArea - deprecated bare global; use ContentBlockByID / ContentBlockByName
 var legacyContent = ContentArea(123);
 
-// Deprecated: hover over ContentAreaByName — should show @deprecated warning
-// New: ContentAreaByName - deprecated, use ContentBlockByName
+// Deprecated: ContentAreaByName — expect hover Deprecated banner + ssjs/deprecated diagnostic
+// New: ContentAreaByName - deprecated bare global; use ContentBlockByName
 var legacyContentByName = ContentAreaByName("MyContentArea");
 
 // requiresCoreLoad: hover over HTTP.Get — should show @remarks about Platform.Load
@@ -269,7 +270,40 @@ var hi = Math.max(1, 2, 3); // throws with 3+ args on engine — use polyfill
 var lo = Math.min(); // returns NaN on engine — use polyfill
 var proto = Object.getPrototypeOf(nums); // missing native — use polyfill
 
+// -----------------------------------------------------------------------------
+// New (ssjs-data 1.1.0): deprecated Classic Content Core Library classes
+// -----------------------------------------------------------------------------
 
+// New: Portfolio - legacy Classic Content file storage, superseded by Content Builder
+var portfolioItem = Portfolio.Init("my-portfolio-key");
+var portfolioAdd = Portfolio.Add({ Name: "logo.png", CategoryID: 12345 });
+var portfolioRows = Portfolio.Retrieve({ Property: "Name", SimpleOperator: "equals", Value: "logo.png" });
+portfolioItem.Update({ Name: "logo-v2.png" });
+portfolioItem.Remove();
+
+
+// New: Template - legacy Classic Content email template, superseded by Content Builder
+var tpl = Template.Init("my-template-key");
+var tplAdd = Template.Add({ CustomerKey: "my-template-key", Name: "Basic Template" });
+var tplRows = Template.Retrieve({ Property: "CustomerKey", SimpleOperator: "equals", Value: "my-template-key" });
+tpl.Update({ Name: "Basic Template v2" });
+
+// New: Send - legacy classic send type, not Content Builder assets
+var send = Send.Init(1234567);
+var sendRows = Send.Retrieve({ Property: "ID", SimpleOperator: "equals", Value: 1234567 });
+var sendLists = send.RetrieveLists();
+send.CancelSend();
+send.Remove();
+
+// New: Send.Definition - legacy Classic Email Studio send definition, superseded by Journey Builder
+var sendDef = Send.Definition.Init("my-send-definition");
+var sendDefAdd = Send.Definition.Add({ CustomerKey: "my-send-definition", Name: "Nightly Send" });
+var sendDefDe = Send.Definition.AddWithDE({ CustomerKey: "my-send-definition" }, "my-de-key");
+var sendDefRows = Send.Definition.Retrieve({ Property: "CustomerKey", SimpleOperator: "equals", Value: "my-send-definition" });
+sendDef.Send();
+sendDef.TestSend();
+sendDef.Update({ Name: "Nightly Send v2" });
+sendDef.Remove();
 
 Platform.Load("core", "1.1.1");
 var re = /[0-9]+/g;

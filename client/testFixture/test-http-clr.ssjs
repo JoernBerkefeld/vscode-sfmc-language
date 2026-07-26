@@ -119,5 +119,5 @@ var vget = new Script.Util.HttpGet("https://api.example.com/cached");
 vget.emptyContentHandling = 9;
 
 // ✅ OK — non-literal RHS is not statically checked
-var dynMethod = someMethod;
+var dynMethod = "someMethod";
 vreq.method = dynMethod;

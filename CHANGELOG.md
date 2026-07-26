@@ -2,6 +2,33 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.14.0] - 2026-07-27
+
+### Added
+
+- New SSJS diagnostic that warns when you call a method on a deprecated Core Library class. It resolves both static calls such as `Send.Definition.Add(...)` and instance calls on variables created via `Init(...)`, and explains what replaced the legacy feature.
+
+### Changed
+
+- Completions for deprecated Core Library classes are now rendered with strike-through and their documentation starts with a `**Deprecated.**` marker.
+- Hover for deprecated Core Library classes now opens with a `⚠️ Deprecated.` banner.
+- `Portfolio`, `Template`, `Send`, and `Send.Definition` are marked deprecated — they operate on legacy Classic Content / Classic Email Studio objects rather than Content Builder assets.
+
+### Fixed
+
+- The `ssjs/nonfunctional-method` diagnostic now reports as an **Error** instead of a Warning — a method confirmed non-functional at runtime (every tested invocation fails) is not merely "discouraged", so it no longer shares severity with an ordinary deprecation warning.
+- Deprecated- and nonfunctional-method diagnostics are now gated by call style: a method's static/instance nature is compared against how it was actually called, so calling an instance-only method in its static form (or vice versa) is no longer misreported as deprecated instead of surfacing as an unknown member.
+- Bare deprecated globals such as `ContentArea("key")` and `ContentAreaByName("name")` now emit `ssjs/deprecated` (previously hover/completion showed deprecated, but the diagnostic was missing because the lookup required `type === 'function'` while those catalog rows omit `type`). Deprecated `Platform.Function.ContentArea*` calls are covered the same way.
+- The bundled `.d.ts` declarations no longer silently drop the `SendDefinitionInstance` interface or its deprecated methods (including `TestSend`), and `new Error("message")` no longer fails to type-check with "has no construct signatures".
+- Restored JSDoc documentation on `Error`/`Number` builtin type declarations (and `EvalError`, `RangeError`, `ReferenceError`, `SyntaxError`, `TypeError`, `URIError`, `Boolean`, `RegExp`) — the fix above for `new Error(...)` construct-signature type-checking had the side effect of silently dropping their description, runtime-verification `@remarks`, official-docs-divergence notes, `@param`, and `@example` from IntelliSense hover.
+- `SendInstance.Tracking` in the bundled `.d.ts` no longer references an undeclared `SendTrackingInstance` type — it now correctly resolves to `.Clicks`/`.TotalByInterval` sub-objects, matching the runtime shape and the existing `TriggeredSendTrackingInstance` pattern.
+- Added the missing `interface Boolean` declaration to the bundled `.d.ts` so `BooleanConstructor` no longer references `Boolean` as a type with nothing backing it — `new Boolean(...)` type-checks cleanly and boxed instances expose `valueOf()`.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.7.0` to `^3.8.2`.
+- Bump `ssjs-data` (bundled via the language server) from `1.0.0` to `1.1.3` — class- and method-level deprecation flags for the Classic Content Core Library classes, the new `coreDeprecatedMethodLookup` export, the fixes listed above, restored JSDoc on constructible ECMAScript built-ins, and the `SendTrackingInstance`/`Boolean` interface fixes.
+
 ## [2.13.0] - 2026-07-25
 
 ### Added

@@ -142,7 +142,8 @@ Variable resolution — inferring the type or value held by a `@variable` at any
 - **Missing `Platform.Load`**: flags calls to Core Library objects (`DataExtension`, `HTTP.Get`, etc.) and bare globals (`Stringify()`, `Now()`, `GUID()`, etc.) when `Platform.Load("Core", "1.1.5")` has not been called **before** that line — order-aware
 - **ES6+ syntax errors**: `let`/`const`, arrow functions, `for...of`, generator functions, spread `...`, destructuring are flagged as errors (SSJS runs in ES3/ES5 only)
 - **TypeScript type diagnostics**: type-aware errors powered by the embedded TypeScript service
-- **Non-functional Core methods**: **Warning** on Core Library methods that resolve and are callable but never take effect on a live business unit — covers static calls such as `FilterDefinition.Update(...)` as well as instance calls on objects created via `Init(...)`
+- **Non-functional Core methods**: **Error** on Core Library methods that resolve and are callable but never take effect on a live business unit — covers static calls such as `FilterDefinition.Update(...)` as well as instance calls on objects created via `Init(...)`
+- **Deprecated Core classes**: **Warning** on methods of deprecated Core Library classes (`ContentAreaObj`, `Email`, `Portfolio`, `Template`, `Send`, `Send.Definition`) — covers static calls such as `Send.Definition.Add(...)` as well as instance calls on objects created via `Init(...)`
 - **MCN incompatibility** (when `sfmcLanguageServer.targetPlatform` is `"next"`): **Error** on any `<script runat="server">` block — SSJS is not supported in Marketing Cloud Next
 
 #### Suppressing "Cannot find name" for cross-file variables
