@@ -28,7 +28,7 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 ### Auto-Completion
 
-- **150 AMPscript functions** with snippet-style parameter placeholders, organized across 14 categories (Content, Data Extension, HTTP, String, Math, and more — see `ampscript-data`)
+- **155 AMPscript functions** with snippet-style parameter placeholders, organized across 14 categories (Content, Data Extension, HTTP, String, Math, and more — see `ampscript-data`)
 - **17 keywords** with contextual snippets (`var`, `set`, `if`/`then`/`elseif`/`else`/`endif`, `for`/`to`/`downto`/`do`/`next`, `and`/`or`/`not`, `true`/`false`)
 - **74 system personalization strings** with descriptions (subscriber identity, email/job metadata, dates, sender info, URLs, MobileConnect demographics, GroupConnect, execution context)
 - **File-scoped variable suggestions** extracted from `@variable` declarations in the current document
@@ -64,7 +64,7 @@ Set **`sfmcLanguageServer.targetPlatform`** to `"next"` (default: `"engagement"`
 
 **In `"next"` mode:**
 
-- **Error** for any AMPscript function not available in Marketing Cloud Next (41 of 150 functions are supported). Example: `InsertDE`, `AttachFile`, `ContentArea` → `"InsertDE is not supported in Marketing Cloud Next."`
+- **Error** for any AMPscript function not available in Marketing Cloud Next (41 of 155 functions are supported). Example: `InsertDE`, `AttachFile`, `ContentArea` → `"InsertDE is not supported in Marketing Cloud Next."`
 - **Information** for supported functions with behavioral differences (`FormatDate`, `Lookup`, `StringToDate`) — the note is shown in the Problems panel at the call site so you can act on it before deploying
 - **Error** on any `<script runat="server">` block — SSJS is not supported in Marketing Cloud Next
 - **MCN Handlebars** support activates: validation, completions, hover, signature help, and code actions for `{{...}}` mustaches and `{!$...}` built-in bindings. Binding hovers link to the Salesforce Developers documentation.
@@ -112,7 +112,7 @@ Variable resolution — inferring the type or value held by a `@variable` at any
 
 ### Auto-Completion
 
-- **298 SFMC-specific completions** sourced from `ssjs-data`: 50 `Platform.Function.*` methods, 27 bare SSJS globals (`Stringify`, `Now`, `Write`, `GUID`, and more), 206 Core Library object methods across 39 objects, and 15 WSProxy operations — plus **60 ES3/ES5 built-in** completions (Array, String, Number, Object, Math, etc.)
+- **223 SFMC-specific completions** sourced from `ssjs-data`: 50 `Platform.Function.*` methods, 27 bare SSJS globals (`Stringify`, `Now`, `Write`, `GUID`, and more), 132 Core Library object methods across 41 objects, and 14 WSProxy operations — plus **127 ES3/ES5 built-in** completions (Array, String, Number, Object, Math, Date, RegExp, etc.)
 - **`Platform.Function.*`**, **`Platform.Variable.*`**, **`Platform.Response.*`**, **`Platform.Request.*`** methods
 - **Core library objects** with full method listings: `DataExtension`, `Subscriber`, `TriggeredSend`, `HTTP`, `Guard`, and more — available after `Platform.Load("Core", "1.1.5")`
 - **WSProxy** method completions for `new Script.Util.WSProxy()`

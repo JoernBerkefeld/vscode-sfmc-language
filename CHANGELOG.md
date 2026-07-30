@@ -2,6 +2,21 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.14.1] - 2026-07-30
+
+### Fixed
+
+- The v2.14.0 VSIX shipped a stale `ssjs-data` catalog: the root lockfile pinned `1.1.1` while `server/package-lock.json` resolved a second, conflicting copy at `1.1.3`. Both lockfiles were regenerated from the registry so exactly one `ssjs-data` version is bundled.
+
+### Changed
+
+- README completion counts corrected against the bundled catalogs: 155 AMPscript functions (41 MCN-supported), 223 SFMC-specific SSJS completions (132 Core Library methods across 41 objects, 14 WSProxy operations), and 127 ECMAScript built-ins.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.8.2` to `^3.8.3`.
+- Bump `ssjs-data` (bundled via the language server) from `1.1.1`/`1.1.3` to `1.2.0` — `Reflect` guidance no longer suggests the broken `in` operator, `Intl` / `toLocaleString` / `toLocaleDateString` now point at the AMPscript `FormatNumber` / `FormatDate` functions via `Platform.Function.TreatAsContent` instead of non-existent Platform functions, `Platform.Function.Stringify` examples use `Platform.Response.Write`, plus corrected `Number.prototype.toPrecision`, `decodeURI`, `Boolean`, and `Error` runtime notes.
+
 ## [2.14.0] - 2026-07-27
 
 ### Added
