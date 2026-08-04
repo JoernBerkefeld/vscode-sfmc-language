@@ -285,7 +285,11 @@
     "undici-types": "^8.7.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^3.8.3"
+    "sfmc-language-lsp": "^3.9.0"
+  },
+  "overrides": {
+    "diff": "^9.0.0",
+    "serialize-javascript": "^7.0.7"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [
