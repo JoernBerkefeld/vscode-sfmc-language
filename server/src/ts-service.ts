@@ -1196,7 +1196,7 @@ export function getSsjsHover(uri: string, position: Position): Hover | undefined
             tagLines.push(tagText ? `*Deprecated:* ${tagText}` : '*Deprecated*');
         } else if (tag.name === 'remarks') {
             if (tagText) tagLines.push(tagText);
-        } else if (tag.name === 'param' && tagText) {
+        } else if (tagText && tag.name === 'param') {
             // TS returns tag text as "paramName - description"; match native TS format:
             // @param `name` — description
             const spaceIndex = tagText.indexOf(' ');
@@ -1204,9 +1204,9 @@ export function getSsjsHover(uri: string, position: Position): Hover | undefined
             const pDesc =
                 spaceIndex === -1 ? '' : tagText.slice(spaceIndex + 1).replace(/^[-–]\s*/, '');
             tagLines.push(pDesc ? `@param \`${pName}\` — ${pDesc}` : `@param \`${pName}\``);
-        } else if ((tag.name === 'returns' || tag.name === 'return') && tagText) {
+        } else if (tagText && (tag.name === 'returns' || tag.name === 'return')) {
             tagLines.push(`@returns ${tagText}`);
-        } else if (tag.name === 'example' && tagText) {
+        } else if (tagText && tag.name === 'example') {
             tagLines.push(`@example\n\`\`\`javascript\n${tagText.trim()}\n\`\`\``);
         } else if (tagText) {
             tagLines.push(`*${tag.name}:* ${tagText}`);

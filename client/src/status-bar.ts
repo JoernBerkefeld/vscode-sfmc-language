@@ -13,7 +13,9 @@ const EXT_ID = 'sfmc-language';
 const PUBLISHER = 'joernberkefeld';
 const CMD_SHOW_OUTPUT = `${EXT_ID}.showOutput`;
 
-/** Settings search query used to reveal the targetPlatform setting. */
+/**
+ * Settings search query used to reveal the targetPlatform setting.
+ */
 const TARGET_PLATFORM_QUERY = `@ext:${PUBLISHER}.${EXT_ID} targetPlatform`;
 
 /**
@@ -26,7 +28,9 @@ function getTargetPlatform(): 'engagement' | 'next' {
         : 'engagement';
 }
 
-/** VS Code codicons used for each lifecycle state. */
+/**
+ * VS Code codicons used for each lifecycle state.
+ */
 const ICONS = {
     loading: '$(loading~spin)',
     ready: '$(check)',

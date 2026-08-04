@@ -10,7 +10,9 @@ import { compareSemver, escapeHtml, markdownToHtml, parseChangelogEntry } from '
 
 export { compareSemver, markdownToHtml, parseChangelogEntry } from './whats-new-core';
 
-/** Synced so users don't see duplicate prompts across machines (see VS Code globalState docs). */
+/**
+ * Synced so users don't see duplicate prompts across machines (see VS Code globalState docs).
+ */
 export const WHATS_NEW_VERSION_KEY = 'whatsNew.lastShownVersion';
 
 const PANEL_VIEW_TYPE = 'sfmcLanguage.whatsNew';

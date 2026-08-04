@@ -53,9 +53,9 @@ export const getDocumentUri = (p: string) => {
 /**
  * Replace the entire content of the active test document.
  * @param content - the new document content
- * @returns true when the edit was applied
+ * @returns nothing
  */
-export async function setTestContent(content: string): Promise<boolean> {
+export async function setTestContent(content: string): Promise<void> {
     const document = testState.document!;
     const all = new vscode.Range(
         document.positionAt(0),
@@ -63,7 +63,7 @@ export async function setTestContent(content: string): Promise<boolean> {
     );
     // Use delete + insert rather than TextEditorEdit.replace so the unicorn
     // string-replacement heuristic does not misfire on the VS Code edit API.
-    return testState.editor!.edit((eb) => {
+    await testState.editor!.edit((eb) => {
         eb.delete(all);
         eb.insert(document.positionAt(0), content);
     });
