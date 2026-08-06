@@ -2,6 +2,17 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.15.0] - 2026-08-06
+
+### Added
+
+- Core-version-aware SSJS diagnostics. `ErrorUtil` and `ErrorUtil.ThrowWSProxyError` only exist up to `Platform.Load("Core", "1")`. When a file loads a newer Core version, using them is now reported as an **error** stating the member is undefined at runtime, instead of the generic deprecation warning. Files that load `Core` version `1` keep the previous warning.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.9.0` to `^3.10.0`.
+- Bump `ssjs-data` (bundled via the language server) to `1.4.0` — adds the `maxCoreVersion` field and the `maxCoreVersionLookup` export that drive the new diagnostic.
+
 ## [2.14.1] - 2026-07-30
 
 ### Fixed
@@ -133,7 +144,7 @@ All notable changes to the SFMC Language Service extension will be documented in
 
 - **MCN Handlebars language support** now reaches the editor: validation, completions, hover, signature help, and code actions for `{{...}}` mustaches and `{!$...}` built-in bindings (powered by `sfmc-language-lsp` 2.x). Handlebars intelligence activates when `sfmcLanguageServer.targetPlatform` is set to `next`.
 - **MCN Handlebars snippets** for the `ampscript` and `sfmc` languages (`snippets/mcn-handlebars.snippets.json`).
-- **Target-platform status bar item** now reflects the active `targetPlatform`: it shows `sfmc-e` for Engagement and `sfmc-next` for Next, and its tooltip adds an *MCE Mode* / *MCNext Mode* line that opens Settings pre-filtered to `@ext:joernberkefeld.sfmc-language targetplatform`. The item refreshes automatically when the setting changes.
+- **Target-platform status bar item** now reflects the active `targetPlatform`: it shows `sfmc-e` for Engagement and `sfmc-next` for Next, and its tooltip adds an _MCE Mode_ / _MCNext Mode_ line that opens Settings pre-filtered to `@ext:joernberkefeld.sfmc-language targetplatform`. The item refreshes automatically when the setting changes.
 - Syntax highlighting for the combined `sfmc` grammar now covers MCN Handlebars mustaches and bindings.
 
 ### Changed
@@ -186,7 +197,7 @@ All notable changes to the SFMC Language Service extension will be documented in
 
 ### Added
 
-- **Find All References** for SSJS symbols (variables and functions) — right-click → *Find All References* / `Shift+F12` now lists every usage in the file.
+- **Find All References** for SSJS symbols (variables and functions) — right-click → _Find All References_ / `Shift+F12` now lists every usage in the file.
 
 ### Fixed
 

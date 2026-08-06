@@ -4,16 +4,16 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 ## Feature Overview
 
-| Feature | AMPscript (`.amp`) | SSJS (`.ssjs`) | SFMC HTML (`.html`) | Handlebars (`.hbs`) |
-| -------------------------------- | :----------------: | :------------: | :-----------------: | :-----------------: |
-| Syntax highlighting | ✓ | ✓ | ✓ (auto-detected) | ✓ (built-in) |
-| Auto-completion | ✓ | ✓ | ✓ | ✓ |
-| Hover / IntelliSense | ✓ | ✓ | ✓ | ✓ |
-| Signature help | ✓ | ✓ | ✓ | ✓ |
-| Go-to definition | — | ✓ | ✓ | — |
-| Diagnostics / errors | ✓ | ✓ | ✓ | ✓ |
-| Variable resolution | planned | ✓ | ✓ | — |
-| Snippets | 36 | 18 | via sfmc language | via handlebars |
+| Feature              | AMPscript (`.amp`) | SSJS (`.ssjs`) | SFMC HTML (`.html`) | Handlebars (`.hbs`) |
+| -------------------- | :----------------: | :------------: | :-----------------: | :-----------------: |
+| Syntax highlighting  |         ✓          |       ✓        |  ✓ (auto-detected)  |    ✓ (built-in)     |
+| Auto-completion      |         ✓          |       ✓        |          ✓          |          ✓          |
+| Hover / IntelliSense |         ✓          |       ✓        |          ✓          |          ✓          |
+| Signature help       |         ✓          |       ✓        |          ✓          |          ✓          |
+| Go-to definition     |         —          |       ✓        |          ✓          |          —          |
+| Diagnostics / errors |         ✓          |       ✓        |          ✓          |          ✓          |
+| Variable resolution  |      planned       |       ✓        |          ✓          |          —          |
+| Snippets             |         36         |       18       |  via sfmc language  |   via handlebars    |
 
 **Variable resolution** means the language service infers the concrete type (and where possible, the value) held in a variable. Hovering over a local variable reveals its resolved type rather than a generic `any`. This is fully available in SSJS and planned for AMPscript in a future release.
 
@@ -57,10 +57,10 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 Set **`sfmcLanguageServer.targetPlatform`** to `"next"` (default: `"engagement"`) to enable MCN-mode diagnostics. Engagement mode is completely unchanged — the setting is additive.
 
-| Setting value | Behaviour |
-|---|---|
-| `"engagement"` (default) | Existing diagnostics only — no MCN-specific checks |
-| `"next"` | Adds errors for MCN-unsupported functions and SSJS blocks; adds information hints for functions with behavioral differences |
+| Setting value            | Behaviour                                                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `"engagement"` (default) | Existing diagnostics only — no MCN-specific checks                                                                          |
+| `"next"`                 | Adds errors for MCN-unsupported functions and SSJS blocks; adds information hints for functions with behavioral differences |
 
 **In `"next"` mode:**
 
@@ -79,29 +79,29 @@ Variable resolution — inferring the type or value held by a `@variable` at any
 
 36 built-in snippets:
 
-| Prefix | Description |
+| Prefix                                                 | Description                                |
 | ------------------------------------------------------ | ------------------------------------------ |
-| `ampblock` | AMPscript block delimiters |
-| `ampinline` | Inline output expression |
-| `vout` | Variable output (`%%=v(@var)=%%`) |
-| `ampvar` / `ampset` / `ampvarset` | Variable declaration and assignment |
-| `ampif` / `ampifelse` / `ampifelseif` | Conditional blocks |
-| `ampfor` / `ampforrows` | FOR loops (counting and row-set iteration) |
-| `amplookup` / `amplookuprows` / `amplookuporderedrows` | Data Extension lookups |
-| `amphttpget` / `amphttppost` | HTTP requests with error handling |
-| `ampcloudpagesurl` | CloudPages URL builder |
-| `ampcontentblock` | Content Builder block inclusion |
-| `ampattrval` | Safe attribute retrieval |
-| `ampempty` | Empty check with default |
-| `ampupsertdata` / `ampinsertdata` | Data Extension DML |
-| `ampcreateobject` | SOAP API object creation |
-| `ampscripttag` | Script tag block |
-| `amptemplate` | Full email template boilerplate |
-| `ampssjs` | AMPscript-in-SSJS bridge pattern |
-| `amptreatascontent` | TreatAsContent from SSJS |
-| `ampredirectto` | Redirect to CloudPage |
-| `ampdateformat` | Common date format patterns |
-| `amprowsetloop` | RowSet loop with error check |
+| `ampblock`                                             | AMPscript block delimiters                 |
+| `ampinline`                                            | Inline output expression                   |
+| `vout`                                                 | Variable output (`%%=v(@var)=%%`)          |
+| `ampvar` / `ampset` / `ampvarset`                      | Variable declaration and assignment        |
+| `ampif` / `ampifelse` / `ampifelseif`                  | Conditional blocks                         |
+| `ampfor` / `ampforrows`                                | FOR loops (counting and row-set iteration) |
+| `amplookup` / `amplookuprows` / `amplookuporderedrows` | Data Extension lookups                     |
+| `amphttpget` / `amphttppost`                           | HTTP requests with error handling          |
+| `ampcloudpagesurl`                                     | CloudPages URL builder                     |
+| `ampcontentblock`                                      | Content Builder block inclusion            |
+| `ampattrval`                                           | Safe attribute retrieval                   |
+| `ampempty`                                             | Empty check with default                   |
+| `ampupsertdata` / `ampinsertdata`                      | Data Extension DML                         |
+| `ampcreateobject`                                      | SOAP API object creation                   |
+| `ampscripttag`                                         | Script tag block                           |
+| `amptemplate`                                          | Full email template boilerplate            |
+| `ampssjs`                                              | AMPscript-in-SSJS bridge pattern           |
+| `amptreatascontent`                                    | TreatAsContent from SSJS                   |
+| `ampredirectto`                                        | Redirect to CloudPage                      |
+| `ampdateformat`                                        | Common date format patterns                |
+| `amprowsetloop`                                        | RowSet loop with error check               |
 
 ## SSJS (Server-Side JavaScript)
 
@@ -144,6 +144,7 @@ Variable resolution — inferring the type or value held by a `@variable` at any
 - **TypeScript type diagnostics**: type-aware errors powered by the embedded TypeScript service
 - **Non-functional Core methods**: **Error** on Core Library methods that resolve and are callable but never take effect on a live business unit — covers static calls such as `FilterDefinition.Update(...)` as well as instance calls on objects created via `Init(...)`
 - **Deprecated Core classes**: **Warning** on methods of deprecated Core Library classes (`ContentAreaObj`, `Email`, `Portfolio`, `Template`, `Send`, `Send.Definition`) — covers static calls such as `Send.Definition.Add(...)` as well as instance calls on objects created via `Init(...)`
+- **Core-version-bound members**: **Error** when a member that only exists up to `Platform.Load("Core", "1")` — such as `ErrorUtil` and `ErrorUtil.ThrowWSProxyError` — is used in a file that loads a newer Core version, because the member is undefined at runtime there. With `Platform.Load("Core", "1")` the usual deprecation **Warning** is shown instead
 - **MCN incompatibility** (when `sfmcLanguageServer.targetPlatform` is `"next"`): **Error** on any `<script runat="server">` block — SSJS is not supported in Marketing Cloud Next
 
 #### Suppressing "Cannot find name" for cross-file variables
@@ -156,7 +157,7 @@ Use an ESLint-style file-level `/* global */` comment to tell the extension whic
 /* global DEBUG, deKey */
 
 if (DEBUG) {
-    Write(deKey);
+  Write(deKey);
 }
 ```
 
@@ -176,20 +177,20 @@ The embedded TypeScript service infers the type — and where possible the concr
 
 18 built-in snippets:
 
-| Prefix | Description |
+| Prefix                                               | Description                       |
 | ---------------------------------------------------- | --------------------------------- |
-| `ssjsblock` | `<script runat="server">` wrapper |
-| `ssjsplatformload` | `Platform.Load("core", "1")` |
-| `ssjslookup` / `ssjslookuprows` | Platform.Function lookups |
-| `ssjsinsertdata` / `ssjsupsertdata` | Data Extension DML |
-| `ssjshttpget` / `ssjshttpgetsimple` / `ssjshttppost` | HTTP requests |
-| `ssjswsproxy` / `ssjswsproxycreate` | WSProxy operations |
-| `ssjstrycatch` | Try/catch error handling |
-| `ssjsde` | DataExtension Init/Retrieve |
-| `ssjsvarbridge` | AMPscript variable bridge |
-| `ssjsrequestparam` / `ssjsformdata` | Request parameters |
-| `ssjsredirect` / `ssjscloudpagesurl` | Navigation |
-| `ssjstemplate` | Full CloudPage template |
+| `ssjsblock`                                          | `<script runat="server">` wrapper |
+| `ssjsplatformload`                                   | `Platform.Load("core", "1")`      |
+| `ssjslookup` / `ssjslookuprows`                      | Platform.Function lookups         |
+| `ssjsinsertdata` / `ssjsupsertdata`                  | Data Extension DML                |
+| `ssjshttpget` / `ssjshttpgetsimple` / `ssjshttppost` | HTTP requests                     |
+| `ssjswsproxy` / `ssjswsproxycreate`                  | WSProxy operations                |
+| `ssjstrycatch`                                       | Try/catch error handling          |
+| `ssjsde`                                             | DataExtension Init/Retrieve       |
+| `ssjsvarbridge`                                      | AMPscript variable bridge         |
+| `ssjsrequestparam` / `ssjsformdata`                  | Request parameters                |
+| `ssjsredirect` / `ssjscloudpagesurl`                 | Navigation                        |
+| `ssjstemplate`                                       | Full CloudPage template           |
 
 ## HTML Files — SFMC Language
 
@@ -218,16 +219,16 @@ GTL uses `{{ }}` delimiters and is a thin wrapper around AMPscript. The extensio
 - Context-aware completions inside `{{ }}` — AMPscript functions, variables, and personalization strings
 - 8 built-in snippets:
 
-| Prefix | Description |
+| Prefix               | Description                         |
 | -------------------- | ----------------------------------- |
-| `gtlexpr` | GTL expression `{{ }}` |
-| `gtlvar` | Variable output `{{ v(@var) }}` |
-| `gtllookup` | Lookup via GTL |
-| `gtlif` | Inline conditional `{{ IIf(...) }}` |
-| `gtlcontent` | ContentBlockByKey via GTL |
-| `gtlpersonalization` | Personalization string |
-| `gtlattrval` | AttributeValue via GTL |
-| `gtlformatdate` | Date formatting via GTL |
+| `gtlexpr`            | GTL expression `{{ }}`              |
+| `gtlvar`             | Variable output `{{ v(@var) }}`     |
+| `gtllookup`          | Lookup via GTL                      |
+| `gtlif`              | Inline conditional `{{ IIf(...) }}` |
+| `gtlcontent`         | ContentBlockByKey via GTL           |
+| `gtlpersonalization` | Personalization string              |
+| `gtlattrval`         | AttributeValue via GTL              |
+| `gtlformatdate`      | Date formatting via GTL             |
 
 ## Handlebars (`.hbs`) — Marketing Cloud Next
 
@@ -266,13 +267,13 @@ This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/m
 
 ## File Types
 
-| File pattern | Language | Notes |
-| --------------------------------- | --------------------------- | ----------------------------------------------------- |
-| `*.ampscript`, `*.amp` | AMPscript | Always |
-| `*.ssjs` | SSJS | Always |
-| `*.html` containing SFMC content | SFMC (AMPscript / SSJS) | Auto-detected on open and on paste |
-| `*.html` without SFMC content | html (unchanged) | Extension does not touch plain HTML |
-| `*.hbs` | Handlebars (built-in) | MCN Handlebars intelligence, always in `next` mode |
+| File pattern                     | Language                | Notes                                              |
+| -------------------------------- | ----------------------- | -------------------------------------------------- |
+| `*.ampscript`, `*.amp`           | AMPscript               | Always                                             |
+| `*.ssjs`                         | SSJS                    | Always                                             |
+| `*.html` containing SFMC content | SFMC (AMPscript / SSJS) | Auto-detected on open and on paste                 |
+| `*.html` without SFMC content    | html (unchanged)        | Extension does not touch plain HTML                |
+| `*.hbs`                          | Handlebars (built-in)   | MCN Handlebars intelligence, always in `next` mode |
 
 ## Installation
 
@@ -280,11 +281,11 @@ This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/m
 
 1. Build and package:
 
-    ```bash
-    npm install
-    npm run compile
-    npm run package
-    ```
+   ```bash
+   npm install
+   npm run compile
+   npm run package
+   ```
 
 2. In VS Code: **Extensions** > `...` > **Install from VSIX...** > select the generated `.vsix` file
 
@@ -297,10 +298,10 @@ This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/m
 
 ## Configuration
 
-| Setting | Default | Description |
+| Setting                                  | Default | Description                                             |
 | ---------------------------------------- | ------- | ------------------------------------------------------- |
-| `sfmcLanguageServer.maxNumberOfProblems` | `100` | Maximum number of diagnostics reported per file |
-| `sfmcLanguageServer.trace.server` | `off` | Traces LSP communication (`off`, `messages`, `verbose`) |
+| `sfmcLanguageServer.maxNumberOfProblems` | `100`   | Maximum number of diagnostics reported per file         |
+| `sfmcLanguageServer.trace.server`        | `off`   | Traces LSP communication (`off`, `messages`, `verbose`) |
 
 ## Architecture
 

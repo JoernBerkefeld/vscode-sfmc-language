@@ -305,6 +305,17 @@ sendDef.TestSend();
 sendDef.Update({ Name: "Nightly Send v2" });
 sendDef.Remove();
 
+// -----------------------------------------------------------------------------
+// New (ssjs-data 1.4.0): Core-version-aware ErrorUtil diagnostic
+// -----------------------------------------------------------------------------
+
+// New: ErrorUtil only exists up to Platform.Load("Core", "1"). Because this file
+// loads "1.1.5" above, the two lines below are reported as errors ("undefined at
+// runtime") instead of the plain deprecation warning. Remove the comment markers
+// to see the diagnostic.
+// var errUtil = ErrorUtil;
+// ErrorUtil.ThrowWSProxyError(wsResult);
+
 Platform.Load("core", "1.1.1");
 var re = /[0-9]+/g;
 var arr = [1, 2, 3];
