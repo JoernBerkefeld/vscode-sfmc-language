@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<!-- Rule: sfmc/ssjs-no-invalid-property-access
+     Flags reads of write-only properties and writes to read-only ones.
+     Demonstrated in server-side script blocks embedded in HTML. -->
+
+<!-- ACCEPTED - assigning postData and reading Platform.Request.Method -->
+<script runat="server">
+Platform.Load("Core", "1.1.5");
+var req = new Script.Util.HttpRequest("https://api.example.com/data");
+req.postData = '{"id":1}';
+var method = String(Platform.Request.Method);
+</script>
+
+<!-- FAIL - reading the write-only postData property throws at runtime -->
+<script runat="server">
+Platform.Load("Core", "1.1.5");
+var req2 = new Script.Util.HttpRequest("https://api.example.com/data");
+Platform.Response.Write(req2.postData);
+</script>
+
+<!-- FAIL - reading ContentType returns an opaque platform value, not the string -->
+<script runat="server">
+Platform.Load("Core", "1.1.5");
+Platform.Response.ContentType = "application/json";
+var ct = Platform.Response.ContentType;
+</script>
+
+<!-- FAIL - assigning the read-only Platform.Request.Method property -->
+<script runat="server">
+Platform.Load("Core", "1.1.5");
+Platform.Request.Method = "POST";
+</script>
+
+</body>
+</html>

@@ -2,6 +2,20 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.16.0] - 2026-08-07
+
+### Added
+
+- New `ssjs/invalid-property-access` diagnostic surfaced from the language server, covering members whose read or write side does not behave the way the property name suggests:
+    - Reading a write-only member such as `Script.Util.HttpRequest.postData` is reported as an **error** — the value can only be set, never read back.
+    - Reading `Platform.Response.ContentType` or `Platform.Response.CharacterSet` is reported as a **warning** — both return an opaque platform value rather than the string that was assigned to them.
+    - Assigning to a read-only `Platform.Request` property (`Method`, `QueryString`, `ClientIP`, …) is reported as an **error** — the assignment is accepted at runtime but silently has no effect.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.10.0` to `^3.11.0`.
+- Bump `ssjs-data` (bundled via the language server) to `1.5.0` — adds the `access` attribute and the `propertyAccessLookup` export that drive the new diagnostic.
+
 ## [2.15.0] - 2026-08-06
 
 ### Added
