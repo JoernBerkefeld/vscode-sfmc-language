@@ -321,3 +321,12 @@ var re = /[0-9]+/g;
 var arr = [1, 2, 3];
 arr.push(4);
 var s = "hello".indexOf("l");
+
+
+/* Test 1 */ %%=ContentBlockByKey("my-block")=%%
+/* Test 2 */ %%=ContentImageByID(12345)=%%
+/* Test 3 */ %%=ContentImageByKey("my-image-key")=%%
+/* Test 4 */ %%=BarcodeURL("CODE128", "12345", 2, 100)=%%
+/* Test 5 */ %%=HTTPGet("https://example.com", true, 0, @status)=%%
+/* Test 6 */ %%=GetPortfolioItem("id")=%%
+/* Test 6 */ %%=GetPublishedSocialContent("id")=%%

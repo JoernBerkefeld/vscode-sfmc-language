@@ -2,6 +2,24 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [2.17.0] - 2026-08-13
+
+### Added
+
+- **AMPscript non-functional-at-runtime diagnostics.** Functions that resolve at runtime but have no known working invocation (e.g. `GetPortfolioItem`, `GetPublishedSocialContent`, whose underlying Classic feature is retired) are now flagged as an **error** at the call site. The functions remain in completions and hover — they exist in the language — but every reached call aborts the page. The diagnostic is suppressed when `disableLspDiagnosticsForEslintRules` is enabled, matching the new `eslint-plugin-sfmc` `amp-no-nonfunctional-function` rule.
+- **Non-functional functions render struck through in completions**, for both AMPscript and SSJS, the same way deprecated members do — the call site is a bug, so the label reads as struck through. For SSJS this is driven by the bundled `sfmc-globals.d.ts`, which now marks these members `@deprecated` so TypeScript strikes them through and warns (`ts(6385)`) at call sites.
+
+### Changed
+
+- Refreshed the bundled AMPscript catalog: many additional functions are now marked runtime-verified (Math, String, Date/Time, Encryption/Encoding families, `AuthenticatedEmployeeID`, plus a content/HTTP/MC-API/MSCRM sweep), and the Marketing Cloud Next Handlebars equivalence data was corrected so `ContentBlockByKey` maps to `getContentBlock` while `ContentBlockByID` and `ContentBlockByName` are no longer tied to it. The catalog also picks up `minArgs` corrections (`ContentImageByID` / `ContentImageByKey` 2→1, `BarcodeURL` 9→4) and flags `GetPortfolioItem` / `GetPublishedSocialContent` as non-functional at runtime.
+- Refreshed the bundled SSJS catalog with runtime-verified return types, a dedicated `HttpGetInstance` type for `Script.Util.HttpGet`, and corrected `Script.Util.HttpRequest` / `HttpResponse` documentation.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.11.0` to `^3.16.0` — adds the `ampscript/nonfunctional-function` diagnostic, strikes non-functional functions through in AMPscript and SSJS completions, and drops the redundant AMPscript hover banner.
+- Bump `ampscript-data` (bundled via the language server) from `3.2.0` to `3.5.0` — adds the `handlebarsExact` flag, the `AMPSCRIPT_OPERATORS` export, keyword Handlebars equivalents, and the `nonFunctionalFunctionLookup` export; removes the speculative `mcnHandlebarsGap` field; and lands a large runtime-verification sweep with `minArgs` / parameter corrections.
+- Bump `ssjs-data` (bundled via the language server) from `1.5.0` to `1.7.0` — runtime-verified return types, corrected HTTP utility docs, and `@deprecated` tagging of `nonFunctionalAtRuntime` methods in the generated `sfmc-globals.d.ts`.
+
 ## [2.16.0] - 2026-08-07
 
 ### Added

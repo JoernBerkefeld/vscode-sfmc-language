@@ -228,3 +228,15 @@ SET @barcode = BarcodeURL("12345", "qr", 200, 200, "", true, "scan me", 0, false
   SET @diff = DateDiff(NOW(), NOW(), "X")
   /* "X" is not a valid DatePart → should show warning */
 ]%%
+
+/* Sample H: non-functional-at-runtime → error + struck-through completion.
+   GetPortfolioItem and GetPublishedSocialContent resolve at runtime but have no
+   known working invocation (their underlying Classic feature is retired), so
+   every reached call aborts the page. Both should:
+     - show a red squiggle (Error, code ampscript/nonfunctional-function)
+     - render struck through in completions (like a deprecated function)
+   They still appear in completions and hover — they exist in the language. */
+%%[
+  SET @portfolio = GetPortfolioItem("my-portfolio-key")
+  SET @socialContent = GetPublishedSocialContent("socialContentId")
+]%%
