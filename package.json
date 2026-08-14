@@ -215,6 +215,18 @@
           "type": "boolean",
           "default": false,
           "description": "Suppress LSP diagnostics that are already covered by eslint-plugin-sfmc rules (e.g. AMPscript unknown function, arity, enum value, smart quotes, comment syntax; SSJS unavailable/broken or polyfillable ECMAScript methods, missing/outdated Platform.Load, and unsupported ES6+ syntax). Use this when both the language server and ESLint are active to avoid duplicate warnings. Diagnostics unique to the LSP (delimiter balance, IF/ENDIF/FOR/NEXT balance, GTL, MCN compatibility) are always shown."
+        },
+        "sfmcLanguageServer.enableFormatter": {
+          "scope": "window",
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the built-in Prettier-based formatter for AMPscript, SSJS, SFMC HTML, MCN Handlebars, and SQL. Uses a bundled copy of prettier and prettier-plugin-sfmc. Disable this to rely solely on the Prettier extension (esbenp.prettier-vscode) or another formatter."
+        },
+        "sfmcLanguageServer.formatterPromptDismissed": {
+          "scope": "window",
+          "type": "boolean",
+          "default": false,
+          "description": "Temporary reset lever for the one-time formatter-coexistence prompt. Whether the prompt has been answered is remembered internally per workspace; this setting is normally absent. Add it with the value false to force the prompt to appear again — the extension removes the entry from your settings once you answer, so it never lingers in a tracked .vscode/settings.json. Change 'editor.defaultFormatter' per language (e.g. under '[ampscript]', '[ssjs]', '[sfmc]', '[handlebars]', '[sql]') to switch formatters."
         }
       }
     },
@@ -241,7 +253,7 @@
     "clean": "node -e \"const {rmSync}=require('fs');for(const p of ['client/out','server/out','client/tsconfig.tsbuildinfo','server/tsconfig.tsbuildinfo','tsconfig.tsbuildinfo'])rmSync(p,{recursive:true,force:true});console.log('cleaned client/out, server/out, *.tsbuildinfo')\"",
     "vscode:prepublish": "npm run clean && npm run esbuild-client -- --minify && npm run esbuild-server -- --minify && npm run copy-globals",
     "esbuild-base": "npm run clean && npm run esbuild-client -- --sourcemap && npm run esbuild-server -- --sourcemap && npm run copy-globals",
-    "esbuild-client": "esbuild ./client/src/extension.ts --bundle --outfile=client/out/extension.js --external:vscode --format=cjs --platform=node",
+    "esbuild-client": "node ./scripts/esbuild-client.mjs",
     "esbuild-server": "esbuild ./server/src/server.ts --bundle --outfile=server/out/server.js --external:vscode --format=cjs --platform=node",
     "copy-globals": "node -e \"const {copyFileSync,mkdirSync}=require('fs'),p='server/node_modules/ssjs-data/dist/sfmc-globals.d.ts';mkdirSync('server/out',{recursive:true});copyFileSync(p,'server/out/sfmc-globals.d.ts');console.log('sfmc-globals.d.ts copied')\"",
     "dev:sync-lsp": "node -e \"const {cpSync}=require('fs');cpSync('../sfmc-language-lsp/dist','server/node_modules/sfmc-language-lsp/dist',{recursive:true});console.log('sfmc-language-lsp/dist synced from local build')\"",

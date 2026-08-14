@@ -1,0 +1,3 @@
+%%[ var @first,@last,@full set @first="Jane" set @last=  "Doe"    set @full=Concat(@first," ",@last)   if @full=="Jane Doe" then set @greeting="hi"  else set @greeting="hello" endif ]%%
+<p>Hello %%=v(@full)=%%, %%=v(@greeting)=%%!</p>
+%%[ for @i=1 to 3 do   set @line=Concat("row ",@i) next @i ]%%

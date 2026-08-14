@@ -24,6 +24,8 @@ import {
 } from 'vscode-languageclient/node';
 import { SfmcStatusBar } from './status-bar';
 import { checkAndShowWhatsNew, showWhatsNewPanel } from './whats-new';
+import { registerFormatter } from './formatter';
+import { maybeSetupFormatter } from './formatter-coexistence';
 
 // Holder object so the running client can be shared between activate/deactivate
 // without a reassigned top-level variable (unicorn/no-top-level-assignment-in-function).
@@ -209,6 +211,11 @@ export function activate(context: ExtensionContext) {
     );
 
     void checkConflictingExtensions(context);
+
+    // Register the built-in Prettier formatter and negotiate coexistence with
+    // the Prettier extension (esbenp.prettier-vscode).
+    registerFormatter(context);
+    void maybeSetupFormatter(context);
 
     context.subscriptions.push(
         commands.registerCommand('sfmc-language.showWhatsNew', () =>

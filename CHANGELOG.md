@@ -2,6 +2,24 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.0.0] - 2026-08-14
+
+### Added
+
+- **Built-in document formatter.** The extension now ships a bundled copy of [Prettier](https://prettier.io/) and [`prettier-plugin-sfmc`](https://www.npmjs.com/package/prettier-plugin-sfmc) and runs them in-process, so **Format Document** and **Format on Save** work for AMPscript, SSJS, SFMC HTML (mixed AMPscript/SSJS/Handlebars content), MCN Handlebars, and SQL with no separate Prettier or plugin install. Plain HTML (no SFMC markers) is intentionally left to other formatters.
+- **Out-of-the-box formatter setup with coexistence handling.** SFMC languages that have no `editor.defaultFormatter` in workspace/folder settings are claimed silently. When a language already points at a different formatter (the Prettier extension or any other), a prominent modal dialog offers — once per workspace — to switch the conflicting languages too. Informational notifications confirm which languages were claimed or switched.
+- **Dedicated "SFMC Prettier Formatter" output channel** that logs each format run (target file, config/ignore file paths, effective options, timing, and errors) in the same style as the Prettier extension.
+- Workspace `.prettierrc*` / `.editorconfig` and `.prettierignore` are respected; the bundled plugin is always injected so a second Prettier is never resolved. For full control over the Prettier or plugin version, use the Prettier extension (`esbenp.prettier-vscode`) instead.
+
+### Changed
+
+- **BREAKING:** The extension now registers itself as a document formatter and, on first activation in a workspace, may write `editor.defaultFormatter` entries into workspace settings for SFMC languages that had none. This changes formatting behaviour for existing users. Set `sfmcLanguageServer.enableFormatter` to `false` to opt out entirely, or set `editor.defaultFormatter` per language to choose a different formatter.
+
+### Configuration
+
+- Added `sfmcLanguageServer.enableFormatter` (default `true`) to toggle the built-in formatter.
+- Added `sfmcLanguageServer.formatterPromptDismissed` — a temporary reset lever to re-show the coexistence prompt; the extension removes it from settings automatically once answered (the choice is remembered internally per workspace).
+
 ## [2.17.0] - 2026-08-13
 
 ### Added

@@ -254,6 +254,60 @@ A compact entry appears in the VS Code status bar (bottom-right) as soon as the 
 - **Click** to open the language server output channel.
 - **Hover** for a tooltip with a **Show Output** link, live server status, active trace level (if enabled), a quick **Settings** link, and an **MCE Mode** / **MCNext Mode** line that opens Settings filtered to the `targetPlatform` option. The label and tooltip update automatically when the setting changes.
 
+## Formatting
+
+The extension ships a built-in document formatter powered by a **bundled copy of [Prettier](https://prettier.io/)** and **[prettier-plugin-sfmc](https://www.npmjs.com/package/prettier-plugin-sfmc)** — no separate install or `.prettierrc` is required. It runs entirely in-process, so **Format Document** and **Format on Save** work out of the box.
+
+### Supported languages
+
+| Language                       | Trigger                                    |
+| ------------------------------ | ------------------------------------------ |
+| AMPscript                      | `*.ampscript`, `*.amp`                     |
+| SSJS                           | `*.ssjs`                                    |
+| SFMC HTML (mixed content)      | `*.html` auto-switched to `sfmc` on markers |
+| MCN Handlebars                 | `*.hbs`                                      |
+| SQL                            | `*.sql`                                      |
+
+Mixed-content SFMC HTML is formatted as one unit: the surrounding HTML, embedded AMPscript (`%%[ … ]%%`, `%%= … =%%`), embedded SSJS (`<script runat="server">`), and MCN Handlebars (`{{ … }}`) are all handled together.
+
+**Plain HTML** (files without SFMC markers) is intentionally **not** claimed — it keeps the `html` language id and is left to VS Code's HTML formatter or your own.
+
+### Choosing a formatter (coexistence with the Prettier extension)
+
+The built-in formatter is always registered, but VS Code decides which formatter runs via `editor.defaultFormatter`. The extension is designed to **just work out of the box** — no manual Prettier or `prettier-plugin-sfmc` install required:
+
+- For every SFMC language that has **no formatter set in your workspace/folder settings**, the extension quietly claims it (writes itself to your **workspace** `.vscode/settings.json`). A formatter you set only in your **User** (global) settings does not block this per-workspace takeover.
+- It only **asks** when there is a genuine conflict — i.e. one or more SFMC languages already have a *different* `editor.defaultFormatter` (the Prettier extension `esbenp.prettier-vscode`, or any other formatter) in your workspace/folder settings. In that case the free languages are still claimed silently, and a **prominent modal dialog** appears **once per workspace** offering to switch the conflicting languages to the SFMC formatter too. Your answer is remembered internally per workspace — it is **not** written to your settings file.
+- If nothing conflicts, you are **never** prompted.
+
+Whenever the extension claims one or more languages silently, it shows a brief informational notification (which auto-dismisses) listing exactly which languages it now formats. After the conflict prompt, it also confirms whether the conflicting languages were **switched** to the SFMC formatter or **kept** with your existing one.
+
+**Re-showing the prompt.** To force the conflict prompt to appear again (e.g. to reset your earlier choice), add `"sfmcLanguageServer.formatterPromptDismissed": false` to your workspace `.vscode/settings.json`. The extension removes that entry automatically once you answer, so it never lingers in a git-tracked settings file.
+
+To switch formatters at any time, set `editor.defaultFormatter` per language in `.vscode/settings.json`, for example:
+
+```jsonc
+{
+    // Use the built-in SFMC formatter for AMPscript…
+    "[ampscript]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
+    // …but hand SSJS to the Prettier extension:
+    "[ssjs]": { "editor.defaultFormatter": "esbenp.prettier-vscode" }
+}
+```
+
+The same `[sfmc]`, `[handlebars]`, and `[sql]` override blocks work too. Set `sfmcLanguageServer.enableFormatter` to `false` to turn the built-in formatter off entirely.
+
+### Config override and its limits
+
+A workspace **`.prettierrc*`**, **`package.json` `"prettier"`** field, or **`.editorconfig`** overrides the standard defaults (e.g. `tabWidth`, `printWidth`, `singleQuote`), and a workspace **`.prettierignore`** is respected — ignored files are skipped.
+
+Two things are **always** enforced, regardless of your config:
+
+1. The **bundled `prettier-plugin-sfmc`** is used. A `"plugins"` entry in your config file is ignored (loading a second Prettier from disk would break the mixed-content parser).
+2. The **bundled Prettier version** is used.
+
+If you need full control over the Prettier or plugin **version**, or a custom **`plugins`** list, use the **Prettier extension (`esbenp.prettier-vscode`)** with a project-local `prettier` / `prettier-plugin-sfmc` install instead, and point the relevant `editor.defaultFormatter` at it.
+
 ## Model Context Protocol (MCP) for AI Assistants
 
 This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/mcp-server-sfmc)** MCP server with VS Code so **GitHub Copilot agent mode** (and other MCP-aware chat flows) can discover SFMC tooling automatically — validation and lookups for AMPscript and SSJS, diff-aware review, fix suggestions, catalogs as resources, and guided prompts. You do **not** need a separate npm install or a manual `.vscode/mcp.json` entry for that discovery; the server is still loaded via `npx` when the tool runs.
@@ -300,8 +354,10 @@ This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/m
 
 | Setting                                  | Default | Description                                             |
 | ---------------------------------------- | ------- | ------------------------------------------------------- |
-| `sfmcLanguageServer.maxNumberOfProblems` | `100`   | Maximum number of diagnostics reported per file         |
-| `sfmcLanguageServer.trace.server`        | `off`   | Traces LSP communication (`off`, `messages`, `verbose`) |
+| `sfmcLanguageServer.maxNumberOfProblems`      | `100`   | Maximum number of diagnostics reported per file                                             |
+| `sfmcLanguageServer.trace.server`             | `off`   | Traces LSP communication (`off`, `messages`, `verbose`)                                     |
+| `sfmcLanguageServer.enableFormatter`          | `true`  | Enable the built-in Prettier-based formatter (AMPscript, SSJS, SFMC HTML, Handlebars, SQL)  |
+| `sfmcLanguageServer.formatterPromptDismissed` | `false` | Temporary reset lever — set to `false` to force the coexistence prompt to reappear. Auto-removed from your settings once answered (persisted internally per workspace) |
 
 ## Architecture
 

@@ -1,0 +1,130 @@
+import * as vscode from 'vscode';
+import * as assert from 'node:assert';
+import {
+    EXTENSION_ID,
+    ESBENP_ID,
+    FORMATTER_PROMPT_DISMISSED_KEY,
+    LANGUAGE_LABELS,
+    formatLanguageList,
+    partitionLanguages,
+    isPromptDismissed,
+} from '../formatter-coexistence';
+import { FORMATTER_LANGUAGES } from '../formatter';
+
+suite('Formatter coexistence — static data', () => {
+    test('EXTENSION_ID matches this extension', () => {
+        assert.strictEqual(EXTENSION_ID, 'joernberkefeld.sfmc-language');
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
+        assert.ok(extension, 'EXTENSION_ID must resolve to the running extension');
+    });
+
+    test('ESBENP_ID targets the Prettier extension', () => {
+        assert.strictEqual(ESBENP_ID, 'esbenp.prettier-vscode');
+    });
+
+    test('memento key is namespaced and non-empty', () => {
+        assert.ok(FORMATTER_PROMPT_DISMISSED_KEY.length > 0);
+        assert.ok(FORMATTER_PROMPT_DISMISSED_KEY.startsWith('sfmcLanguageServer.'));
+    });
+});
+
+suite('Formatter coexistence — partitionLanguages', () => {
+    test('all languages are free when none have a workspace formatter', () => {
+        const { free, conflicting } = partitionLanguages(FORMATTER_LANGUAGES, () => {});
+        assert.deepStrictEqual(free, [...FORMATTER_LANGUAGES]);
+        assert.deepStrictEqual(conflicting, []);
+    });
+
+    test('our own value counts as free (re-claim is a no-op)', () => {
+        const { free, conflicting } = partitionLanguages(FORMATTER_LANGUAGES, () => EXTENSION_ID);
+        assert.deepStrictEqual(free, [...FORMATTER_LANGUAGES]);
+        assert.deepStrictEqual(conflicting, []);
+    });
+
+    test('a different formatter counts as conflicting', () => {
+        const { free, conflicting } = partitionLanguages(FORMATTER_LANGUAGES, () => ESBENP_ID);
+        assert.deepStrictEqual(free, []);
+        assert.deepStrictEqual(conflicting, [...FORMATTER_LANGUAGES]);
+    });
+
+    test('splits free vs conflicting per language', () => {
+        const preset: Record<string, string> = { ssjs: ESBENP_ID, sql: EXTENSION_ID };
+        const { free, conflicting } = partitionLanguages(FORMATTER_LANGUAGES, (id) => preset[id]);
+        // ssjs conflicts (esbenp); sql is ours (free); the rest are unset (free).
+        assert.deepStrictEqual(conflicting, ['ssjs']);
+        assert.ok(free.includes('sql'));
+        assert.ok(free.includes('ampscript'));
+        assert.ok(free.includes('sfmc'));
+        assert.ok(free.includes('handlebars'));
+        assert.ok(!free.includes('ssjs'));
+    });
+});
+
+suite('Formatter coexistence — isPromptDismissed', () => {
+    test('not dismissed when nothing is set', () => {
+        assert.strictEqual(isPromptDismissed(undefined, undefined, undefined, undefined), false);
+    });
+
+    test('dismissed when the memento is true', () => {
+        assert.strictEqual(isPromptDismissed(true, undefined, undefined, undefined), true);
+    });
+
+    test('dismissed when only a workspace setting is true', () => {
+        assert.strictEqual(isPromptDismissed(undefined, undefined, true, undefined), true);
+    });
+
+    test('explicit workspace false re-enables the prompt even if the memento is true', () => {
+        assert.strictEqual(isPromptDismissed(true, undefined, false, undefined), false);
+    });
+
+    test('explicit folder false re-enables the prompt even if the memento is true', () => {
+        assert.strictEqual(isPromptDismissed(true, false, undefined, undefined), false);
+    });
+
+    test('a global-only true does not block an explicit workspace false', () => {
+        assert.strictEqual(isPromptDismissed(undefined, undefined, false, true), false);
+    });
+
+    test('global true dismisses when nothing else is set', () => {
+        assert.strictEqual(isPromptDismissed(undefined, undefined, undefined, true), true);
+    });
+});
+
+suite('Formatter coexistence — language labels', () => {
+    test('every formatter language has a friendly label', () => {
+        for (const languageId of FORMATTER_LANGUAGES) {
+            assert.ok(
+                typeof LANGUAGE_LABELS[languageId] === 'string' &&
+                    LANGUAGE_LABELS[languageId].length > 0,
+                `missing label for ${languageId}`
+            );
+        }
+    });
+
+    test('formatLanguageList renders friendly labels comma-separated', () => {
+        assert.strictEqual(
+            formatLanguageList(['ampscript', 'ssjs', 'sql']),
+            'AMPscript, SSJS, SQL'
+        );
+    });
+
+    test('formatLanguageList falls back to the raw id for unknown languages', () => {
+        assert.strictEqual(formatLanguageList(['made-up']), 'made-up');
+    });
+});
+
+suite('Formatter coexistence — manifest wiring', () => {
+    test('formatterPromptDismissed + enableFormatter settings are contributed', () => {
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
+        assert.ok(extension);
+        const properties = extension.packageJSON?.contributes?.configuration?.properties ?? {};
+        assert.ok(
+            'sfmcLanguageServer.enableFormatter' in properties,
+            'enableFormatter setting must be contributed'
+        );
+        assert.ok(
+            'sfmcLanguageServer.formatterPromptDismissed' in properties,
+            'formatterPromptDismissed setting must be contributed'
+        );
+    });
+});

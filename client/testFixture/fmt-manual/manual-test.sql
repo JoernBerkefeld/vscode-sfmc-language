@@ -1,0 +1,1 @@
+select s.subscriberkey as sk, s.emailaddress, j.journeyname from subscribers s inner join journeys j on j.id=s.journeyid where s.status='active' and j.name like '%welcome%' order by s.emailaddress asc
