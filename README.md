@@ -4,16 +4,19 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 ## Feature Overview
 
-| Feature              | AMPscript (`.amp`) | SSJS (`.ssjs`) | SFMC HTML (`.html`) | Handlebars (`.hbs`) |
-| -------------------- | :----------------: | :------------: | :-----------------: | :-----------------: |
-| Syntax highlighting  |         ✓          |       ✓        |  ✓ (auto-detected)  |    ✓ (built-in)     |
-| Auto-completion      |         ✓          |       ✓        |          ✓          |          ✓          |
-| Hover / IntelliSense |         ✓          |       ✓        |          ✓          |          ✓          |
-| Signature help       |         ✓          |       ✓        |          ✓          |          ✓          |
-| Go-to definition     |         —          |       ✓        |          ✓          |          —          |
-| Diagnostics / errors |         ✓          |       ✓        |          ✓          |          ✓          |
-| Variable resolution  |      planned       |       ✓        |          ✓          |          —          |
-| Snippets             |         36         |       18       |  via sfmc language  |   via handlebars    |
+| Feature              | AMPscript (`.amp`) | SSJS (`.ssjs`) | SFMC HTML (`.html`) | Handlebars (`.hbs`) | SQL (`.sql`) |
+| -------------------- | :----------------: | :------------: | :-----------------: | :-----------------: | :----------: |
+| Syntax highlighting  |         ✓          |       ✓        |  ✓ (auto-detected)  |    ✓ (built-in)     | ✓ (built-in) |
+| Auto-completion      |         ✓          |       ✓        |          ✓          |          ✓          |      —       |
+| Hover / IntelliSense |         ✓          |       ✓        |          ✓          |          ✓          |      —       |
+| Signature help       |         ✓          |       ✓        |          ✓          |          ✓          |      —       |
+| Go-to definition     |         —          |       ✓        |          ✓          |          —          |      —       |
+| Diagnostics / errors |         ✓          |       ✓        |          ✓          |          ✓          |      —       |
+| Formatting           |         ✓          |       ✓        |          ✓          |          ✓          |      ✓       |
+| Variable resolution  |      planned       |       ✓        |          ✓          |          —          |      —       |
+| Snippets             |         36         |       18       |  via sfmc language  |   via handlebars    |      —       |
+
+**Formatting** runs a bundled copy of [Prettier](https://prettier.io/) and [`prettier-plugin-sfmc`](https://www.npmjs.com/package/prettier-plugin-sfmc) in-process, so **Format Document** and **Format on Save** work for AMPscript, SSJS, SFMC HTML (mixed AMPscript/SSJS/Handlebars), MCN Handlebars, and SQL with no separate Prettier or plugin install. Plain HTML with no SFMC markers is intentionally left to other formatters. Toggle it with `sfmcLanguageServer.enableFormatter` (default `true`).
 
 **Variable resolution** means the language service infers the concrete type (and where possible, the value) held in a variable. Hovering over a local variable reveals its resolved type rather than a generic `any`. This is fully available in SSJS and planned for AMPscript in a future release.
 

@@ -1,7 +1,7 @@
 {
   "name": "sfmc-language",
   "displayName": "SFMC Language Service",
-  "description": "Language support for Salesforce Marketing Cloud (Engagement and Next) — AMPscript, SSJS, and GTL. Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, snippets, and MCN compatibility checks.",
+  "description": "Language support for Salesforce Marketing Cloud (Engagement and Next) — AMPscript, SSJS, and GTL. Includes syntax highlighting, auto-completion, IntelliSense, diagnostics, formatting, snippets, and MCN compatibility checks.",
   "author": "Jörn Berkefeld",
   "license": "MIT",
   "version": "3.0.0",
@@ -13,7 +13,8 @@
   "categories": [
     "Programming Languages",
     "Snippets",
-    "Linters"
+    "Linters",
+    "Formatters"
   ],
   "keywords": [
     "ampscript",
@@ -28,7 +29,9 @@
     "mcp",
     "model context protocol",
     "handlebars",
-    "engagement"
+    "engagement",
+    "formatter",
+    "prettier"
   ],
   "icon": "resources/images/vscode-sfmc-language-white256.png",
   "galleryBanner": {
