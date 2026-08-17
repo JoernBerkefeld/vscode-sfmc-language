@@ -21,4 +21,17 @@ npm run compile --no-workspaces || {
   exit 1
 }
 
+# Verify the shipped esbuild bundle is OS-portable whenever the bundler or the
+# client source that goes into it changes. Skipped for unrelated commits to keep
+# them fast (CI runs it on every push/PR regardless). Guards against baking a
+# build-machine absolute path into import.meta.url (would break activation on a
+# different OS — see scripts/test-bundle.mjs).
+if git diff --cached --name-only | grep -Eq '^(scripts/esbuild-client\.mjs|scripts/test-bundle\.mjs|client/src/)'; then
+  echo "[PRE-COMMIT] Bundler or client source changed — verifying bundle is OS-portable..."
+  npm run test:bundle || {
+    echo "[PRE-COMMIT] Bundle integrity check failed. See scripts/test-bundle.mjs."
+    exit 1
+  }
+fi
+
 echo "[PRE-COMMIT] All checks passed."

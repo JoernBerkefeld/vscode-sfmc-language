@@ -276,7 +276,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "postinstall": "cd client && npm install && cd ../server && npm install && cd .. && npm run copy-globals",
-    "test": "node ./client/out/test/run-test"
+    "test:bundle": "node ./scripts/test-bundle.mjs",
+    "test": "npm run test:bundle && node ./client/out/test/run-test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

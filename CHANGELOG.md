@@ -2,6 +2,17 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.0.2] - 2026-08-18
+
+### Fixed
+
+- **Extension failed to activate on Windows/macOS (regression in 3.0.0/3.0.1).** The client bundler baked the build machine's absolute path into `import.meta.url`, so the published bundle called `createRequire('file:///home/runner/…')` — a path that only exists on the Linux CI runner. On any other OS this threw `TypeError: The argument 'filename' must be a file URL object, file URL string, or absolute path string` and the extension never started (formatting, completions, hover, and diagnostics were all unavailable). The bundler now resolves the URL at runtime via `pathToFileURL(__filename)`, so it is always valid on the machine that loads the extension.
+
+### Added
+
+- **Bundle regression test** (`npm run test:bundle`, part of `npm test`) that rebuilds the minified client bundle and asserts no absolute build path is baked in, the runtime `import.meta.url` shim is present, and the bundle loads and exports `activate`/`deactivate`.
+- **Release guard.** The bundle-integrity check now runs as a dedicated step in both CI workflows (blocking merges and, via `needs: build`, blocking the marketplace publish) and in the pre-commit hook whenever the bundler or client source changes — so a non-portable bundle can no longer be released.
+
 ## [3.0.1] - 2026-08-17
 
 ### Added

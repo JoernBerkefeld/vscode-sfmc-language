@@ -21,6 +21,11 @@ jobs:
                   node-version: "24"
 
             - run: npm ci
+            # Blocks the release if the shipped esbuild bundle is not OS-portable
+            # (e.g. a build-machine absolute path baked into import.meta.url). Runs
+            # before the heavy host tests so a broken bundle fails fast.
+            - name: Verify client bundle is OS-portable
+              run: npm run test:bundle
             - run: npm run compile
             - name: Install Xvfb for headless VS Code test runner
               run: sudo apt-get install -y xvfb
