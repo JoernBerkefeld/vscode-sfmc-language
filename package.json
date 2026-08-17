@@ -229,7 +229,7 @@
           "scope": "window",
           "type": "boolean",
           "default": false,
-          "description": "Temporary reset lever for the one-time formatter-coexistence prompt. Whether the prompt has been answered is remembered internally per workspace; this setting is normally absent. Add it with the value false to force the prompt to appear again — the extension removes the entry from your settings once you answer, so it never lingers in a tracked .vscode/settings.json. Change 'editor.defaultFormatter' per language (e.g. under '[ampscript]', '[ssjs]', '[sfmc]', '[handlebars]', '[sql]') to switch formatters."
+          "description": "Controls the one-time formatter-coexistence prompt. Normally absent: whether the prompt was answered is remembered internally per workspace. Set to false to force the prompt to appear again (the extension removes this transient value once you answer, so it never lingers in a tracked .vscode/settings.json). Set to true as an admin lever to fully opt out — the extension then neither prompts nor silently writes 'editor.defaultFormatter', leaving your committed formatter choice untouched for the whole team; the extension never removes an explicit true. Change 'editor.defaultFormatter' per language (use the lowercase language IDs '[ampscript]', '[ssjs]', '[sfmc]', '[handlebars]', '[sql]' — not the display aliases) to pick a formatter."
         }
       }
     },

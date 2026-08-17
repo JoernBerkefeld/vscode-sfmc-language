@@ -16,10 +16,20 @@
  *   anything else). Then we still claim the unset languages silently and ask
  *   (via a prominent modal dialog) only about the conflicting ones. If nothing
  *   conflicts, we never ask.
+ * - **Admin lever:** an explicit `sfmcLanguageServer.formatterPromptDismissed:
+ *   true` in committed workspace/folder settings (or user-global) fully opts out
+ *   — the extension neither writes `editor.defaultFormatter` nor prompts, so a
+ *   team can pin their own formatter choice for everyone. The extension never
+ *   removes an explicit `true`; it only clears the transient reset value it
+ *   itself may have written when a user answers the modal.
+ *
+ * On every activation a single status line is written to the "SFMC Prettier
+ * Formatter" Output channel describing the current takeover state (prompt
+ * answered / suppressed, conflicts, and what was claimed).
  */
 
 import { workspace, window, ConfigurationTarget, ExtensionContext } from 'vscode';
-import { FORMATTER_LANGUAGES } from './formatter';
+import { FORMATTER_LANGUAGES, logInfo } from './formatter';
 
 export const EXTENSION_ID = 'joernberkefeld.sfmc-language';
 export const ESBENP_ID = 'esbenp.prettier-vscode';
@@ -113,6 +123,99 @@ export function isPromptDismissed(
 }
 
 /**
+ * Decide whether the extension should **suppress all takeover actions** (both
+ * the silent auto-claim of unset languages and the conflict prompt). Pure
+ * function for testability.
+ *
+ * This is the admin lever: an explicit `formatterPromptDismissed: true` in
+ * committed workspace/folder settings (or a user-global `true`) means "leave my
+ * formatter configuration alone" — the extension neither writes
+ * `editor.defaultFormatter` nor asks. It is deliberately distinct from the
+ * per-workspace memento (which records that a user *answered* the modal, but
+ * still allows newly added languages to be claimed on later loads).
+ * @param settingWorkspaceFolderValue - `formatterPromptDismissed` in folder scope
+ * @param settingWorkspaceValue - `formatterPromptDismissed` in workspace scope
+ * @param settingGlobalValue - `formatterPromptDismissed` in user/global scope
+ * @returns true if all takeover actions should be skipped
+ */
+export function isAutoClaimSuppressed(
+    settingWorkspaceFolderValue: boolean | undefined,
+    settingWorkspaceValue: boolean | undefined,
+    settingGlobalValue: boolean | undefined
+): boolean {
+    // An explicit false anywhere means "please do ask" — never suppress.
+    if (
+        settingWorkspaceFolderValue === false ||
+        settingWorkspaceValue === false ||
+        settingGlobalValue === false
+    ) {
+        return false;
+    }
+    return (
+        settingWorkspaceFolderValue === true ||
+        settingWorkspaceValue === true ||
+        settingGlobalValue === true
+    );
+}
+
+/**
+ * Describe the prompt state for the status line.
+ * @param isMementoDismissed - whether the per-workspace memento marks the prompt answered
+ * @param isAutoClaimSuppressed - whether the admin lever suppresses all takeover
+ * @returns a short human-readable phrase
+ */
+function describePromptState(isMementoDismissed: boolean, isAutoClaimSuppressed: boolean): string {
+    if (isAutoClaimSuppressed) return 'suppressed (formatterPromptDismissed=true)';
+    if (isMementoDismissed) return 'already answered for this workspace (memento)';
+    return 'not yet answered';
+}
+
+/**
+ * Describe what the extension claimed (or why it did not) for the status line.
+ * @param isAutoClaimSuppressed - whether the admin lever suppresses all takeover
+ * @param free - languages with no conflicting workspace formatter
+ * @param newlyClaimed - subset of free that had no workspace default yet
+ * @returns a short human-readable phrase
+ */
+function describeClaimState(
+    isAutoClaimSuppressed: boolean,
+    free: readonly string[],
+    newlyClaimed: readonly string[]
+): string {
+    if (isAutoClaimSuppressed) return 'no languages claimed (admin lever active)';
+    if (newlyClaimed.length > 0) return `newly claiming: ${formatLanguageList(newlyClaimed)}`;
+    if (free.length > 0) return 'all free languages already set to SFMC formatter';
+    return 'no free languages to claim';
+}
+
+/**
+ * Build the single status line logged to the formatter Output channel at
+ * startup, so the takeover state is auditable without a debugger. Pure function
+ * for testability.
+ * @param isMementoDismissed - whether the per-workspace memento marks the prompt answered
+ * @param isAutoClaimSuppressed - whether the admin lever suppresses all takeover
+ * @param free - languages with no conflicting workspace formatter
+ * @param conflicting - languages already pointing at another formatter
+ * @param newlyClaimed - subset of free that had no workspace default yet
+ * @returns a one-line human-readable status string
+ */
+export function buildCoexistenceStatusLine(
+    isMementoDismissed: boolean,
+    isAutoClaimSuppressed: boolean,
+    free: readonly string[],
+    conflicting: readonly string[],
+    newlyClaimed: readonly string[]
+): string {
+    const promptState = describePromptState(isMementoDismissed, isAutoClaimSuppressed);
+    const conflictState =
+        conflicting.length > 0
+            ? `conflicts with other formatter for: ${formatLanguageList(conflicting)}`
+            : 'no conflicts';
+    const claimState = describeClaimState(isAutoClaimSuppressed, free, newlyClaimed);
+    return `Formatter coexistence: prompt ${promptState}; ${conflictState}; ${claimState}.`;
+}
+
+/**
  * The `editor.defaultFormatter` configured for a language in the **workspace or
  * folder** scope only. User-global values are intentionally ignored so that a
  * global esbenp default does not stop us from claiming the language for this
@@ -190,6 +293,11 @@ async function markPromptDismissed(context: ExtensionContext): Promise<void> {
  *    prominent modal dialog once per workspace asking whether to switch those to
  *    the SFMC formatter too. An explicit `formatterPromptDismissed: false` in
  *    workspace/folder settings re-enables the prompt even after a prior answer.
+ * 3. When `formatterPromptDismissed: true` is set (admin lever), skip both the
+ *    silent claim and the prompt entirely.
+ *
+ * A single status line is always logged to the formatter Output channel first,
+ * so the resulting decision is auditable.
  * @param context - the extension context
  * @returns a promise resolving once setup completes
  */
@@ -210,6 +318,37 @@ export async function maybeSetupFormatter(context: ExtensionContext): Promise<vo
         (languageId) => workspaceDefaultFormatter(languageId) === undefined
     );
 
+    const inspectedDismissed = workspace
+        .getConfiguration('sfmcLanguageServer')
+        .inspect<boolean>('formatterPromptDismissed');
+    const isMementoDismissed = context.workspaceState.get<boolean>(
+        FORMATTER_PROMPT_DISMISSED_KEY,
+        false
+    );
+    // Admin lever: an explicit `formatterPromptDismissed: true` in committed
+    // settings tells the extension to leave the formatter config untouched — no
+    // silent claiming, no prompt.
+    const isSuppressed = isAutoClaimSuppressed(
+        inspectedDismissed?.workspaceFolderValue,
+        inspectedDismissed?.workspaceValue,
+        inspectedDismissed?.globalValue
+    );
+
+    // Log a single, auditable status line so the takeover state is visible in
+    // the "SFMC Prettier Formatter" Output channel without a debugger.
+    logInfo(
+        buildCoexistenceStatusLine(
+            isMementoDismissed,
+            isSuppressed,
+            free,
+            conflicting,
+            newlyClaimed
+        )
+    );
+
+    // Admin lever active → do not touch settings and do not prompt.
+    if (isSuppressed) return;
+
     // Always claim the languages that are free (unset, or already ours).
     if (free.length > 0) {
         await setDefaultFormatter(free);
@@ -228,11 +367,8 @@ export async function maybeSetupFormatter(context: ExtensionContext): Promise<vo
     // the prompt by setting `formatterPromptDismissed: false` in their
     // workspace/folder settings. An explicit `false` overrides the memento so
     // that resetting the setting reliably brings the prompt back.
-    const inspectedDismissed = workspace
-        .getConfiguration('sfmcLanguageServer')
-        .inspect<boolean>('formatterPromptDismissed');
     const isDismissed = isPromptDismissed(
-        context.workspaceState.get<boolean>(FORMATTER_PROMPT_DISMISSED_KEY),
+        isMementoDismissed,
         inspectedDismissed?.workspaceFolderValue,
         inspectedDismissed?.workspaceValue,
         inspectedDismissed?.globalValue

@@ -8,6 +8,8 @@ import {
     formatLanguageList,
     partitionLanguages,
     isPromptDismissed,
+    isAutoClaimSuppressed,
+    buildCoexistenceStatusLine,
 } from '../formatter-coexistence';
 import { FORMATTER_LANGUAGES } from '../formatter';
 
@@ -87,6 +89,58 @@ suite('Formatter coexistence — isPromptDismissed', () => {
 
     test('global true dismisses when nothing else is set', () => {
         assert.strictEqual(isPromptDismissed(undefined, undefined, undefined, true), true);
+    });
+});
+
+suite('Formatter coexistence — isAutoClaimSuppressed', () => {
+    test('not suppressed when nothing is set', () => {
+        assert.strictEqual(isAutoClaimSuppressed(undefined, undefined, undefined), false);
+    });
+
+    test('suppressed when a workspace true is set', () => {
+        assert.strictEqual(isAutoClaimSuppressed(undefined, true, undefined), true);
+    });
+
+    test('suppressed when a folder true is set', () => {
+        assert.strictEqual(isAutoClaimSuppressed(true, undefined, undefined), true);
+    });
+
+    test('suppressed when a user-global true is set', () => {
+        assert.strictEqual(isAutoClaimSuppressed(undefined, undefined, true), true);
+    });
+
+    test('an explicit false anywhere wins over a true elsewhere', () => {
+        assert.strictEqual(isAutoClaimSuppressed(false, true, true), false);
+        assert.strictEqual(isAutoClaimSuppressed(undefined, false, true), false);
+        assert.strictEqual(isAutoClaimSuppressed(undefined, undefined, false), false);
+    });
+});
+
+suite('Formatter coexistence — buildCoexistenceStatusLine', () => {
+    test('reports newly-claimed languages when not answered and no conflict', () => {
+        const line = buildCoexistenceStatusLine(
+            false,
+            false,
+            ['ampscript', 'ssjs'],
+            [],
+            ['ampscript', 'ssjs']
+        );
+        assert.ok(line.includes('prompt not yet answered'));
+        assert.ok(line.includes('no conflicts'));
+        assert.ok(line.includes('newly claiming: AMPscript, SSJS'));
+    });
+
+    test('reports memento-answered state and conflicts', () => {
+        const line = buildCoexistenceStatusLine(true, false, ['ampscript'], ['sql'], []);
+        assert.ok(line.includes('already answered for this workspace (memento)'));
+        assert.ok(line.includes('conflicts with other formatter for: SQL'));
+        assert.ok(line.includes('all free languages already set to SFMC formatter'));
+    });
+
+    test('reports the admin lever as suppressed and claims nothing', () => {
+        const line = buildCoexistenceStatusLine(false, true, ['ampscript'], ['sql'], ['ampscript']);
+        assert.ok(line.includes('suppressed (formatterPromptDismissed=true)'));
+        assert.ok(line.includes('no languages claimed (admin lever active)'));
     });
 });
 

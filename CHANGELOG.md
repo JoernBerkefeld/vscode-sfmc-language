@@ -2,6 +2,16 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.0.1] - 2026-08-17
+
+### Added
+
+- **Startup status line for formatter coexistence.** On every activation the extension now logs a single line to the **SFMC Prettier Formatter** output channel describing the takeover state — whether the coexistence prompt was already answered for the workspace (memento), whether the admin opt-out is active, which SFMC languages conflict with another formatter, and which (if any) were newly claimed. Makes it auditable why the prompt did or did not appear.
+
+### Changed
+
+- **`sfmcLanguageServer.formatterPromptDismissed: true` is now a full admin opt-out.** When set to `true` in committed workspace/folder (or user) settings, the extension no longer prompts **and** no longer silently writes `editor.defaultFormatter`, leaving a team's pinned formatter choice untouched. An explicit `true` is never removed by the extension (only the transient `false` reset value is auto-removed after the prompt is answered). Previously `true` suppressed only the prompt, not the silent claiming.
+
 ## [3.0.0] - 2026-08-14
 
 ### Added

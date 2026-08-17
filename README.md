@@ -287,6 +287,12 @@ Whenever the extension claims one or more languages silently, it shows a brief i
 
 **Re-showing the prompt.** To force the conflict prompt to appear again (e.g. to reset your earlier choice), add `"sfmcLanguageServer.formatterPromptDismissed": false` to your workspace `.vscode/settings.json`. The extension removes that entry automatically once you answer, so it never lingers in a git-tracked settings file.
 
+**Team lead / admin opt-out.** To pin a formatter choice for a whole repository and stop the extension from ever prompting **or** silently claiming languages, commit `"sfmcLanguageServer.formatterPromptDismissed": true` to the project's `.vscode/settings.json` (alongside your desired `editor.defaultFormatter` per-language blocks). With `true` set, the extension leaves your `editor.defaultFormatter` values completely untouched and never shows the modal — and, unlike the transient `false` reset value, it **never removes** an explicit `true`. This is the recommended way to standardise the formatter (SFMC formatter, Prettier extension, or a mix) across a team without each member being asked. (`sfmcLanguageServer.enableFormatter: false` also silences everything, but it additionally turns the built-in formatter off — use `formatterPromptDismissed: true` when you still want the built-in formatter available where you point `editor.defaultFormatter` at it.)
+
+> **Language IDs, not aliases.** Per-language override blocks must use the lowercase language **IDs** — `[ampscript]`, `[ssjs]`, `[sfmc]`, `[handlebars]`, `[sql]`. The capitalised display names (e.g. `[AMPscript]`) are aliases and are **ignored** by VS Code's language-scoped settings.
+
+**Auditing the decision.** On every activation the extension writes a single status line to the **SFMC Prettier Formatter** Output channel (Output panel → "SFMC Prettier Formatter") describing the current state — whether the prompt was already answered for this workspace, whether the admin opt-out is active, which languages conflict, and which (if any) were newly claimed. Use it to confirm why (or why not) the prompt appeared.
+
 To switch formatters at any time, set `editor.defaultFormatter` per language in `.vscode/settings.json`, for example:
 
 ```jsonc
@@ -294,11 +300,15 @@ To switch formatters at any time, set `editor.defaultFormatter` per language in 
     // Use the built-in SFMC formatter for AMPscript…
     "[ampscript]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
     // …but hand SSJS to the Prettier extension:
-    "[ssjs]": { "editor.defaultFormatter": "esbenp.prettier-vscode" }
+    "[ssjs]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    // …and keep the remaining three on the built-in SFMC formatter:
+    "[sfmc]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
+    "[handlebars]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
+    "[sql]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" }
 }
 ```
 
-The same `[sfmc]`, `[handlebars]`, and `[sql]` override blocks work too. Set `sfmcLanguageServer.enableFormatter` to `false` to turn the built-in formatter off entirely.
+All five SFMC language IDs (`[ampscript]`, `[ssjs]`, `[sfmc]`, `[handlebars]`, `[sql]`) support this per-language override. Set `sfmcLanguageServer.enableFormatter` to `false` to turn the built-in formatter off entirely.
 
 ### Config override and its limits
 
@@ -360,7 +370,7 @@ This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/m
 | `sfmcLanguageServer.maxNumberOfProblems`      | `100`   | Maximum number of diagnostics reported per file                                             |
 | `sfmcLanguageServer.trace.server`             | `off`   | Traces LSP communication (`off`, `messages`, `verbose`)                                     |
 | `sfmcLanguageServer.enableFormatter`          | `true`  | Enable the built-in Prettier-based formatter (AMPscript, SSJS, SFMC HTML, Handlebars, SQL)  |
-| `sfmcLanguageServer.formatterPromptDismissed` | `false` | Temporary reset lever — set to `false` to force the coexistence prompt to reappear. Auto-removed from your settings once answered (persisted internally per workspace) |
+| `sfmcLanguageServer.formatterPromptDismissed` | `false` | Set to `false` to force the coexistence prompt to reappear (auto-removed once answered; state persisted internally per workspace). Set to `true` as an admin opt-out — the extension then never prompts and never writes `editor.defaultFormatter`, and an explicit `true` is left untouched |
 
 ## Architecture
 

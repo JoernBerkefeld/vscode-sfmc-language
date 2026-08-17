@@ -69,7 +69,7 @@ export function logPrefix(level: 'INFO' | 'ERROR'): string {
  * Append an INFO line to the Output channel.
  * @param message - the message to log
  */
-function logInfo(message: string): void {
+export function logInfo(message: string): void {
     getChannel().appendLine(`${logPrefix('INFO')}${message}`);
 }
 
