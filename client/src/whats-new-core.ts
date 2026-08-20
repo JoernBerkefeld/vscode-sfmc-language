@@ -51,12 +51,26 @@ export function escapeHtml(s: string): string {
 }
 
 /**
- * Convert inline markdown (bold, code) in an already HTML-escaped string to HTML.
+ * Determine whether a URL uses a safe scheme (http(s) or mailto) for anchor generation.
+ * @param url - the URL to test
+ * @returns true when the URL is safe to turn into an anchor
+ */
+function isSafeUrl(url: string): boolean {
+    return /^(https?:\/\/|mailto:)/i.test(url);
+}
+
+/**
+ * Convert inline markdown (links, bold, code) in an already HTML-escaped string to HTML.
  * @param escaped - an HTML-escaped string containing inline markdown
  * @returns the string with inline markdown replaced by HTML tags
  */
 function inlineMarkdown(escaped: string): string {
-    let s = escaped.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // [text](url) → anchor. Runs on already-escaped text, so "&" in URLs is "&amp;"
+    // (harmless in href). Only safe schemes become links; others stay as literal text.
+    let s = escaped.replaceAll(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, text: string, url: string) =>
+        isSafeUrl(url) ? `<a href="${url}">${text}</a>` : match
+    );
+    s = s.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     s = s.replaceAll(/`([^`]+)`/g, '<code>$1</code>');
     return s;
 }
@@ -78,47 +92,54 @@ function renderInline(text: string): string {
 function renderMarkdownChunk(chunk: string): string {
     const lines = chunk.split(/\r?\n/);
     const out: string[] = [];
-    let isInUl = false;
+    // Indentation (in spaces) of each currently-open <ul>, outermost first.
+    const listIndents: number[] = [];
 
-    const closeUl = () => {
-        if (!isInUl) {
-            return;
+    const closeLists = (toDepth: number) => {
+        while (listIndents.length > toDepth) {
+            out.push('</ul>');
+            listIndents.pop();
         }
-
-        out.push('</ul>');
-        isInUl = false;
     };
 
     for (const line of lines) {
         const h3 = line.match(/^###\s+(.+)$/);
         if (h3) {
-            closeUl();
+            closeLists(0);
             out.push(`<h3>${renderInline(h3[1]!.trim())}</h3>`);
             continue;
         }
         const h2 = line.match(/^##\s+(.+)$/);
         if (h2) {
-            closeUl();
+            closeLists(0);
             out.push(`<h2>${renderInline(h2[1]!.trim())}</h2>`);
             continue;
         }
-        const bullet = line.match(/^\s*-\s+(.+)$/);
+        const bullet = line.match(/^(\s*)-\s+(.+)$/);
         if (bullet) {
-            if (!isInUl) {
+            const indent = bullet[1]!.replaceAll('\t', '  ').length;
+            // Open a deeper list only when this bullet is indented past the current level;
+            // close lists back to the matching level when it dedents.
+            if (listIndents.length === 0 || indent > listIndents.at(-1)!) {
                 out.push('<ul>');
-                isInUl = true;
+                listIndents.push(indent);
+            } else {
+                while (listIndents.length > 1 && indent < listIndents.at(-1)!) {
+                    out.push('</ul>');
+                    listIndents.pop();
+                }
             }
-            out.push(`<li>${renderInline(bullet[1]!.trim())}</li>`);
+            out.push(`<li>${renderInline(bullet[2]!.trim())}</li>`);
             continue;
         }
         if (line.trim() === '') {
-            closeUl();
+            closeLists(0);
             continue;
         }
-        closeUl();
+        closeLists(0);
         out.push(`<p>${renderInline(line.trim())}</p>`);
     }
-    closeUl();
+    closeLists(0);
     return out.join('');
 }
 

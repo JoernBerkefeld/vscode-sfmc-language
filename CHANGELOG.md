@@ -2,6 +2,24 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.1.0] - 2026-08-20
+
+### Added
+
+- **What's New panel: nested changelog lists and markdown links.** Indented bullets in `CHANGELOG.md` now render as nested `<ul>` lists, and `[text](url)` links become clickable anchors (http(s)/mailto only; other schemes stay literal for safety).
+
+### Fixed
+
+- **Client TypeScript compile under npm workspaces.** Keep `@types/mocha` installed so `client` `tsc` still resolves mocha globals when the extension is developed inside the monorepo workspaces layout.
+
+### Changed
+
+- Extension Development Host fixture now pins `editor.defaultFormatter` for AMPscript, SSJS, SFMC HTML, Handlebars, and SQL to this extension so F5 formatting tests match the built-in formatter takeover behaviour.
+
+### Dependencies
+
+- Bump `sfmc-language-lsp` from `^3.16.0` to `^3.17.0`, which refreshes the bundled language catalogs to the split-refactored data packages (`ampscript-data` 4.0.0, `handlebars-data` 0.4.0, `ssjs-data` 2.0.0). These are internal source-layout refactors (each large `index.js` was split into per-category modules); the exported catalog surface is unchanged, so completions, hover, and diagnostics behave identically.
+
 ## [3.0.2] - 2026-08-18
 
 ### Fixed
