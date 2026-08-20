@@ -167,3 +167,76 @@ suite('SFMC HTML auto-detection', () => {
         );
     });
 });
+
+/**
+ * Set `sfmcLanguageServer.ssjsFileMode`. The test host opens files without a
+ * workspace folder, so a Workspace-target write throws ("no workspace is
+ * opened"); we use the Global target, which the resource-scoped `getSsjsFileMode`
+ * read resolves as the effective value for every fixture.
+ * @param value - the mode to write
+ * @returns a promise resolving once the update is applied
+ */
+async function setSsjsFileMode(value: 'javascript' | 'auto' | 'sfmc'): Promise<void> {
+    await vscode.workspace
+        .getConfiguration('sfmcLanguageServer')
+        .update('ssjsFileMode', value, vscode.ConfigurationTarget.Global);
+}
+
+suite('.ssjs detection — ssjsFileMode', () => {
+    teardown(async () => {
+        // Reset to the default so later suites see today's behaviour.
+        await setSsjsFileMode('javascript');
+    });
+
+    test("mode 'javascript' (default): wrapped.ssjs stays ssjs", async () => {
+        await setSsjsFileMode('javascript');
+        const documentUri = getDocumentUri('wrapped.ssjs');
+        await activate(documentUri);
+        const lang = await waitForLanguage(documentUri, 'ssjs');
+        assert.strictEqual(lang, 'ssjs', "wrapped.ssjs should stay ssjs under mode 'javascript'");
+    });
+
+    test("mode 'auto': wrapped.ssjs → sfmc", async () => {
+        await setSsjsFileMode('auto');
+        const documentUri = getDocumentUri('wrapped.ssjs');
+        await activate(documentUri);
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(lang, 'sfmc', "wrapped.ssjs should become sfmc under mode 'auto'");
+    });
+
+    test("mode 'auto': wrapped-multi.ssjs → sfmc", async () => {
+        await setSsjsFileMode('auto');
+        const documentUri = getDocumentUri('wrapped-multi.ssjs');
+        await activate(documentUri);
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(lang, 'sfmc', "wrapped-multi.ssjs should become sfmc under mode 'auto'");
+    });
+
+    test("mode 'auto': pure.ssjs stays ssjs", async () => {
+        await setSsjsFileMode('auto');
+        const documentUri = getDocumentUri('pure.ssjs');
+        await activate(documentUri);
+        const lang = await waitForLanguage(documentUri, 'ssjs');
+        assert.strictEqual(lang, 'ssjs', "pure.ssjs should stay ssjs under mode 'auto'");
+    });
+
+    test("mode 'sfmc': wrapped.ssjs → sfmc", async () => {
+        await setSsjsFileMode('sfmc');
+        const documentUri = getDocumentUri('wrapped.ssjs');
+        await activate(documentUri);
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(lang, 'sfmc', "wrapped.ssjs should become sfmc under mode 'sfmc'");
+    });
+
+    test("mode 'sfmc': pure.ssjs → sfmc (force-all)", async () => {
+        await setSsjsFileMode('sfmc');
+        const documentUri = getDocumentUri('pure.ssjs');
+        await activate(documentUri);
+        const lang = await waitForLanguage(documentUri, 'sfmc');
+        assert.strictEqual(
+            lang,
+            'sfmc',
+            "pure.ssjs should become sfmc under mode 'sfmc' (force-all)"
+        );
+    });
+});

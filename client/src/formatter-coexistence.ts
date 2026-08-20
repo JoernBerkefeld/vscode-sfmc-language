@@ -285,6 +285,57 @@ async function markPromptDismissed(context: ExtensionContext): Promise<void> {
 }
 
 /**
+ * The VS Code config scopes that may hold a stale capital `[AMPscript]`
+ * `editor.defaultFormatter` block.
+ */
+export type StaleFormatterScope = 'workspace' | 'workspaceFolder';
+
+/**
+ * Decide which scopes hold a stale capital `[AMPscript]` `editor.defaultFormatter`
+ * value that should be cleared. SSJS Manager's capital `AMPscript` language id is
+ * dead once it hands language intelligence to us, so any per-language formatter
+ * override under it is stale config. Pure function for testability.
+ * @param workspaceValue - the `[AMPscript]` `editor.defaultFormatter` in workspace scope, or undefined
+ * @param workspaceFolderValue - the same in folder scope, or undefined
+ * @returns the scopes that actually hold a value and should be cleared
+ */
+export function staleAmpscriptFormatterScopes(
+    workspaceValue: string | undefined,
+    workspaceFolderValue: string | undefined
+): StaleFormatterScope[] {
+    const scopes: StaleFormatterScope[] = [];
+    if (workspaceValue !== undefined) scopes.push('workspace');
+    if (workspaceFolderValue !== undefined) scopes.push('workspaceFolder');
+    return scopes;
+}
+
+/**
+ * Remove a stale capital `[AMPscript]` `editor.defaultFormatter` block from
+ * workspace/folder settings. Only the scope(s) that actually hold a value are
+ * cleared, mirroring the scope-guard in `markPromptDismissed` so it never throws
+ * in a single-folder window and only writes when there is something to remove.
+ * @returns a promise resolving once any stale value is cleared
+ */
+async function clearStaleAmpscriptFormatter(): Promise<void> {
+    const config = workspace.getConfiguration('editor', { languageId: 'AMPscript' });
+    const inspected = config.inspect<string>('defaultFormatter');
+    const scopes = staleAmpscriptFormatterScopes(
+        inspected?.workspaceValue,
+        inspected?.workspaceFolderValue
+    );
+    if (scopes.includes('workspace')) {
+        await config.update('defaultFormatter', undefined, ConfigurationTarget.Workspace);
+    }
+    if (scopes.includes('workspaceFolder')) {
+        try {
+            await config.update('defaultFormatter', undefined, ConfigurationTarget.WorkspaceFolder);
+        } catch {
+            // No resource-scoped folder in a single-folder window — ignore.
+        }
+    }
+}
+
+/**
  * Set up the built-in formatter for this workspace:
  *
  * 1. Silently claim every SFMC language that has no conflicting workspace/folder
@@ -348,6 +399,11 @@ export async function maybeSetupFormatter(context: ExtensionContext): Promise<vo
 
     // Admin lever active → do not touch settings and do not prompt.
     if (isSuppressed) return;
+
+    // Defensive cleanup: strip a stale capital `[AMPscript]` editor.defaultFormatter
+    // block (dead once SSJS Manager's capital AMPscript id is gone). Idempotent and
+    // a no-op for the vast majority of users who never had such a block.
+    await clearStaleAmpscriptFormatter();
 
     // Always claim the languages that are free (unset, or already ours).
     if (free.length > 0) {

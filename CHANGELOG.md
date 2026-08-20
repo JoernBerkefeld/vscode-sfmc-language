@@ -2,6 +2,17 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **`sfmcLanguageServer.ssjsFileMode` setting (SSJS Manager interop).** Controls how `.ssjs` files are interpreted: `javascript` (default — every `.ssjs` is plain SSJS, no content scan, same as before), `auto` (per-file detection — a `.ssjs` that wraps its code in `<script runat="server">` or contains AMPscript is treated as SFMC content so the embedded SSJS is linted inside the tag, while a plain-JS `.ssjs` stays SSJS), or `sfmc` (force every `.ssjs` to SFMC content). The `auto` mode enables interop with the [SSJS Manager](https://marketplace.visualstudio.com/items?itemName=FiB.ssjs-vsc) extension, whose `.ssjs` files are script-wrapped. The default preserves today's behaviour.
+
+### Changed
+
+- **Debounced change-driven language detection.** `.ssjs`/HTML re-classification on document change is now debounced (~250 ms trailing, per document) so rapid typing in large files no longer triggers a full-file content scan on every keystroke; open and mode-change detection stay immediate.
+- **Formatter takeover cleanup.** When the built-in formatter silently claims languages, it now also strips a stale capital `[AMPscript]` `editor.defaultFormatter` block from workspace/folder settings (dead once SSJS Manager's capital `AMPscript` language id is gone). Idempotent and a no-op for users who never had such a block.
+
 ## [3.1.0] - 2026-08-20
 
 ### Added
@@ -82,9 +93,9 @@ All notable changes to the SFMC Language Service extension will be documented in
 ### Added
 
 - New `ssjs/invalid-property-access` diagnostic surfaced from the language server, covering members whose read or write side does not behave the way the property name suggests:
-    - Reading a write-only member such as `Script.Util.HttpRequest.postData` is reported as an **error** — the value can only be set, never read back.
-    - Reading `Platform.Response.ContentType` or `Platform.Response.CharacterSet` is reported as a **warning** — both return an opaque platform value rather than the string that was assigned to them.
-    - Assigning to a read-only `Platform.Request` property (`Method`, `QueryString`, `ClientIP`, …) is reported as an **error** — the assignment is accepted at runtime but silently has no effect.
+  - Reading a write-only member such as `Script.Util.HttpRequest.postData` is reported as an **error** — the value can only be set, never read back.
+  - Reading `Platform.Response.ContentType` or `Platform.Response.CharacterSet` is reported as a **warning** — both return an opaque platform value rather than the string that was assigned to them.
+  - Assigning to a read-only `Platform.Request` property (`Method`, `QueryString`, `ClientIP`, …) is reported as an **error** — the assignment is accepted at runtime but silently has no effect.
 
 ### Dependencies
 

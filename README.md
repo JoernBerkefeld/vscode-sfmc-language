@@ -195,6 +195,20 @@ The embedded TypeScript service infers the type — and where possible the concr
 | `ssjsredirect` / `ssjscloudpagesurl`                 | Navigation                        |
 | `ssjstemplate`                                       | Full CloudPage template           |
 
+### How `.ssjs` files are interpreted (`sfmcLanguageServer.ssjsFileMode`)
+
+By default a `.ssjs` file is treated as **plain Server-Side JavaScript** — the whole file is linted as SSJS. Some tooling (notably [SSJS Manager](https://marketplace.visualstudio.com/items?itemName=FiB.ssjs-vsc)) instead stores `.ssjs` files as HTML that wraps the code in `<script runat="server">…</script>` (sometimes with AMPscript/HTML around it). Feeding such a file to the SSJS linter whole would flag the wrapper as broken JavaScript.
+
+Use **`sfmcLanguageServer.ssjsFileMode`** (resource-scoped) to choose how `.ssjs` files are read:
+
+| Value                    | Behaviour                                                                                                                                                                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `"javascript"` (default) | Every `.ssjs` file is plain SSJS — today's behaviour, no content scan.                                                                                                                                                                                                                      |
+| `"auto"`                 | Per-file detection: a `.ssjs` that wraps its code in `<script runat="server">` (or contains AMPscript) is treated as **SFMC** content so the embedded SSJS is linted inside the tag; a plain-JS `.ssjs` stays SSJS. Enables interop with SSJS Manager. Costs a small per-edit content scan. |
+| `"sfmc"`                 | Every `.ssjs` file is forced to **SFMC** content — choose this only when all your `.ssjs` files are script-wrapped (a plain-JS `.ssjs` would then be treated as HTML, not linted as SSJS). No content scan.                                                                                 |
+
+The default preserves existing behaviour. SSJS Manager can set `"auto"` per-workspace automatically.
+
 ## HTML Files — SFMC Language
 
 Any `.html` file that contains SFMC content is automatically switched to the **SFMC (AMPscript / SSJS)** language (`sfmc`) — no manual language selection needed.
@@ -263,13 +277,13 @@ The extension ships a built-in document formatter powered by a **bundled copy of
 
 ### Supported languages
 
-| Language                       | Trigger                                    |
-| ------------------------------ | ------------------------------------------ |
-| AMPscript                      | `*.ampscript`, `*.amp`                     |
-| SSJS                           | `*.ssjs`                                    |
-| SFMC HTML (mixed content)      | `*.html` auto-switched to `sfmc` on markers |
-| MCN Handlebars                 | `*.hbs`                                      |
-| SQL                            | `*.sql`                                      |
+| Language                  | Trigger                                     |
+| ------------------------- | ------------------------------------------- |
+| AMPscript                 | `*.ampscript`, `*.amp`                      |
+| SSJS                      | `*.ssjs`                                    |
+| SFMC HTML (mixed content) | `*.html` auto-switched to `sfmc` on markers |
+| MCN Handlebars            | `*.hbs`                                     |
+| SQL                       | `*.sql`                                     |
 
 Mixed-content SFMC HTML is formatted as one unit: the surrounding HTML, embedded AMPscript (`%%[ … ]%%`, `%%= … =%%`), embedded SSJS (`<script runat="server">`), and MCN Handlebars (`{{ … }}`) are all handled together.
 
@@ -280,7 +294,7 @@ Mixed-content SFMC HTML is formatted as one unit: the surrounding HTML, embedded
 The built-in formatter is always registered, but VS Code decides which formatter runs via `editor.defaultFormatter`. The extension is designed to **just work out of the box** — no manual Prettier or `prettier-plugin-sfmc` install required:
 
 - For every SFMC language that has **no formatter set in your workspace/folder settings**, the extension quietly claims it (writes itself to your **workspace** `.vscode/settings.json`). A formatter you set only in your **User** (global) settings does not block this per-workspace takeover.
-- It only **asks** when there is a genuine conflict — i.e. one or more SFMC languages already have a *different* `editor.defaultFormatter` (the Prettier extension `esbenp.prettier-vscode`, or any other formatter) in your workspace/folder settings. In that case the free languages are still claimed silently, and a **prominent modal dialog** appears **once per workspace** offering to switch the conflicting languages to the SFMC formatter too. Your answer is remembered internally per workspace — it is **not** written to your settings file.
+- It only **asks** when there is a genuine conflict — i.e. one or more SFMC languages already have a _different_ `editor.defaultFormatter` (the Prettier extension `esbenp.prettier-vscode`, or any other formatter) in your workspace/folder settings. In that case the free languages are still claimed silently, and a **prominent modal dialog** appears **once per workspace** offering to switch the conflicting languages to the SFMC formatter too. Your answer is remembered internally per workspace — it is **not** written to your settings file.
 - If nothing conflicts, you are **never** prompted.
 
 Whenever the extension claims one or more languages silently, it shows a brief informational notification (which auto-dismisses) listing exactly which languages it now formats. After the conflict prompt, it also confirms whether the conflicting languages were **switched** to the SFMC formatter or **kept** with your existing one.
@@ -297,14 +311,14 @@ To switch formatters at any time, set `editor.defaultFormatter` per language in 
 
 ```jsonc
 {
-    // Use the built-in SFMC formatter for AMPscript…
-    "[ampscript]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
-    // …but hand SSJS to the Prettier extension:
-    "[ssjs]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
-    // …and keep the remaining three on the built-in SFMC formatter:
-    "[sfmc]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
-    "[handlebars]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
-    "[sql]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" }
+  // Use the built-in SFMC formatter for AMPscript…
+  "[ampscript]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
+  // …but hand SSJS to the Prettier extension:
+  "[ssjs]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  // …and keep the remaining three on the built-in SFMC formatter:
+  "[sfmc]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
+  "[handlebars]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
+  "[sql]": { "editor.defaultFormatter": "joernberkefeld.sfmc-language" },
 }
 ```
 
@@ -365,12 +379,13 @@ This extension registers the **[mcp-server-sfmc](https://www.npmjs.com/package/m
 
 ## Configuration
 
-| Setting                                  | Default | Description                                             |
-| ---------------------------------------- | ------- | ------------------------------------------------------- |
-| `sfmcLanguageServer.maxNumberOfProblems`      | `100`   | Maximum number of diagnostics reported per file                                             |
-| `sfmcLanguageServer.trace.server`             | `off`   | Traces LSP communication (`off`, `messages`, `verbose`)                                     |
-| `sfmcLanguageServer.enableFormatter`          | `true`  | Enable the built-in Prettier-based formatter (AMPscript, SSJS, SFMC HTML, Handlebars, SQL)  |
-| `sfmcLanguageServer.formatterPromptDismissed` | `false` | Set to `false` to force the coexistence prompt to reappear (auto-removed once answered; state persisted internally per workspace). Set to `true` as an admin opt-out — the extension then never prompts and never writes `editor.defaultFormatter`, and an explicit `true` is left untouched |
+| Setting                                       | Default      | Description                                                                                                                                                                                                                                                                                  |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sfmcLanguageServer.maxNumberOfProblems`      | `100`        | Maximum number of diagnostics reported per file                                                                                                                                                                                                                                              |
+| `sfmcLanguageServer.trace.server`             | `off`        | Traces LSP communication (`off`, `messages`, `verbose`)                                                                                                                                                                                                                                      |
+| `sfmcLanguageServer.ssjsFileMode`             | `javascript` | How `.ssjs` files are interpreted: `javascript` (plain SSJS, default), `auto` (detect script-wrapped vs plain per file — SSJS Manager interop), or `sfmc` (force all `.ssjs` to SFMC)                                                                                                        |
+| `sfmcLanguageServer.enableFormatter`          | `true`       | Enable the built-in Prettier-based formatter (AMPscript, SSJS, SFMC HTML, Handlebars, SQL)                                                                                                                                                                                                   |
+| `sfmcLanguageServer.formatterPromptDismissed` | `false`      | Set to `false` to force the coexistence prompt to reappear (auto-removed once answered; state persisted internally per workspace). Set to `true` as an admin opt-out — the extension then never prompts and never writes `editor.defaultFormatter`, and an explicit `true` is left untouched |
 
 ## Architecture
 

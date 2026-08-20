@@ -33,6 +33,30 @@ const state: { client: LanguageClient | undefined } = { client: undefined };
 
 const EXTENSION_DISPLAY_NAME = 'SFMC Language Service';
 
+// Per-document trailing debounce for change-driven language detection, keyed by
+// document URI string. Only the `onDidChangeTextDocument` path is debounced so
+// rapid typing in a large `.ssjs` file does not re-scan on every keystroke.
+const pendingDetect = new Map<string, NodeJS.Timeout>();
+const DETECT_DEBOUNCE_MS = 250;
+
+/**
+ * Schedule a trailing-debounced `detectAndSwitchLanguage` for a document. A
+ * newer change resets the timer so detection runs once typing settles.
+ * @param document - the changed document to (re-)classify
+ */
+function scheduleDetect(document: TextDocument): void {
+    const key = document.uri.toString();
+    const existing = pendingDetect.get(key);
+    if (existing) clearTimeout(existing);
+    pendingDetect.set(
+        key,
+        setTimeout(() => {
+            pendingDetect.delete(key);
+            detectAndSwitchLanguage(document);
+        }, DETECT_DEBOUNCE_MS)
+    );
+}
+
 export const CONFLICTING_EXTENSIONS = [
     { id: 'xnerd.ampscript-language', name: 'AMPscript (xnerd)' },
     { id: 'FiB.beautyAmp', name: 'beautyAmp' },
@@ -116,15 +140,40 @@ function isMcnNextTarget(): boolean {
 }
 
 /**
+ * How a `.ssjs` file should be interpreted, read resource-scoped so a workspace
+ * can override it per folder.
+ * @param document - the document whose URI scopes the config read
+ * @returns the configured `sfmcLanguageServer.ssjsFileMode` (default `javascript`)
+ */
+function getSsjsFileMode(document: TextDocument): 'javascript' | 'auto' | 'sfmc' {
+    return workspace
+        .getConfiguration('sfmcLanguageServer', document.uri)
+        .get<'javascript' | 'auto' | 'sfmc'>('ssjsFileMode', 'javascript');
+}
+
+/**
  * Switch a document's language ID to the appropriate SFMC dialect based on its
  * path and content (SSJS files, AMPscript/SSJS HTML, and MCN Handlebars).
  * @param document - the text document to inspect and possibly re-language
  */
 function detectAndSwitchLanguage(document: TextDocument): void {
-    // Force .ssjs files to use the ssjs language ID even when VS Code or user settings
-    // have mapped *.ssjs to javascript (configurationDefaults can be overridden by user settings).
-    if (document.uri.path.endsWith('.ssjs') && document.languageId !== 'ssjs') {
-        languages.setTextDocumentLanguage(document, 'ssjs');
+    // Route .ssjs files by the ssjsFileMode setting. `javascript` (default) and
+    // `sfmc` map the extension to a fixed id with no content scan; only `auto`
+    // reads the text to detect a <script runat="server">/AMPscript wrapper (SSJS
+    // Manager style) and route those to the region-extracting `sfmc` id.
+    if (document.uri.path.toLowerCase().endsWith('.ssjs')) {
+        const mode = getSsjsFileMode(document); // cached config read, no getText()
+        let targetId: 'ssjs' | 'sfmc';
+        if (mode === 'javascript') {
+            targetId = 'ssjs';
+        } else if (mode === 'sfmc') {
+            targetId = 'sfmc';
+        } else {
+            targetId = hasAnyMarker(document.getText(), AMPSCRIPT_MARKERS) ? 'sfmc' : 'ssjs';
+        }
+        if (document.languageId !== targetId) {
+            languages.setTextDocumentLanguage(document, targetId);
+        }
         return;
     }
 
@@ -202,11 +251,31 @@ export function activate(context: ExtensionContext) {
         detectAndSwitchLanguage(document);
     }
 
-    // Detect SFMC content in HTML documents: on open and on content change (e.g. pasting)
+    // Detect SFMC content in HTML documents: on open (immediate) and on content
+    // change (debounced, e.g. while typing/pasting). Closing a document clears
+    // any pending debounce timer so it never fires against a gone document.
     context.subscriptions.push(
         workspace.onDidOpenTextDocument(detectAndSwitchLanguage),
         workspace.onDidChangeTextDocument((event) => {
-            detectAndSwitchLanguage(event.document);
+            scheduleDetect(event.document);
+        }),
+        workspace.onDidCloseTextDocument((document) => {
+            const key = document.uri.toString();
+            const pending = pendingDetect.get(key);
+            if (pending) {
+                clearTimeout(pending);
+                pendingDetect.delete(key);
+            }
+        }),
+        // Re-classify open .ssjs documents immediately when ssjsFileMode changes,
+        // so switching the mode takes effect without reopening files.
+        workspace.onDidChangeConfiguration((event) => {
+            if (!event.affectsConfiguration('sfmcLanguageServer.ssjsFileMode')) return;
+            for (const document of workspace.textDocuments) {
+                if (document.uri.path.toLowerCase().endsWith('.ssjs')) {
+                    detectAndSwitchLanguage(document);
+                }
+            }
         })
     );
 
@@ -249,6 +318,10 @@ export function activate(context: ExtensionContext) {
  * @returns a promise that resolves when the client has stopped, or undefined
  */
 export function deactivate(): Thenable<void> | undefined {
+    for (const timer of pendingDetect.values()) {
+        clearTimeout(timer);
+    }
+    pendingDetect.clear();
     if (!state.client) {
         return undefined;
     }

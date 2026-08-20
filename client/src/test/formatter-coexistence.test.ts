@@ -10,6 +10,7 @@ import {
     isPromptDismissed,
     isAutoClaimSuppressed,
     buildCoexistenceStatusLine,
+    staleAmpscriptFormatterScopes,
 } from '../formatter-coexistence';
 import { FORMATTER_LANGUAGES } from '../formatter';
 
@@ -144,6 +145,31 @@ suite('Formatter coexistence — buildCoexistenceStatusLine', () => {
     });
 });
 
+suite('Formatter coexistence — staleAmpscriptFormatterScopes', () => {
+    test('no scopes when neither holds a value', () => {
+        assert.deepStrictEqual(staleAmpscriptFormatterScopes(undefined, undefined), []);
+    });
+
+    test('workspace scope when only the workspace value is present', () => {
+        assert.deepStrictEqual(staleAmpscriptFormatterScopes('FiB.ssjs-vsc', undefined), [
+            'workspace',
+        ]);
+    });
+
+    test('folder scope when only the folder value is present', () => {
+        assert.deepStrictEqual(staleAmpscriptFormatterScopes(undefined, 'FiB.ssjs-vsc'), [
+            'workspaceFolder',
+        ]);
+    });
+
+    test('both scopes when both hold a value', () => {
+        assert.deepStrictEqual(staleAmpscriptFormatterScopes('a', 'b'), [
+            'workspace',
+            'workspaceFolder',
+        ]);
+    });
+});
+
 suite('Formatter coexistence — language labels', () => {
     test('every formatter language has a friendly label', () => {
         for (const languageId of FORMATTER_LANGUAGES) {
@@ -179,6 +205,20 @@ suite('Formatter coexistence — manifest wiring', () => {
         assert.ok(
             'sfmcLanguageServer.formatterPromptDismissed' in properties,
             'formatterPromptDismissed setting must be contributed'
+        );
+        assert.ok(
+            'sfmcLanguageServer.ssjsFileMode' in properties,
+            'ssjsFileMode setting must be contributed'
+        );
+        assert.deepStrictEqual(
+            properties['sfmcLanguageServer.ssjsFileMode']?.enum,
+            ['javascript', 'auto', 'sfmc'],
+            'ssjsFileMode must offer the javascript/auto/sfmc enum'
+        );
+        assert.strictEqual(
+            properties['sfmcLanguageServer.ssjsFileMode']?.default,
+            'javascript',
+            'ssjsFileMode must default to javascript (no behaviour change)'
         );
     });
 });

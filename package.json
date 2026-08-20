@@ -213,6 +213,22 @@
           "default": "engagement",
           "description": "Target platform for MCN compatibility diagnostics. Set to 'next' to detect AMPscript functions or SSJS code that cannot run in Marketing Cloud Next."
         },
+        "sfmcLanguageServer.ssjsFileMode": {
+          "scope": "resource",
+          "type": "string",
+          "enum": [
+            "javascript",
+            "auto",
+            "sfmc"
+          ],
+          "enumDescriptions": [
+            "Treat .ssjs files as plain Server-Side JavaScript (default): the whole file is linted as SSJS. Fastest — no content scanning.",
+            "Auto-detect per file: a .ssjs file that wraps its code in <script runat=\"server\">...</script> (or contains AMPscript) is treated as SFMC content so the embedded SSJS is linted inside the tag; a plain-JS .ssjs stays SSJS. Enables interop with SSJS Manager (FiB.ssjs-vsc). Costs a small per-edit content scan.",
+            "Treat every .ssjs file as SFMC content (HTML that may embed <script runat=\"server\"> SSJS and AMPscript). Choose this only when all your .ssjs files are script-wrapped; a plain-JS .ssjs would then be treated as HTML, not linted as SSJS. No content scanning."
+          ],
+          "default": "javascript",
+          "description": "How .ssjs files are interpreted. 'javascript' (default) = plain SSJS; 'auto' = detect script-wrapped vs plain per file (SSJS Manager interop); 'sfmc' = force all .ssjs to SFMC. SSJS Manager can set 'auto' per-workspace automatically."
+        },
         "sfmcLanguageServer.disableLspDiagnosticsForEslintRules": {
           "scope": "resource",
           "type": "boolean",
