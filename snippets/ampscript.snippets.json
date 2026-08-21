@@ -24,7 +24,7 @@
 		"description": "Declare an AMPscript variable"
 	},
 	"Set Variable": {
-		"prefix": "ampset",
+		"prefix": ["ampset", "set"],
 		"body": "set @${1:variableName} = ${2:value}",
 		"description": "Assign a value to an AMPscript variable"
 	},
@@ -37,7 +37,7 @@
 		"description": "Declare and assign an AMPscript variable"
 	},
 	"IF Block": {
-		"prefix": "ampif",
+		"prefix": ["ampif", "if-then"],
 		"body": [
 			"if ${1:condition} then",
 			"\t${0}",
@@ -46,7 +46,7 @@
 		"description": "IF/THEN/ENDIF conditional block"
 	},
 	"IF/ELSE Block": {
-		"prefix": "ampifelse",
+		"prefix": ["ampifelse", "if-then-else"],
 		"body": [
 			"if ${1:condition} then",
 			"\t${2}",
@@ -57,7 +57,7 @@
 		"description": "IF/THEN/ELSE/ENDIF conditional block"
 	},
 	"IF/ELSEIF/ELSE Block": {
-		"prefix": "ampifelseif",
+		"prefix": ["ampifelseif", "if-then-elseif"],
 		"body": [
 			"if ${1:condition} then",
 			"\t${2}",
@@ -70,7 +70,7 @@
 		"description": "IF/ELSEIF/ELSE/ENDIF conditional block"
 	},
 	"FOR Loop": {
-		"prefix": "ampfor",
+		"prefix": ["ampfor", "for"],
 		"body": [
 			"for @${1:i} = 1 to ${2:count} do",
 			"\t${0}",

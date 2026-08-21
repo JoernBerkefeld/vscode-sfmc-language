@@ -2,6 +2,12 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.2.1] - 2026-08-21
+
+### Added
+
+- Added trigger aliases (`set`, `for`, `if-then`, `if-then-else`, `if-then-elseif`) to the AMPScript control-flow snippets, mirroring the snippet trigger keywords used by the vscode-ampscript extension so those familiar triggers keep working.
+
 ## [3.2.0] - 2026-08-21
 
 ### Added
