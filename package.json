@@ -294,7 +294,8 @@
     "postinstall": "cd client && npm install --no-workspaces && cd ../server && npm install --no-workspaces && cd .. && npm run copy-globals",
     "test:bundle": "node ./scripts/test-bundle.mjs",
     "test:deps": "node ./scripts/check-client-mocha-types.mjs",
-    "test": "npm run test:deps && npm run test:bundle && node ./client/out/test/run-test"
+    "test:telemetry-catalog": "node ./scripts/validate-telemetry-catalog.mjs",
+    "test": "npm run test:deps && npm run test:telemetry-catalog && npm run test:bundle && node ./client/out/test/run-test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

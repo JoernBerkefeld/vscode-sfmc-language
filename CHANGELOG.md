@@ -2,6 +2,14 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [Unreleased]
+
+## [3.3.0] - 2026-08-22
+
+### Added
+
+- **Anonymous usage telemetry (opt-out via VS Code).** Added a small custom telemetry reporter that sends anonymous, PII-free usage events (extension activation with target platform / `.ssjs` mode / co-installed-extension booleans, detected SFMC languages, formatter-coexistence outcome, and conflicting-extension detection) to a PostHog project hosted in the EU. It is gated **solely** by VS Code's global `telemetry.telemetryLevel` setting — set it to `off` and nothing is sent. The full event catalogue ships as `telemetry.json` (visible via the VS Code CLI `--telemetry` dump). See the new **Telemetry** section in the README.
+
 ## [3.2.1] - 2026-08-21
 
 ### Added

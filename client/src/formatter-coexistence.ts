@@ -31,6 +31,46 @@
 import { workspace, window, ConfigurationTarget, ExtensionContext } from 'vscode';
 import { FORMATTER_LANGUAGES, logInfo } from './formatter';
 
+/**
+ * The mutually-exclusive outcomes of the formatter-coexistence resolution,
+ * reported once per activation as the `formatter.coexistence.resolved` event's
+ * `outcome` property.
+ * - `disabled` — the built-in formatter is disabled.
+ * - `suppressed` — admin lever (`formatterPromptDismissed: true`) left config untouched.
+ * - `no-conflict` — free languages claimed; nothing conflicted, so no prompt.
+ * - `already-answered` — a conflict existed but the prompt was already dismissed.
+ * - `switched` — the user switched the conflicting languages to the SFMC formatter.
+ * - `kept` — the user kept their existing formatter for the conflicting languages.
+ * - `cancelled` — the user dismissed the modal without choosing.
+ */
+export type CoexistenceOutcome =
+    | 'disabled'
+    | 'suppressed'
+    | 'no-conflict'
+    | 'already-answered'
+    | 'switched'
+    | 'kept'
+    | 'cancelled'
+    | 'failed';
+
+/**
+ * Narrow dependency overrides used to exercise the real coexistence flow without
+ * mutating a developer's editor settings in integration tests.
+ */
+export interface CoexistenceTestOverrides {
+    formatterEnabled?: boolean;
+    free?: string[];
+    conflicting?: string[];
+    newlyClaimed?: string[];
+    isMementoDismissed?: boolean;
+    isSuppressed?: boolean;
+    isDismissed?: boolean;
+    choice?: 'Use SFMC formatter' | 'Keep current' | undefined;
+    clearStaleFormatter?: () => Promise<void>;
+    setFormatter?: (languageIds: readonly string[]) => Promise<void>;
+    markDismissed?: () => Promise<void>;
+}
+
 export const EXTENSION_ID = 'joernberkefeld.sfmc-language';
 export const ESBENP_ID = 'esbenp.prettier-vscode';
 
@@ -350,120 +390,163 @@ async function clearStaleAmpscriptFormatter(): Promise<void> {
  * A single status line is always logged to the formatter Output channel first,
  * so the resulting decision is auditable.
  * @param context - the extension context
+ * @param [reportOutcome] - optional callback receiving the one resolved coexistence outcome
+ * @param [testOverrides] - narrow deterministic seams used by integration tests
  * @returns a promise resolving once setup completes
  */
-export async function maybeSetupFormatter(context: ExtensionContext): Promise<void> {
-    const formatterEnabled = workspace
-        .getConfiguration('sfmcLanguageServer')
-        .get<boolean>('enableFormatter', true);
-    if (!formatterEnabled) return;
+export async function maybeSetupFormatter(
+    context: ExtensionContext,
+    reportOutcome?: (outcome: CoexistenceOutcome) => void,
+    testOverrides?: CoexistenceTestOverrides
+): Promise<void> {
+    let isReported = false;
+    const report = (outcome: CoexistenceOutcome): void => {
+        if (isReported) return;
+        isReported = true;
+        reportOutcome?.(outcome);
+    };
 
-    const { free, conflicting } = partitionLanguages(
-        FORMATTER_LANGUAGES,
-        workspaceDefaultFormatter
-    );
+    try {
+        const formatterEnabled =
+            testOverrides?.formatterEnabled ??
+            workspace.getConfiguration('sfmcLanguageServer').get<boolean>('enableFormatter', true);
+        if (!formatterEnabled) {
+            report('disabled');
+            return;
+        }
 
-    // "free" includes languages already set to us; only the ones with no
-    // workspace default yet are actually being newly claimed — toast just those.
-    const newlyClaimed = free.filter(
-        (languageId) => workspaceDefaultFormatter(languageId) === undefined
-    );
+        const partition =
+            testOverrides?.free && testOverrides.conflicting
+                ? { free: testOverrides.free, conflicting: testOverrides.conflicting }
+                : partitionLanguages(FORMATTER_LANGUAGES, workspaceDefaultFormatter);
+        const { free, conflicting } = partition;
 
-    const inspectedDismissed = workspace
-        .getConfiguration('sfmcLanguageServer')
-        .inspect<boolean>('formatterPromptDismissed');
-    const isMementoDismissed = context.workspaceState.get<boolean>(
-        FORMATTER_PROMPT_DISMISSED_KEY,
-        false
-    );
-    // Admin lever: an explicit `formatterPromptDismissed: true` in committed
-    // settings tells the extension to leave the formatter config untouched — no
-    // silent claiming, no prompt.
-    const isSuppressed = isAutoClaimSuppressed(
-        inspectedDismissed?.workspaceFolderValue,
-        inspectedDismissed?.workspaceValue,
-        inspectedDismissed?.globalValue
-    );
+        // "free" includes languages already set to us; only the ones with no
+        // workspace default yet are actually being newly claimed — toast just those.
+        const newlyClaimed =
+            testOverrides?.newlyClaimed ??
+            free.filter((languageId) => workspaceDefaultFormatter(languageId) === undefined);
 
-    // Log a single, auditable status line so the takeover state is visible in
-    // the "SFMC Prettier Formatter" Output channel without a debugger.
-    logInfo(
-        buildCoexistenceStatusLine(
-            isMementoDismissed,
-            isSuppressed,
-            free,
-            conflicting,
-            newlyClaimed
-        )
-    );
+        const inspectedDismissed = workspace
+            .getConfiguration('sfmcLanguageServer')
+            .inspect<boolean>('formatterPromptDismissed');
+        const isMementoDismissed =
+            testOverrides?.isMementoDismissed ??
+            context.workspaceState.get<boolean>(FORMATTER_PROMPT_DISMISSED_KEY, false);
+        // Admin lever: an explicit `formatterPromptDismissed: true` in committed
+        // settings tells the extension to leave the formatter config untouched — no
+        // silent claiming, no prompt.
+        const isSuppressed =
+            testOverrides?.isSuppressed ??
+            isAutoClaimSuppressed(
+                inspectedDismissed?.workspaceFolderValue,
+                inspectedDismissed?.workspaceValue,
+                inspectedDismissed?.globalValue
+            );
 
-    // Admin lever active → do not touch settings and do not prompt.
-    if (isSuppressed) return;
-
-    // Defensive cleanup: strip a stale capital `[AMPscript]` editor.defaultFormatter
-    // block (dead once SSJS Manager's capital AMPscript id is gone). Idempotent and
-    // a no-op for the vast majority of users who never had such a block.
-    await clearStaleAmpscriptFormatter();
-
-    // Always claim the languages that are free (unset, or already ours).
-    if (free.length > 0) {
-        await setDefaultFormatter(free);
-    }
-    if (newlyClaimed.length > 0) {
-        void window.showInformationMessage(
-            `SFMC formatter is now formatting ${formatLanguageList(newlyClaimed)}. ` +
-                'Change this per language via "editor.defaultFormatter" in .vscode/settings.json.'
+        // Log a single, auditable status line so the takeover state is visible in
+        // the "SFMC Prettier Formatter" Output channel without a debugger.
+        logInfo(
+            buildCoexistenceStatusLine(
+                isMementoDismissed,
+                isSuppressed,
+                free,
+                conflicting,
+                newlyClaimed
+            )
         );
+
+        // Admin lever active → do not touch settings and do not prompt.
+        if (isSuppressed) {
+            report('suppressed');
+            return;
+        }
+
+        // Defensive cleanup: strip a stale capital `[AMPscript]` editor.defaultFormatter
+        // block (dead once SSJS Manager's capital AMPscript id is gone). Idempotent and
+        // a no-op for the vast majority of users who never had such a block.
+        await (testOverrides?.clearStaleFormatter ?? clearStaleAmpscriptFormatter)();
+
+        // Always claim the languages that are free (unset, or already ours).
+        const setFormatter = testOverrides?.setFormatter ?? setDefaultFormatter;
+        if (free.length > 0) {
+            await setFormatter(free);
+        }
+        if (newlyClaimed.length > 0) {
+            void window.showInformationMessage(
+                `SFMC formatter is now formatting ${formatLanguageList(newlyClaimed)}. ` +
+                    'Change this per language via "editor.defaultFormatter" in .vscode/settings.json.'
+            );
+        }
+
+        // No genuine conflicts → nothing to ask.
+        if (conflicting.length === 0) {
+            report('no-conflict');
+            return;
+        }
+
+        // Ask at most once per workspace, unless the user has explicitly re-enabled
+        // the prompt by setting `formatterPromptDismissed: false` in their
+        // workspace/folder settings. An explicit `false` overrides the memento so
+        // that resetting the setting reliably brings the prompt back.
+        const isDismissed =
+            testOverrides?.isDismissed ??
+            isPromptDismissed(
+                isMementoDismissed,
+                inspectedDismissed?.workspaceFolderValue,
+                inspectedDismissed?.workspaceValue,
+                inspectedDismissed?.globalValue
+            );
+        if (isDismissed) {
+            report('already-answered');
+            return;
+        }
+
+        const useBuiltIn = 'Use SFMC formatter';
+        const keepCurrent = 'Keep current';
+        const conflictList = formatLanguageList(conflicting);
+        const choice =
+            testOverrides && 'choice' in testOverrides
+                ? testOverrides.choice
+                : await window.showInformationMessage(
+                      'Format SFMC files out of the box?',
+                      {
+                          modal: true,
+                          detail:
+                              'The SFMC Language Service can format AMPscript, SSJS, SFMC HTML, MCN Handlebars, and SQL ' +
+                              'with a bundled Prettier + prettier-plugin-sfmc — no manual Prettier or plugin setup needed.\n\n' +
+                              `You already have another formatter set for: ${conflictList}.\n\n` +
+                              `"${useBuiltIn}" switches those to the SFMC formatter for this workspace. ` +
+                              `"${keepCurrent}" leaves them as they are. You can change this any time per language ` +
+                              'via "editor.defaultFormatter" in .vscode/settings.json.',
+                      },
+                      useBuiltIn,
+                      keepCurrent
+                  );
+
+        const markDismissed = testOverrides?.markDismissed ?? (() => markPromptDismissed(context));
+        if (choice === useBuiltIn) {
+            await setFormatter(conflicting);
+            await markDismissed();
+            report('switched');
+            void window.showInformationMessage(
+                `${formatLanguageList(conflicting)} ` +
+                    `${conflicting.length === 1 ? 'has' : 'have'} been switched to the SFMC formatter.`
+            );
+        } else if (choice === keepCurrent) {
+            // Leave the conflicting languages untouched; just remember the decision.
+            await markDismissed();
+            report('kept');
+            void window.showInformationMessage(
+                `${formatLanguageList(conflicting)} will continue to be formatted by your existing formatter.`
+            );
+        } else {
+            // Dismissed without choosing (Esc / Cancel): do not persist, so we can
+            // ask again later.
+            report('cancelled');
+        }
+    } catch (error) {
+        report('failed');
+        throw error;
     }
-
-    // No genuine conflicts → nothing to ask.
-    if (conflicting.length === 0) return;
-
-    // Ask at most once per workspace, unless the user has explicitly re-enabled
-    // the prompt by setting `formatterPromptDismissed: false` in their
-    // workspace/folder settings. An explicit `false` overrides the memento so
-    // that resetting the setting reliably brings the prompt back.
-    const isDismissed = isPromptDismissed(
-        isMementoDismissed,
-        inspectedDismissed?.workspaceFolderValue,
-        inspectedDismissed?.workspaceValue,
-        inspectedDismissed?.globalValue
-    );
-    if (isDismissed) return;
-
-    const useBuiltIn = 'Use SFMC formatter';
-    const keepCurrent = 'Keep current';
-    const conflictList = formatLanguageList(conflicting);
-    const choice = await window.showInformationMessage(
-        'Format SFMC files out of the box?',
-        {
-            modal: true,
-            detail:
-                'The SFMC Language Service can format AMPscript, SSJS, SFMC HTML, MCN Handlebars, and SQL ' +
-                'with a bundled Prettier + prettier-plugin-sfmc — no manual Prettier or plugin setup needed.\n\n' +
-                `You already have another formatter set for: ${conflictList}.\n\n` +
-                `"${useBuiltIn}" switches those to the SFMC formatter for this workspace. ` +
-                `"${keepCurrent}" leaves them as they are. You can change this any time per language ` +
-                'via "editor.defaultFormatter" in .vscode/settings.json.',
-        },
-        useBuiltIn,
-        keepCurrent
-    );
-
-    if (choice === useBuiltIn) {
-        await setDefaultFormatter(conflicting);
-        await markPromptDismissed(context);
-        void window.showInformationMessage(
-            `${formatLanguageList(conflicting)} ` +
-                `${conflicting.length === 1 ? 'has' : 'have'} been switched to the SFMC formatter.`
-        );
-    } else if (choice === keepCurrent) {
-        // Leave the conflicting languages untouched; just remember the decision.
-        await markPromptDismissed(context);
-        void window.showInformationMessage(
-            `${formatLanguageList(conflicting)} will continue to be formatted by your existing formatter.`
-        );
-    }
-    // Dismissed without choosing (Esc / Cancel): do not persist, so we can ask
-    // again later.
 }

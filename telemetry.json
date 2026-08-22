@@ -1,0 +1,52 @@
+{
+  "commonProperties": {
+    "extension": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Short extension name." },
+    "extensionVersion": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Extension package version." },
+    "os": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Host operating-system platform." },
+    "vscodeVersion": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Host editor version." },
+    "distinct_id": { "classification": "EndUserPseudonymizedInformation", "purpose": "FeatureInsight", "comment": "Stable pseudonymous vscode.env.machineId; never a person profile." },
+    "$process_person_profile": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Always false so PostHog does not create person profiles." }
+  },
+  "events": {
+    "extension.activated": {
+      "owner": "joernberkefeld",
+      "comment": "Fired once per activation with platform, SSJS mode, and passive ecosystem signals.",
+      "properties": {
+        "targetPlatform": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Configured target platform." },
+        "ssjsFileMode": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Configured .ssjs interpretation mode." },
+        "coInstalledAsDependency": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Another extension references this extension as a dependency." },
+        "coInstalledInPack": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Another extension references this extension in an extension pack." },
+        "neighbor.sergey-agadzhanov.ampscript": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Named neighboring extension is installed." },
+        "neighbor.FiB.ssjs-vsc": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Named neighboring extension is installed." },
+        "neighbor.FiB.beautyAmp": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Named neighboring extension is installed." },
+        "neighbor.sfmc-devtools": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Named neighboring extension is installed." },
+        "neighbor.sfmc-data": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Named neighboring extension is installed." },
+        "neighbor.mso-conditionals": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Named neighboring extension is installed." },
+        "neighbor.sfmc-extension-pack": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Named neighboring extension is installed." },
+        "neighbor.sfmc-extension-pack-plus": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Named neighboring extension is installed." },
+        "neighbor.markdown-preview-bitbucket-innersource": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Named neighboring extension is installed." }
+      }
+    },
+    "language.detected": {
+      "owner": "joernberkefeld",
+      "comment": "Fired at most once per accepted language id per activation.",
+      "properties": {
+        "languageId": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Resolved SFMC language id." }
+      }
+    },
+    "formatter.coexistence.resolved": {
+      "owner": "joernberkefeld",
+      "comment": "Fired exactly once when formatter coexistence resolves or fails.",
+      "properties": {
+        "outcome": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "disabled, suppressed, no-conflict, already-answered, switched, kept, cancelled, or failed." }
+      }
+    },
+    "conflict.detected": {
+      "owner": "joernberkefeld",
+      "comment": "Fired for active extensions from the existing conflict list.",
+      "properties": {
+        "extensionId": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "xnerd.ampscript-language or FiB.beautyAmp." }
+      }
+    }
+  }
+}

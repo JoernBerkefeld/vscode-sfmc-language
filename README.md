@@ -429,6 +429,14 @@ npm run package      # Package as .vsix
 
 The extension uses **esbuild** for production bundling (`vscode:prepublish`), reducing load time and VSIX size.
 
+## Telemetry
+
+This extension collects a small amount of **anonymous** usage telemetry to understand adoption and which features are used, so development can be prioritised. It is sent to a [PostHog](https://posthog.com/) project hosted in the **EU** and contains **no** personally identifiable information, file contents, credentials, or business-unit / tenant identifiers.
+
+What is collected: extension activation (with the configured target platform, `.ssjs` file mode, and booleans indicating whether a small allowlist of related SFMC extensions are co-installed), which SFMC language(s) a session edits, the formatter-coexistence outcome, and whether a known conflicting AMPscript extension is active. Events are keyed by VS Code's anonymous machine id only. The full catalogue ships as `telemetry.json` in the extension root and is visible via the VS Code CLI `--telemetry` dump.
+
+**Opt out:** telemetry is gated **solely** by VS Code's global telemetry setting. Set `telemetry.telemetryLevel` to `off` and nothing is sent — the extension respects `isTelemetryEnabled` and stops immediately when you change it. There is no separate extension setting to configure.
+
 ## Notes
 
 - AMPscript function metadata is sourced from the `ampscript-data` shared package.

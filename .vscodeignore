@@ -24,3 +24,4 @@ package-lock.json
 !client/out/extension.js
 !server/out/server.js
 !server/out/sfmc-globals.d.ts
+!telemetry.json

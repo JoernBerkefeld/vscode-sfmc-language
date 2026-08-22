@@ -11,6 +11,9 @@ import {
     isAutoClaimSuppressed,
     buildCoexistenceStatusLine,
     staleAmpscriptFormatterScopes,
+    maybeSetupFormatter,
+    CoexistenceOutcome,
+    CoexistenceTestOverrides,
 } from '../formatter-coexistence';
 import { FORMATTER_LANGUAGES } from '../formatter';
 
@@ -190,6 +193,96 @@ suite('Formatter coexistence — language labels', () => {
 
     test('formatLanguageList falls back to the raw id for unknown languages', () => {
         assert.strictEqual(formatLanguageList(['made-up']), 'made-up');
+    });
+});
+
+/**
+ * Resolve without performing a configuration write.
+ * @returns an already-resolved promise
+ */
+async function noOperation(): Promise<void> {}
+
+suite('Formatter coexistence — telemetry outcomes', () => {
+    const context = {
+        workspaceState: { get: () => false },
+    } as unknown as vscode.ExtensionContext;
+
+    /**
+     * Run the real coexistence decision flow with deterministic dependencies.
+     * @param overrides - scenario values and injected operations
+     * @returns every telemetry outcome reported by the flow
+     */
+    async function resolveOutcome(
+        overrides: CoexistenceTestOverrides
+    ): Promise<CoexistenceOutcome[]> {
+        const outcomes: CoexistenceOutcome[] = [];
+        await maybeSetupFormatter(
+            context,
+            (outcome) => {
+                outcomes.push(outcome);
+            },
+            {
+                free: [],
+                conflicting: [],
+                newlyClaimed: [],
+                isMementoDismissed: false,
+                isSuppressed: false,
+                isDismissed: false,
+                clearStaleFormatter: noOperation,
+                setFormatter: noOperation,
+                markDismissed: noOperation,
+                ...overrides,
+            }
+        );
+        return outcomes;
+    }
+
+    test('reports disabled, suppressed, no-conflict, and already-answered exactly once', async () => {
+        assert.deepStrictEqual(await resolveOutcome({ formatterEnabled: false }), ['disabled']);
+        assert.deepStrictEqual(await resolveOutcome({ isSuppressed: true }), ['suppressed']);
+        assert.deepStrictEqual(await resolveOutcome({}), ['no-conflict']);
+        assert.deepStrictEqual(await resolveOutcome({ conflicting: ['ssjs'], isDismissed: true }), [
+            'already-answered',
+        ]);
+    });
+
+    test('reports switched, kept, and cancelled exactly once', async () => {
+        assert.deepStrictEqual(
+            await resolveOutcome({ conflicting: ['ssjs'], choice: 'Use SFMC formatter' }),
+            ['switched']
+        );
+        assert.deepStrictEqual(
+            await resolveOutcome({ conflicting: ['ssjs'], choice: 'Keep current' }),
+            ['kept']
+        );
+        assert.deepStrictEqual(await resolveOutcome({ conflicting: ['ssjs'], choice: undefined }), [
+            'cancelled',
+        ]);
+    });
+
+    test('reports failed exactly once when a configuration write fails', async () => {
+        const outcomes: CoexistenceOutcome[] = [];
+        await assert.rejects(
+            maybeSetupFormatter(
+                context,
+                (outcome) => {
+                    outcomes.push(outcome);
+                },
+                {
+                    free: ['ssjs'],
+                    conflicting: [],
+                    newlyClaimed: [],
+                    isMementoDismissed: false,
+                    isSuppressed: false,
+                    clearStaleFormatter: noOperation,
+                    setFormatter: async () => {
+                        throw new Error('configuration write failed');
+                    },
+                    markDismissed: noOperation,
+                }
+            )
+        );
+        assert.deepStrictEqual(outcomes, ['failed']);
     });
 });
 
