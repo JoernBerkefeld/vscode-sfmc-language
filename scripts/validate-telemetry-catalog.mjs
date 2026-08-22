@@ -109,94 +109,102 @@ const cursorCli = path.join(cursorRoot, 'bin', 'cursor.cmd');
 const cursorExe = path.join(cursorRoot, '..', '..', 'Cursor.exe');
 const cliJs = path.join(cursorRoot, 'out', 'cli.js');
 const parserPath = path.join(cursorRoot, 'out', 'vs', 'code', 'node', 'cliProcessMain.js');
-assert.ok(existsSync(cursorCli), `Cursor CLI not found at ${cursorCli}`);
-assert.ok(existsSync(cursorExe), `Cursor executable not found at ${cursorExe}`);
-assert.ok(existsSync(cliJs), `Cursor CLI entry not found at ${cliJs}`);
-assert.ok(existsSync(parserPath), `Cursor telemetry parser not found at ${parserPath}`);
-
-const parserSource = readFileSync(parserPath, 'utf8');
-assert.ok(
-    parserSource.includes('telemetry.json'),
-    'Installed CLI parser no longer discovers extension telemetry.json files'
-);
-assert.ok(
-    parserSource.includes('JSON.parse'),
-    'Installed CLI parser no longer JSON.parse()s telemetry catalogs'
-);
-assert.ok(
-    parserSource.includes('telemetry-core.json') &&
-        parserSource.includes('telemetry-extensions.json'),
-    'Installed CLI parser no longer loads core/extension product catalogs'
-);
-
-const temporaryRoot = mkdtempSync(path.join(tmpdir(), 'sfmc-language-telemetry-'));
-const extensionsDirectory = path.join(temporaryRoot, 'extensions');
-const userDataDirectory = path.join(temporaryRoot, 'user-data');
-const extensionFolder = path.join(
-    extensionsDirectory,
-    `${packageJson.publisher}.${packageJson.name}`
-);
-const temporaryCoreCatalogs = [
-    path.join(cursorRoot, 'telemetry-core.json'),
-    path.join(cursorRoot, 'telemetry-extensions.json'),
-];
-const createdCoreCatalogs = [];
-
-try {
-    mkdirSync(extensionFolder, { recursive: true });
-    mkdirSync(userDataDirectory, { recursive: true });
-    writeFileSync(path.join(extensionFolder, 'telemetry.json'), `${JSON.stringify(catalog)}\n`);
-
-    for (const corePath of temporaryCoreCatalogs) {
-        if (existsSync(corePath)) {
-            continue;
-        }
-
-        writeFileSync(corePath, '{}\n', 'utf8');
-        createdCoreCatalogs.push(corePath);
-    }
-
-    // Node 20+ refuses to spawn .cmd/.bat via execFile without a shell (EINVAL).
-    // Invoke the same Electron-as-Node CLI that cursor.cmd launches.
-    const output = execFileSync(
-        cursorExe,
-        [
-            cliJs,
-            '--extensions-dir',
-            extensionsDirectory,
-            '--user-data-dir',
-            userDataDirectory,
-            '--telemetry',
-        ],
-        {
-            encoding: 'utf8',
-            maxBuffer: 32 * 1024 * 1024,
-            timeout: 60_000,
-            windowsHide: true,
-            env: {
-                ...process.env,
-                ELECTRON_RUN_AS_NODE: '1',
-                VSCODE_DEV: '',
-            },
-        }
-    );
-    const discovered = JSON.parse(output);
-    const extensionKey = Object.keys(discovered).find((key) =>
-        key.toLowerCase().startsWith(`${packageJson.publisher}.${packageJson.name}`.toLowerCase())
+const cursorCliAvailable =
+    existsSync(cursorCli) && existsSync(cursorExe) && existsSync(cliJs) && existsSync(parserPath);
+if (cursorCliAvailable) {
+    const parserSource = readFileSync(parserPath, 'utf8');
+    assert.ok(
+        parserSource.includes('telemetry.json'),
+        'Installed CLI parser no longer discovers extension telemetry.json files'
     );
     assert.ok(
-        extensionKey,
-        `Installed extension telemetry catalog was not discovered by the editor CLI. Keys: ${Object.keys(discovered).join(', ')}`
+        parserSource.includes('JSON.parse'),
+        'Installed CLI parser no longer JSON.parse()s telemetry catalogs'
     );
-    assert.deepEqual(
-        discovered[extensionKey],
-        catalog,
-        'Editor CLI did not return the packaged catalog unchanged'
+    assert.ok(
+        parserSource.includes('telemetry-core.json') &&
+            parserSource.includes('telemetry-extensions.json'),
+        'Installed CLI parser no longer loads core/extension product catalogs'
     );
+
+    const temporaryRoot = mkdtempSync(path.join(tmpdir(), 'sfmc-language-telemetry-'));
+    const extensionsDirectory = path.join(temporaryRoot, 'extensions');
+    const userDataDirectory = path.join(temporaryRoot, 'user-data');
+    const extensionFolder = path.join(
+        extensionsDirectory,
+        `${packageJson.publisher}.${packageJson.name}`
+    );
+    const temporaryCoreCatalogs = [
+        path.join(cursorRoot, 'telemetry-core.json'),
+        path.join(cursorRoot, 'telemetry-extensions.json'),
+    ];
+    const createdCoreCatalogs = [];
+
+    try {
+        mkdirSync(extensionFolder, { recursive: true });
+        mkdirSync(userDataDirectory, { recursive: true });
+        writeFileSync(path.join(extensionFolder, 'telemetry.json'), `${JSON.stringify(catalog)}\n`);
+
+        for (const corePath of temporaryCoreCatalogs) {
+            if (existsSync(corePath)) {
+                continue;
+            }
+
+            writeFileSync(corePath, '{}\n', 'utf8');
+            createdCoreCatalogs.push(corePath);
+        }
+
+        // Node 20+ refuses to spawn .cmd/.bat via execFile without a shell (EINVAL).
+        // Invoke the same Electron-as-Node CLI that cursor.cmd launches.
+        const output = execFileSync(
+            cursorExe,
+            [
+                cliJs,
+                '--extensions-dir',
+                extensionsDirectory,
+                '--user-data-dir',
+                userDataDirectory,
+                '--telemetry',
+            ],
+            {
+                encoding: 'utf8',
+                maxBuffer: 32 * 1024 * 1024,
+                timeout: 60_000,
+                windowsHide: true,
+                env: {
+                    ...process.env,
+                    ELECTRON_RUN_AS_NODE: '1',
+                    VSCODE_DEV: '',
+                },
+            }
+        );
+        const discovered = JSON.parse(output);
+        const extensionKey = Object.keys(discovered).find((key) =>
+            key
+                .toLowerCase()
+                .startsWith(`${packageJson.publisher}.${packageJson.name}`.toLowerCase())
+        );
+        assert.ok(
+            extensionKey,
+            `Installed extension telemetry catalog was not discovered by the editor CLI. Keys: ${Object.keys(discovered).join(', ')}`
+        );
+        assert.deepEqual(
+            discovered[extensionKey],
+            catalog,
+            'Editor CLI did not return the packaged catalog unchanged'
+        );
+        console.log(
+            `Validated telemetry.json through Cursor CLI --telemetry (${extensionKey}) using ${parserPath}.`
+        );
+    } finally {
+        for (const corePath of createdCoreCatalogs) rmSync(corePath, { force: true });
+        rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+} else {
+    // GitHub Actions (and other CI) have no Cursor install. Schema validation
+    // above is still authoritative for the catalog shape; the live CLI dump is
+    // a local extra that confirms the installed editor still discovers it.
     console.log(
-        `Validated telemetry.json through Cursor CLI --telemetry (${extensionKey}) using ${parserPath}.`
+        'Skipping live Cursor CLI --telemetry dump (Cursor not installed). telemetry.json schema validation passed.'
     );
-} finally {
-    for (const corePath of createdCoreCatalogs) rmSync(corePath, { force: true });
-    rmSync(temporaryRoot, { recursive: true, force: true });
 }
