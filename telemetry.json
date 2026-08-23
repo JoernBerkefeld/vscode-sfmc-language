@@ -36,9 +36,12 @@
     },
     "formatter.coexistence.resolved": {
       "owner": "joernberkefeld",
-      "comment": "Fired exactly once when formatter coexistence resolves or fails.",
+      "comment": "Fired exactly once when formatter coexistence resolves or fails. On failed, extra sanitized properties identify the stage; never a raw message, stack, or path.",
       "properties": {
-        "outcome": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "disabled, suppressed, no-conflict, already-answered, switched, kept, cancelled, or failed." }
+        "outcome": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "disabled, suppressed, no-conflict, already-answered, switched, kept, cancelled, or failed." },
+        "errorCategory": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Optional. Present only when outcome is failed: clearStaleFormatter, claimLanguages, showModal, settingsWrite, persistDecision, noWritableFolder, or unknown." },
+        "errorName": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Optional. Short Error.name identifier (TypeError, FileSystemError) when it matches a safe pattern. Never a message." },
+        "errorCode": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "comment": "Optional. Sanitized error.code (ENOENT, FileNotFound) or a small integer exit code as a string. Never a path." }
       }
     },
     "conflict.detected": {

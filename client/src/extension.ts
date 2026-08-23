@@ -471,8 +471,11 @@ export function activate(
     // the Prettier extension (esbenp.prettier-vscode).
     dependencies.registerFormatter(context);
     void Promise.resolve(
-        dependencies.setupFormatter(context, (outcome) => {
-            reporter.track('formatter.coexistence.resolved', { outcome });
+        dependencies.setupFormatter(context, (outcome, extras) => {
+            reporter.track('formatter.coexistence.resolved', {
+                outcome,
+                ...(outcome === 'failed' && extras),
+            });
         })
     ).catch(() => {
         // The resolver reports its `failed` outcome before rethrowing.

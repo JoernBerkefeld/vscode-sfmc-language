@@ -12,9 +12,11 @@ import {
     buildCoexistenceStatusLine,
     staleAmpscriptFormatterScopes,
     maybeSetupFormatter,
+    resolveFailureCategory,
     CoexistenceOutcome,
     CoexistenceTestOverrides,
 } from '../formatter-coexistence';
+import type { FailureTelemetryProperties } from '../error-telemetry';
 import { FORMATTER_LANGUAGES } from '../formatter';
 
 suite('Formatter coexistence — static data', () => {
@@ -262,11 +264,13 @@ suite('Formatter coexistence — telemetry outcomes', () => {
 
     test('reports failed exactly once when a configuration write fails', async () => {
         const outcomes: CoexistenceOutcome[] = [];
+        const extras: Array<FailureTelemetryProperties | undefined> = [];
         await assert.rejects(
             maybeSetupFormatter(
                 context,
-                (outcome) => {
+                (outcome, extra) => {
                     outcomes.push(outcome);
+                    extras.push(extra);
                 },
                 {
                     free: ['ssjs'],
@@ -283,6 +287,93 @@ suite('Formatter coexistence — telemetry outcomes', () => {
             )
         );
         assert.deepStrictEqual(outcomes, ['failed']);
+        assert.strictEqual(extras[0]?.errorCategory, 'claimLanguages');
+        assert.strictEqual(extras[0]?.errorName, 'Error');
+        assert.strictEqual(Object.hasOwn(extras[0] ?? {}, 'errorCode'), false);
+        assert.strictEqual(Object.hasOwn(extras[0] ?? {}, 'message'), false);
+    });
+
+    test('reports failed extras for stale cleanup, modal, switch write, and persist', async () => {
+        const cases: Array<{
+            expected: string;
+            overrides: CoexistenceTestOverrides;
+        }> = [
+            {
+                expected: 'clearStaleFormatter',
+                overrides: {
+                    clearStaleFormatter: async () => {
+                        throw new TypeError('stale cleanup failed');
+                    },
+                },
+            },
+            {
+                expected: 'showModal',
+                overrides: {
+                    conflicting: ['ssjs'],
+                    showModal: async () => {
+                        throw new Error('modal failed');
+                    },
+                },
+            },
+            {
+                expected: 'settingsWrite',
+                overrides: {
+                    conflicting: ['ssjs'],
+                    choice: 'Use SFMC formatter',
+                    setFormatter: async () => {
+                        throw { name: 'FileSystemError', code: 'NoPermissions' };
+                    },
+                },
+            },
+            {
+                expected: 'persistDecision',
+                overrides: {
+                    conflicting: ['ssjs'],
+                    choice: 'Keep current',
+                    markDismissed: async () => {
+                        throw new Error('persist failed');
+                    },
+                },
+            },
+        ];
+        for (const { expected, overrides } of cases) {
+            const extras: Array<FailureTelemetryProperties | undefined> = [];
+            await assert.rejects(
+                maybeSetupFormatter(
+                    context,
+                    (_outcome, extra) => {
+                        extras.push(extra);
+                    },
+                    {
+                        free: [],
+                        conflicting: [],
+                        newlyClaimed: [],
+                        isMementoDismissed: false,
+                        isSuppressed: false,
+                        clearStaleFormatter: noOperation,
+                        setFormatter: noOperation,
+                        markDismissed: noOperation,
+                        ...overrides,
+                    }
+                )
+            );
+            assert.strictEqual(extras[0]?.errorCategory, expected, expected);
+        }
+    });
+
+    test('fixture workspace setup resolves no-conflict without throwing', async () => {
+        assert.ok(
+            (vscode.workspace.workspaceFolders?.length ?? 0) > 0,
+            'run-test must open client/testFixture so settings writes do not toast'
+        );
+        assert.deepStrictEqual(await resolveOutcome({}), ['no-conflict']);
+    });
+
+    test('resolveFailureCategory maps write stages without a workspace to noWritableFolder', () => {
+        assert.strictEqual(resolveFailureCategory('claimLanguages', false), 'noWritableFolder');
+        assert.strictEqual(resolveFailureCategory('settingsWrite', false), 'noWritableFolder');
+        assert.strictEqual(resolveFailureCategory('showModal', false), 'showModal');
+        assert.strictEqual(resolveFailureCategory('claimLanguages', true), 'claimLanguages');
     });
 });
 

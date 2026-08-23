@@ -4,6 +4,14 @@ All notable changes to the SFMC Language Service extension will be documented in
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-08-23
+
+### Changed
+
+- **Formatter coexistence `failed` telemetry** now includes a closed-enum `errorCategory` (stage: settings write, modal, stale `[AMPscript]` cleanup, persist, no writable folder, or unknown) plus optional sanitized `errorName` / `errorCode`. Still never sends the exception message, stack, or file paths.
+- **No-folder windows** no longer call `editor.defaultFormatter` updates (which made VS Code toast a workspace-settings write error). The coexistence resolver reports `failed` / `noWritableFolder` and returns instead.
+- **Integration-test host** now opens `client/testFixture` so formatter coexistence can write settings without a workspace-write error.
+
 ## [3.3.0] - 2026-08-22
 
 ### Added

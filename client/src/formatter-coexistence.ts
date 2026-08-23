@@ -29,6 +29,7 @@
  */
 
 import { workspace, window, ConfigurationTarget, ExtensionContext } from 'vscode';
+import { FailureTelemetryProperties, sanitizeFailureTelemetry } from './error-telemetry';
 import { FORMATTER_LANGUAGES, logInfo } from './formatter';
 
 /**
@@ -42,6 +43,9 @@ import { FORMATTER_LANGUAGES, logInfo } from './formatter';
  * - `switched` — the user switched the conflicting languages to the SFMC formatter.
  * - `kept` — the user kept their existing formatter for the conflicting languages.
  * - `cancelled` — the user dismissed the modal without choosing.
+ * - `failed` — an exception during setup. Extra sanitized properties
+ *   (`errorCategory`, optional `errorName` / `errorCode`) distinguish the
+ *   stage; never a raw message, stack, or path.
  */
 export type CoexistenceOutcome =
     | 'disabled'
@@ -52,6 +56,43 @@ export type CoexistenceOutcome =
     | 'kept'
     | 'cancelled'
     | 'failed';
+
+/**
+ * Closed-enum stage recorded as `errorCategory` on a `failed` outcome.
+ */
+export type FormatterFailureStage =
+    | 'clearStaleFormatter'
+    | 'claimLanguages'
+    | 'showModal'
+    | 'settingsWrite'
+    | 'persistDecision'
+    | 'noWritableFolder'
+    | 'unknown';
+
+const WRITE_FAILURE_STAGES = new Set<FormatterFailureStage>([
+    'clearStaleFormatter',
+    'claimLanguages',
+    'settingsWrite',
+    'persistDecision',
+]);
+
+/**
+ * Maps a thrown-stage to the category we send. Write stages without a
+ * workspace folder collapse to `noWritableFolder` so we do not need the
+ * (often path-bearing) exception message.
+ * @param stage - last coexistence step that ran
+ * @param hasWritableWorkspace - whether `workspace.workspaceFolders` is non-empty
+ * @returns a closed `errorCategory` value
+ */
+export function resolveFailureCategory(
+    stage: FormatterFailureStage,
+    hasWritableWorkspace: boolean
+): FormatterFailureStage {
+    if (!hasWritableWorkspace && WRITE_FAILURE_STAGES.has(stage)) {
+        return 'noWritableFolder';
+    }
+    return stage;
+}
 
 /**
  * Narrow dependency overrides used to exercise the real coexistence flow without
@@ -66,6 +107,7 @@ export interface CoexistenceTestOverrides {
     isSuppressed?: boolean;
     isDismissed?: boolean;
     choice?: 'Use SFMC formatter' | 'Keep current' | undefined;
+    showModal?: () => Promise<'Use SFMC formatter' | 'Keep current' | undefined>;
     clearStaleFormatter?: () => Promise<void>;
     setFormatter?: (languageIds: readonly string[]) => Promise<void>;
     markDismissed?: () => Promise<void>;
@@ -376,6 +418,43 @@ async function clearStaleAmpscriptFormatter(): Promise<void> {
 }
 
 /**
+ * Resolve the coexistence modal choice from a test override or the real prompt.
+ * @param conflictList - friendly language list shown in the modal detail
+ * @param useBuiltIn - primary action label
+ * @param keepCurrent - secondary action label
+ * @param testOverrides - optional test seams
+ * @returns the chosen action, or undefined when the modal is dismissed
+ */
+async function resolveFormatterChoice(
+    conflictList: string,
+    useBuiltIn: string,
+    keepCurrent: string,
+    testOverrides?: CoexistenceTestOverrides
+): Promise<string | undefined> {
+    if (testOverrides && 'choice' in testOverrides) {
+        return testOverrides.choice;
+    }
+    if (testOverrides?.showModal) {
+        return testOverrides.showModal();
+    }
+    return window.showInformationMessage(
+        'Format SFMC files out of the box?',
+        {
+            modal: true,
+            detail:
+                'The SFMC Language Service can format AMPscript, SSJS, SFMC HTML, MCN Handlebars, and SQL ' +
+                'with a bundled Prettier + prettier-plugin-sfmc — no manual Prettier or plugin setup needed.\n\n' +
+                `You already have another formatter set for: ${conflictList}.\n\n` +
+                `"${useBuiltIn}" switches those to the SFMC formatter for this workspace. ` +
+                `"${keepCurrent}" leaves them as they are. You can change this any time per language ` +
+                'via "editor.defaultFormatter" in .vscode/settings.json.',
+        },
+        useBuiltIn,
+        keepCurrent
+    );
+}
+
+/**
  * Set up the built-in formatter for this workspace:
  *
  * 1. Silently claim every SFMC language that has no conflicting workspace/folder
@@ -391,19 +470,21 @@ async function clearStaleAmpscriptFormatter(): Promise<void> {
  * so the resulting decision is auditable.
  * @param context - the extension context
  * @param [reportOutcome] - optional callback receiving the one resolved coexistence outcome
+ *   and, on `failed`, sanitized extra properties
  * @param [testOverrides] - narrow deterministic seams used by integration tests
  * @returns a promise resolving once setup completes
  */
 export async function maybeSetupFormatter(
     context: ExtensionContext,
-    reportOutcome?: (outcome: CoexistenceOutcome) => void,
+    reportOutcome?: (outcome: CoexistenceOutcome, extras?: FailureTelemetryProperties) => void,
     testOverrides?: CoexistenceTestOverrides
 ): Promise<void> {
     let isReported = false;
-    const report = (outcome: CoexistenceOutcome): void => {
+    let stage: FormatterFailureStage = 'unknown';
+    const report = (outcome: CoexistenceOutcome, extras?: FailureTelemetryProperties): void => {
         if (isReported) return;
         isReported = true;
-        reportOutcome?.(outcome);
+        reportOutcome?.(outcome, extras);
     };
 
     try {
@@ -462,14 +543,23 @@ export async function maybeSetupFormatter(
             return;
         }
 
+        // A settings write with no opened folder makes VS Code itself toast
+        // "Unable to write into Workspace Settings…". Bail before any update().
+        if (!testOverrides && (workspace.workspaceFolders?.length ?? 0) === 0) {
+            report('failed', { errorCategory: 'noWritableFolder' });
+            return;
+        }
+
         // Defensive cleanup: strip a stale capital `[AMPscript]` editor.defaultFormatter
         // block (dead once SSJS Manager's capital AMPscript id is gone). Idempotent and
         // a no-op for the vast majority of users who never had such a block.
+        stage = 'clearStaleFormatter';
         await (testOverrides?.clearStaleFormatter ?? clearStaleAmpscriptFormatter)();
 
         // Always claim the languages that are free (unset, or already ours).
         const setFormatter = testOverrides?.setFormatter ?? setDefaultFormatter;
         if (free.length > 0) {
+            stage = 'claimLanguages';
             await setFormatter(free);
         }
         if (newlyClaimed.length > 0) {
@@ -505,28 +595,19 @@ export async function maybeSetupFormatter(
         const useBuiltIn = 'Use SFMC formatter';
         const keepCurrent = 'Keep current';
         const conflictList = formatLanguageList(conflicting);
-        const choice =
-            testOverrides && 'choice' in testOverrides
-                ? testOverrides.choice
-                : await window.showInformationMessage(
-                      'Format SFMC files out of the box?',
-                      {
-                          modal: true,
-                          detail:
-                              'The SFMC Language Service can format AMPscript, SSJS, SFMC HTML, MCN Handlebars, and SQL ' +
-                              'with a bundled Prettier + prettier-plugin-sfmc — no manual Prettier or plugin setup needed.\n\n' +
-                              `You already have another formatter set for: ${conflictList}.\n\n` +
-                              `"${useBuiltIn}" switches those to the SFMC formatter for this workspace. ` +
-                              `"${keepCurrent}" leaves them as they are. You can change this any time per language ` +
-                              'via "editor.defaultFormatter" in .vscode/settings.json.',
-                      },
-                      useBuiltIn,
-                      keepCurrent
-                  );
+        stage = 'showModal';
+        const choice = await resolveFormatterChoice(
+            conflictList,
+            useBuiltIn,
+            keepCurrent,
+            testOverrides
+        );
 
         const markDismissed = testOverrides?.markDismissed ?? (() => markPromptDismissed(context));
         if (choice === useBuiltIn) {
+            stage = 'settingsWrite';
             await setFormatter(conflicting);
+            stage = 'persistDecision';
             await markDismissed();
             report('switched');
             void window.showInformationMessage(
@@ -535,6 +616,7 @@ export async function maybeSetupFormatter(
             );
         } else if (choice === keepCurrent) {
             // Leave the conflicting languages untouched; just remember the decision.
+            stage = 'persistDecision';
             await markDismissed();
             report('kept');
             void window.showInformationMessage(
@@ -546,7 +628,13 @@ export async function maybeSetupFormatter(
             report('cancelled');
         }
     } catch (error) {
-        report('failed');
+        const hasWritableWorkspace = (workspace.workspaceFolders?.length ?? 0) > 0;
+        // Test seams inject the throw; keep the raw stage so tests can assert it.
+        // Production remaps write stages without a folder to `noWritableFolder`.
+        const errorCategory = testOverrides
+            ? stage
+            : resolveFailureCategory(stage, hasWritableWorkspace);
+        report('failed', sanitizeFailureTelemetry(error, errorCategory));
         throw error;
     }
 }

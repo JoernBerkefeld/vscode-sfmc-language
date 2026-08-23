@@ -24,7 +24,7 @@ export const TELEMETRY_EVENT_PROPERTIES = {
         'neighbor.markdown-preview-bitbucket-innersource',
     ],
     'language.detected': ['languageId'],
-    'formatter.coexistence.resolved': ['outcome'],
+    'formatter.coexistence.resolved': ['outcome', 'errorCategory', 'errorName', 'errorCode'],
     'conflict.detected': ['extensionId'],
 } as const;
 
