@@ -2,7 +2,11 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
-## [Unreleased]
+## [3.3.2] - 2026-09-02
+
+### Dependencies
+
+- Bump `prettier-plugin-sfmc` from 1.2.0 to 2.0.0. SQL (`.sql`) formatting now runs through `sql-formatter` directly; this drops the previous `prettier-plugin-sql` -> `node-sql-parser` / `jsox` transitive dependency tree, shrinking the bundled extension. T-SQL dialect and `[bracketed identifiers]` behavior are unchanged.
 
 ## [3.3.1] - 2026-08-23
 
