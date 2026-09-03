@@ -319,7 +319,7 @@
     "undici-types": "^8.10.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^3.17.0"
+    "sfmc-language-lsp": "^3.17.1"
   },
   "overrides": {
     "diff": "^9.0.0",

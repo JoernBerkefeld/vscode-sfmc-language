@@ -2,6 +2,13 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.3.3] - 2026-09-03
+
+### Dependencies
+
+- Bump the bundled `sfmc-language-lsp` from 3.17.0 to 3.17.1. The language server now uses the first-party `sfmc-handlebars-parser` for GTL / MCN Handlebars instead of the third-party `@handlebars/parser`, removing that transitive dependency from the bundled server. No user-facing behavior change.
+- The bundled `prettier-plugin-sfmc` remains at 2.0.0 (already the latest major).
+
 ## [3.3.2] - 2026-09-02
 
 ### Dependencies
