@@ -110,6 +110,95 @@ function captureFetch(): {
     };
 }
 
+suite('Telemetry — real ecosystem detector', () => {
+    const selfId = 'joernberkefeld.sfmc-language';
+    const requested = {
+        'neighbor.xnerd.ampscript-language': 'xnerd.ampscript-language',
+        'neighbor.esbenp.prettier-vscode': 'esbenp.prettier-vscode',
+        'neighbor.dbaeumer.vscode-eslint': 'dbaeumer.vscode-eslint',
+        'neighbor.MarketingThibs.ampscriptsnippets': 'MarketingThibs.ampscriptsnippets',
+        'neighbor.markdown-preview-bitbucket-innersource':
+            'joernberkefeld.markdown-preview-bitbucket-innersource',
+    };
+
+    /**
+     * Run the production detector against an inactive extension registry fixture.
+     * @param ids - installed extension identifiers
+     * @param hasReferences - whether another extension references this extension
+     * @returns the actual detector's boolean snapshot
+     */
+    function detect(ids: string[], hasReferences = false): Record<string, boolean> {
+        const originalAll = Object.getOwnPropertyDescriptor(vscode.extensions, 'all');
+        const originalLookup = Object.getOwnPropertyDescriptor(vscode.extensions, 'getExtension');
+        assert.ok(originalAll?.configurable, 'host registry must support safe restoration');
+        assert.ok(originalLookup?.configurable, 'host lookup must support safe restoration');
+        const installed = [
+            ...ids.map((id) => ({ id, isActive: false, packageJSON: {} })),
+            {
+                id: selfId,
+                isActive: false,
+                packageJSON: { extensionDependencies: [selfId], extensionPack: [selfId] },
+            },
+            {
+                id: 'unrelated.private-tool',
+                isActive: false,
+                packageJSON: hasReferences
+                    ? { extensionDependencies: [selfId], extensionPack: [selfId] }
+                    : {},
+            },
+        ];
+        try {
+            Object.defineProperties(vscode.extensions, {
+                all: { configurable: true, get: () => installed },
+                getExtension: {
+                    configurable: true,
+                    value: (id: string) => installed.find((extension) => extension.id === id),
+                },
+            });
+            const result = detectEcosystem(selfId);
+            const expectedKeys = TELEMETRY_EVENT_PROPERTIES['extension.activated'].filter(
+                (key) => key !== 'targetPlatform' && key !== 'ssjsFileMode'
+            );
+            assert.deepStrictEqual(
+                Object.keys(result).toSorted((a, b) => a.localeCompare(b)),
+                [...expectedKeys].toSorted((a, b) => a.localeCompare(b))
+            );
+            assert.ok(Object.values(result).every((value) => typeof value === 'boolean'));
+            assert.ok(!Object.hasOwn(result, 'neighbor.sfmc-language'));
+            assert.ok(!JSON.stringify(result).includes('unrelated.private-tool'));
+            assert.strictEqual(result.coInstalledAsDependency, hasReferences);
+            assert.strictEqual(result.coInstalledInPack, hasReferences);
+            for (const [key, id] of Object.entries(requested)) {
+                assert.strictEqual(
+                    result[key],
+                    ids.includes(id),
+                    `${key} must map exactly to ${id}`
+                );
+            }
+            return result;
+        } finally {
+            Object.defineProperties(vscode.extensions, {
+                all: originalAll,
+                getExtension: originalLookup,
+            });
+        }
+    }
+
+    test('absent neighbors are false and self references do not count', () => {
+        detect([]);
+    });
+
+    test('all requested inactive extensions are present and dependency/pack flags survive', () => {
+        detect(Object.values(requested), true);
+    });
+
+    for (const [key, id] of Object.entries(requested)) {
+        test(`mixed registry maps only ${key} to true`, () => {
+            detect([id]);
+        });
+    }
+});
+
 suite('Telemetry — language detection session dedup', () => {
     test('disabled detection does not poison dedup after re-enable', () => {
         const seen = new Set<string>();

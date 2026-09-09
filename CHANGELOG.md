@@ -2,6 +2,14 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.5.0] - 2026-09-09
+
+### Changed
+
+- Describe Handlebars rather than GTL in the extension's Marketplace summary; language IDs and functionality are unchanged.
+
+- Extend the activation telemetry allowlist with presence booleans for `xnerd.ampscript-language`, `esbenp.prettier-vscode`, `dbaeumer.vscode-eslint`, and `MarketingThibs.ampscriptsnippets`, preserving the existing Markdown preview signal. Presence is limited to the current extension host and does not require activation.
+
 ## [3.4.0] - 2026-09-09
 
 ### Added

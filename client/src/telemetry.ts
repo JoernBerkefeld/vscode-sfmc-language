@@ -13,6 +13,10 @@ export const TELEMETRY_EVENT_PROPERTIES = {
         'ssjsFileMode',
         'coInstalledAsDependency',
         'coInstalledInPack',
+        'neighbor.xnerd.ampscript-language',
+        'neighbor.esbenp.prettier-vscode',
+        'neighbor.dbaeumer.vscode-eslint',
+        'neighbor.MarketingThibs.ampscriptsnippets',
         'neighbor.sergey-agadzhanov.ampscript',
         'neighbor.FiB.ssjs-vsc',
         'neighbor.FiB.beautyAmp',
@@ -68,7 +72,7 @@ interface ActiveRequest {
 }
 
 /**
- * Small anonymous PostHog reporter gated by VS Code's global telemetry setting.
+ * Small pseudonymous PostHog reporter gated by VS Code's global telemetry setting.
  * Normal debounced sends are fire-and-forget; extension shutdown can await a
  * bounded final drain through `disposeAsync()`.
  */
@@ -262,6 +266,10 @@ export class TelemetryReporter implements vscode.Disposable {
 }
 
 const NEIGHBOR_ALLOWLIST: Record<string, string> = {
+    'neighbor.xnerd.ampscript-language': 'xnerd.ampscript-language',
+    'neighbor.esbenp.prettier-vscode': 'esbenp.prettier-vscode',
+    'neighbor.dbaeumer.vscode-eslint': 'dbaeumer.vscode-eslint',
+    'neighbor.MarketingThibs.ampscriptsnippets': 'MarketingThibs.ampscriptsnippets',
     'neighbor.sergey-agadzhanov.ampscript': 'sergey-agadzhanov.ampscript',
     'neighbor.FiB.ssjs-vsc': 'FiB.ssjs-vsc',
     'neighbor.FiB.beautyAmp': 'FiB.beautyAmp',
