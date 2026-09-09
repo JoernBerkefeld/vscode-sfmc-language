@@ -20,6 +20,18 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 **Variable resolution** means the language service infers the concrete type (and where possible, the value) held in a variable. Hovering over a local variable reveals its resolved type rather than a generic `any`. This is fully available in SSJS and planned for AMPscript in a future release.
 
+## Diagnostic documentation
+
+Click a diagnostic code in the Problems panel to open its rule documentation for the version that produced it:
+
+- Shared AMPscript, SSJS, GTL, and Handlebars diagnostics use canonical `sfmc/...` codes. Browse the [shared rule index](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.0.0/docs/rules/README.md) for triggers, fixes, variants, and suppression options. These links belong to the bundled **LSP version**, not the extension version.
+- TypeScript-backed SSJS diagnostics keep their numeric codes and `sfmc-ts` source. Their links belong to the **extension version**; see the [TypeScript diagnostic guide](docs/diagnostics/typescript.md) for documented codes and the fallback explanation for other compiler messages.
+- Quick fixes preserve the original diagnostic variant and payload, including embedded code. When ESLint-overlap suppression is enabled, the AttributeValue recommendation is now suppressed with its corresponding ESLint rule. ESLint parser failures and third-party rules are not relabeled as SFMC rules.
+
+For adapter integrations, see the [LSP diagnostic-contract migration notes](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.0.0/README.md#diagnostic-identities-and-documentation). Development builds use prospective version links, which may not resolve until a **new tag contains both implementation and documentation**; there is no fallback to a moving branch or an older release.
+
+Extension **3.4.0** adopts the published LSP `^4.0.0` at both dependency sites and bundles its `ssjs-data` 2.1.0 catalog. Release verification uses clean registry installs and `npm run verify:lsp-release --no-workspaces` to check the actual bundled LSP against its immutable tagged documentation; local tarball acceptance alone is not release evidence.
+
 ## AMPscript
 
 ### Syntax Highlighting

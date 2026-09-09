@@ -2,6 +2,23 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.4.0] - 2026-09-09
+
+### Added
+
+- Clickable Problems-panel documentation for shared AMPscript, SSJS, GTL, and Handlebars diagnostics, pinned to the owning LSP version. TypeScript-backed SSJS diagnostics retain numeric codes and link to extension-versioned guidance, with a generic fallback for other compiler codes.
+- Release safeguards check owning-version documentation and bundled diagnostic URLs, including the actual installed LSP's tagged rule pages before extension publication.
+
+### Changed
+
+- Shared diagnostics now expose canonical `sfmc/...` rule IDs. Quick fixes preserve internal variants and original payloads through standalone and embedded publication; see the README migration guidance for adapter integrations.
+- ESLint-overlap suppression now also suppresses the AttributeValue recommendation when enabled.
+
+### Dependencies
+
+- Upgrade the bundled `sfmc-language-lsp` from 3.17.1 to 4.0.0 at both extension and server dependency sites, adopting the versioned diagnostic contract.
+- Upgrade the transitive `ssjs-data` catalog from 2.0.0 to 2.1.0, including additional unsupported ECMAScript methods and their documented Engagement support evidence. `ampscript-data` remains at 4.0.0.
+
 ## [3.3.3] - 2026-09-03
 
 ### Dependencies

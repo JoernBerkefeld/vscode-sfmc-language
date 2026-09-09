@@ -9,6 +9,7 @@
  * that return LSP-typed results ready to merge into the server handlers.
  */
 import * as ts from 'typescript';
+import { getTypescriptDiagnosticUrl } from './diagnostic-documentation';
 import * as fs from 'node:fs';
 // eslint-disable-next-line unicorn/import-style
 import * as path from 'node:path';
@@ -1092,6 +1093,7 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
             source: 'sfmc-ts',
             message,
             code: d.code,
+            codeDescription: { href: getTypescriptDiagnosticUrl(d.code) },
         });
     }
     return results;

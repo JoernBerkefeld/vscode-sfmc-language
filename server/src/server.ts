@@ -279,11 +279,74 @@ connection.onCodeAction(async (parameters): Promise<CodeAction[]> => {
         languageId: getDocumentLanguage(document),
         uri: document.uri,
     };
-    return sfmcLanguageService.getCodeActions(
+    const effective = effectiveSettings(document, settings);
+    const actions = sfmcLanguageService.getCodeActions(
         document_,
         parameters.context.diagnostics,
-        effectiveSettings(document, settings)
+        effective
     ) as CodeAction[];
+    if (document_.languageId !== 'ampscript') return actions;
+
+    // Generate embedded actions against region-local text: passing padded HTML
+    // would let helper/polyfill insertions escape to the start of the document.
+    for (const region of getSsjsRegions(document_.text)) {
+        const local = TextDocument.create(
+            document.uri,
+            'ssjs',
+            document.version,
+            document_.text.slice(region.start, region.end)
+        );
+        const diagnostics = parameters.context.diagnostics.filter(
+            (diagnostic) =>
+                diagnostic.source === 'ssjs' &&
+                document.offsetAt(diagnostic.range.start) >= region.start &&
+                document.offsetAt(diagnostic.range.end) <= region.end
+        );
+        const localDiagnostics = diagnostics.map((diagnostic) => ({
+            ...diagnostic,
+            range: {
+                start: local.positionAt(document.offsetAt(diagnostic.range.start) - region.start),
+                end: local.positionAt(document.offsetAt(diagnostic.range.end) - region.start),
+            },
+        }));
+        const localActions = sfmcLanguageService.getCodeActions(
+            { text: local.getText(), languageId: 'ssjs', uri: document.uri },
+            localDiagnostics,
+            effective
+        );
+        for (const action of localActions) {
+            actions.push({
+                ...action,
+                diagnostics: action.diagnostics?.map((diagnostic) => ({
+                    ...diagnostic,
+                    range: {
+                        start: document.positionAt(
+                            region.start + local.offsetAt(diagnostic.range.start)
+                        ),
+                        end: document.positionAt(
+                            region.start + local.offsetAt(diagnostic.range.end)
+                        ),
+                    },
+                })),
+                edit: action.edit && {
+                    changes: {
+                        [document.uri]: (action.edit.changes?.[document.uri] ?? []).map((edit) => ({
+                            ...edit,
+                            range: {
+                                start: document.positionAt(
+                                    region.start + local.offsetAt(edit.range.start)
+                                ),
+                                end: document.positionAt(
+                                    region.start + local.offsetAt(edit.range.end)
+                                ),
+                            },
+                        })),
+                    },
+                },
+            });
+        }
+    }
+    return actions;
 });
 
 // ---------------------------------------------------------------------------

@@ -286,16 +286,20 @@
     "package:test": "npx @vscode/vsce package --no-dependencies --pre-release -o sfmc-language-BETA.vsix",
     "publish": "npx @vscode/vsce publish --no-dependencies",
     "publish:pre-release": "npx @vscode/vsce publish --no-dependencies --pre-release",
-    "lint": "eslint server/src client/src eslint.config.mjs",
-    "lint:fix": "eslint --fix server/src client/src eslint.config.mjs",
+    "lint": "eslint server/src client/src eslint.config.mjs scripts/validate-diagnostic-documentation.mjs scripts/validate-diagnostic-documentation.test.mjs scripts/test-server-artifact.mjs scripts/test-server-artifact.test.mjs scripts/validate-lsp-release.mjs scripts/validate-lsp-release.test.mjs",
+    "lint:fix": "eslint --fix server/src client/src eslint.config.mjs scripts/validate-diagnostic-documentation.mjs scripts/validate-diagnostic-documentation.test.mjs scripts/test-server-artifact.mjs scripts/test-server-artifact.test.mjs scripts/validate-lsp-release.mjs scripts/validate-lsp-release.test.mjs",
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "postinstall": "cd client && npm install --no-workspaces && cd ../server && npm install --no-workspaces && cd .. && npm run copy-globals",
     "test:bundle": "node ./scripts/test-bundle.mjs",
+    "test:server-artifact": "node --test scripts/test-server-artifact.test.mjs",
     "test:deps": "node ./scripts/check-client-mocha-types.mjs",
     "test:telemetry-catalog": "node ./scripts/validate-telemetry-catalog.mjs",
-    "test": "npm run test:deps && npm run test:telemetry-catalog && npm run test:bundle && node ./client/out/test/run-test"
+    "test:diagnostic-docs": "node --test scripts/validate-diagnostic-documentation.test.mjs scripts/validate-lsp-release.test.mjs",
+    "verify:lsp-release": "node scripts/validate-lsp-release.mjs",
+    "verify:release-docs": "node scripts/validate-diagnostic-documentation.mjs --release",
+    "test": "npm run test:deps && npm run test:telemetry-catalog && npm run test:diagnostic-docs && npm run test:server-artifact && npm run test:bundle && node ./client/out/test/run-test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -319,7 +323,7 @@
     "undici-types": "^8.10.0"
   },
   "dependencies": {
-    "sfmc-language-lsp": "^3.17.1"
+    "sfmc-language-lsp": "^4.0.0"
   },
   "overrides": {
     "diff": "^9.0.0",

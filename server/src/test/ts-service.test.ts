@@ -23,6 +23,11 @@ import {
     getSsjsReferences,
 } from '../ts-service';
 
+import {
+    DOCUMENTED_TYPESCRIPT_CODES,
+    getTypescriptDiagnosticUrl,
+} from '../diagnostic-documentation';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -117,6 +122,57 @@ test('removeSsjsDocument cleans up without error', () => {
 // Suite: diagnostics
 // ---------------------------------------------------------------------------
 console.log('Suite: diagnostics');
+
+test('Documentation routes use the root version and real bounded anchors', () => {
+    const root = path.resolve(__dirname, '../../..');
+    const { version } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')) as {
+        version: string;
+    };
+    const documentation = readFileSync(path.join(root, 'docs/diagnostics/typescript.md'), 'utf8');
+    assert.deepStrictEqual(DOCUMENTED_TYPESCRIPT_CODES, [2304, 2339]);
+    for (const code of [...DOCUMENTED_TYPESCRIPT_CODES, 1005, 999_999]) {
+        const anchor: string = DOCUMENTED_TYPESCRIPT_CODES.includes(code)
+            ? `ts${code}`
+            : 'other-diagnostics';
+        assert.strictEqual(
+            getTypescriptDiagnosticUrl(code),
+            `https://github.com/JoernBerkefeld/vscode-sfmc-language/blob/v${version}/docs/diagnostics/typescript.md#${anchor}`
+        );
+        const heading = anchor === 'other-diagnostics' ? 'Other diagnostics' : anchor.toUpperCase();
+        assert.ok(
+            documentation.includes(`## ${heading}\n`),
+            `Missing documentation heading: ${heading}`
+        );
+    }
+});
+
+for (const [expectedCode, code] of [
+    [2304, 'var result = missingDocumentationVariable;'],
+    [2339, 'var result = "value"; result.missingDocumentationProperty;'],
+    [1005, 'var result = (1;'],
+] as const) {
+    test(`Emitted TS${expectedCode} retains its numeric code and documentation route`, () => {
+        const uri = `file:///documentation-${expectedCode}.ssjs`;
+        try {
+            updateSsjsDocument(uri, code);
+            const diagnostics = getSsjsDiagnostics(uri);
+            assert.ok(
+                diagnostics.some((diagnostic) => diagnostic.code === expectedCode),
+                `Expected TS${expectedCode}, got ${JSON.stringify(diagnostics)}`
+            );
+            for (const diagnostic of diagnostics) {
+                assert.strictEqual(diagnostic.source, 'sfmc-ts');
+                assert.strictEqual(typeof diagnostic.code, 'number');
+                assert.strictEqual(
+                    diagnostic.codeDescription?.href,
+                    getTypescriptDiagnosticUrl(diagnostic.code as number)
+                );
+            }
+        } finally {
+            removeSsjsDocument(uri);
+        }
+    });
+}
 
 test('No diagnostics for valid SSJS', () => {
     const code = 'var x = "hello"; var y = x.toUpperCase();';

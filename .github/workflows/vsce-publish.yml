@@ -16,14 +16,30 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v7
+              with:
+                  ref: refs/tags/${{ github.event.release.tag_name }}
             - uses: actions/setup-node@v6
               with:
                   node-version: "24"
 
             - run: npm ci
+            # This checkout proves only extension-owned TS docs. LSP docs belong to the LSP release gate.
+            - name: Verify release tag and extension diagnostic docs
+              run: npm run verify:release-docs --no-workspaces
+              env:
+                  RELEASE_TAG: ${{ github.event.release.tag_name }}
             # Blocks the release if the shipped esbuild bundle is not OS-portable
             # (e.g. a build-machine absolute path baked into import.meta.url). Runs
             # before the heavy host tests so a broken bundle fails fast.
+            # Executes the full relocated server and both installed LSP entry graphs offline.
+            # Independently read LSP documentation at its exact immutable tag commit.
+            # Matching installed and emitted versions alone is not release provenance.
+            - name: Verify exact bundled LSP tag documentation (release-only network)
+              run: npm run verify:lsp-release --no-workspaces
+              env:
+                  GH_TOKEN: ${{ github.token }}
+            - name: Verify server artifact and installed LSP identity
+              run: npm run test:server-artifact --no-workspaces
             - name: Verify client bundle is OS-portable
               run: npm run test:bundle
             - run: npm run compile
@@ -37,11 +53,24 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v7
+              with:
+                  ref: refs/tags/${{ github.event.release.tag_name }}
             - uses: actions/setup-node@v6
               with:
                   node-version: "24"
 
             - run: npm ci
+            # This checkout proves only extension-owned TS docs. LSP docs belong to the LSP release gate.
+            - name: Verify release tag and extension diagnostic docs
+              run: npm run verify:release-docs --no-workspaces
+              env:
+                  RELEASE_TAG: ${{ github.event.release.tag_name }}
+            - name: Verify exact bundled LSP tag documentation (release-only network)
+              run: npm run verify:lsp-release --no-workspaces
+              env:
+                  GH_TOKEN: ${{ github.token }}
+            - name: Verify server artifact and installed LSP identity
+              run: npm run test:server-artifact --no-workspaces
             - name: Package VSIX
               run: npx @vscode/vsce package --no-dependencies
             - name: Publish to VS Code Marketplace

@@ -306,6 +306,11 @@ sendDef.Update({ Name: "Nightly Send v2" });
 sendDef.Remove();
 
 // -----------------------------------------------------------------------------
+// New (ssjs-data 2.1.0): unsupported ECMAScript negative example.
+// Uncomment only to inspect the TypeScript-backed unsupported-member diagnostic;
+// this is intentionally invalid in Engagement, not a supported coding example.
+// Object.fromEntries([]);
+
 // New (ssjs-data 1.4.0): Core-version-aware ErrorUtil diagnostic
 // -----------------------------------------------------------------------------
 
