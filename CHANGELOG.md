@@ -2,6 +2,22 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.6.0] - 2026-10-02
+
+### Added
+
+- Surface the LSP's `sfmc/amp-prefer-boolean-literal` diagnostic and preferred quick fixes for valid numeric or quoted boolean-like AMPscript arguments.
+
+### Changed
+
+- AMPscript hover documentation prefers dedicated `sfmc.guide` pages while preserving Salesforce Developers links, and includes refreshed Marketing Cloud Next guidance from the Winter '27 catalog.
+- Refresh Handlebars validation and parsing through the updated shared language service.
+
+### Dependencies
+
+- Upgrade the bundled `sfmc-language-lsp` from 4.0.0 to 4.2.1 at both extension and server dependency sites.
+- Upgrade the transitive `ampscript-data` catalog from 4.0.0 to 4.2.0 and `ssjs-data` from 2.1.0 to 2.1.1.
+
 ## [3.5.0] - 2026-09-09
 
 ### Changed

@@ -11,13 +11,14 @@ test('both extension dependency sites declare the published diagnostic contract'
         const lock = JSON.parse(
             readFileSync(new URL(`${prefix}package-lock.json`, import.meta.url), 'utf8')
         );
-        assert.equal(manifest.dependencies['sfmc-language-lsp'], '^4.0.0');
-        assert.equal(lock.packages['node_modules/sfmc-language-lsp'].version, '4.0.0');
-        assert.equal(lock.packages['node_modules/ssjs-data'].version, '2.1.0');
+        assert.equal(manifest.dependencies['sfmc-language-lsp'], '^4.2.1');
+        assert.equal(lock.packages['node_modules/sfmc-language-lsp'].version, '4.2.1');
+        assert.equal(lock.packages['node_modules/ampscript-data'].version, '4.2.0');
+        assert.equal(lock.packages['node_modules/ssjs-data'].version, '2.1.1');
     }
 });
 
-const identity = { manifest: { name: 'sfmc-language-lsp', version: '4.0.0' } };
+const identity = { manifest: { name: 'sfmc-language-lsp', version: '4.2.1' } };
 const rules = [
     {
         ruleId: 'sfmc/amp-no-unknown-function',
@@ -55,6 +56,13 @@ function reader(documents) {
 test('release-only validation checks actual tag documents offline', async () => {
     const read = reader(files());
     assert.equal(await validateTaggedLsp(identity, rules, read), 1);
+});
+
+test('release-only validation accepts CRLF tagged documentation', async () => {
+    const documents = files();
+    const path = rules[0].documentationPath;
+    documents.set(path, documents.get(path).replaceAll('\n', '\r\n'));
+    assert.equal(await validateTaggedLsp(identity, rules, reader(documents)), 1);
 });
 
 test('matching installed and tagged versions do not excuse missing tagged docs', async () => {

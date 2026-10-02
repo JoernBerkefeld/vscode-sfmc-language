@@ -240,3 +240,26 @@ SET @barcode = BarcodeURL("12345", "qr", 200, 200, "", true, "scan me", 0, false
   SET @portfolio = GetPortfolioItem("my-portfolio-key")
   SET @socialContent = GetPublishedSocialContent("socialContentId")
 ]%%
+
+/* New (sfmc-language-lsp 4.2.1): boolean-like literals and preferred quick fixes.
+   - Bare true/false are accepted without the preference warning.
+   - 1, 0 and quoted equivalents remain valid but warn with a quick fix.
+   - Invalid values such as "yes" produce only the argument-value error. */
+%%[
+  RaiseError("stop", true, "", 0, false)
+  RaiseError("stop", 1, "", 0, "0")
+  /* RaiseError("stop", true, "", 0, "yes") */
+
+  /* BarcodeURL.showText is boolean-like, so 1 should suggest bare true. */
+  SET @booleanBarcode = BarcodeURL("123", "code128auto", 300, 100, "", 1)
+
+  /* This numeric enum is not boolean-like and must not show the preference warning. */
+  SET @crmState = SetStateMscrmRecord("record-id", "contact", "active", 1)
+]%%
+
+/* New (ampscript-data 4.2.0): MC Next RegExMatch behavior guidance.
+   In targetPlatform "next", hover should describe the different regex engine and
+   the supported literal option names. */
+%%[
+  SET @regexResult = RegExMatch("Example123", "([A-Za-z]+)([0-9]+)", 1, "IgnoreCase")
+]%%

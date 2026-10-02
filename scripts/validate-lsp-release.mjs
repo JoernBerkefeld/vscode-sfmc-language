@@ -34,9 +34,13 @@ export async function validateTaggedLsp(identity, rules, readTaggedFile) {
         assert.equal(rule.documentationPath, expected);
         if (pages.has(expected)) continue;
         const content = await readTaggedFile(expected);
-        assert.ok(content.startsWith(`# ${rule.ruleId}\n`), `Wrong tagged heading: ${expected}`);
+        const normalizedContent = content.replaceAll('\r\n', '\n');
         assert.ok(
-            content.length > 700 && content.includes('```'),
+            normalizedContent.startsWith(`# ${rule.ruleId}\n`),
+            `Wrong tagged heading: ${expected}`
+        );
+        assert.ok(
+            normalizedContent.length > 700 && normalizedContent.includes('```'),
             `Missing tagged guidance: ${expected}`
         );
         assert.ok(
