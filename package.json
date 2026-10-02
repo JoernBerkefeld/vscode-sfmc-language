@@ -308,7 +308,7 @@
     "@types/node": "^24.13.3",
     "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.28.1",
-    "eslint": "^10.8.0",
+    "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsdoc": "^63.3.3",
     "eslint-plugin-prettier": "^5.5.6",
