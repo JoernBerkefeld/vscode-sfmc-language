@@ -3,9 +3,9 @@ import Mocha from 'mocha';
 import { glob } from 'glob';
 
 /**
- * Discover and run the Mocha test suite for the extension integration tests.
- * @returns a promise that resolves when all tests pass, or rejects on failure
- */
+Discover and run the Mocha test suite for the extension integration tests.
+@returns a promise that resolves when all tests pass, or rejects on failure
+*/
 export async function run(): Promise<void> {
     const mocha = new Mocha({
         ui: 'tdd',

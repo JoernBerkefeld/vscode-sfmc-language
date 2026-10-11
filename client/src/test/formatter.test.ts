@@ -12,21 +12,21 @@ import {
 import { getDocumentUri } from './helper';
 
 /**
- * Locale-aware string comparator for deterministic array sorting in assertions.
- * @param a - first string
- * @param b - second string
- * @returns negative, zero, or positive per `String#localeCompare`
- */
+Locale-aware string comparator for deterministic array sorting in assertions.
+@param a - first string
+@param b - second string
+@returns negative, zero, or positive per `String#localeCompare`
+*/
 const byLocale = (a: string, b: string): number => a.localeCompare(b);
 
 /**
- * Open a fixture document and force it to the given language ID so the
- * formatter's language-based dispatch is exercised regardless of VS Code's own
- * file-association guess.
- * @param fixture - fixture-relative path
- * @param languageId - language ID to apply
- * @returns the opened text document
- */
+Open a fixture document and force it to the given language ID so the
+formatter's language-based dispatch is exercised regardless of VS Code's own
+file-association guess.
+@param fixture - fixture-relative path
+@param languageId - language ID to apply
+@returns the opened text document
+*/
 async function openAs(fixture: string, languageId: string): Promise<vscode.TextDocument> {
     const document = await vscode.workspace.openTextDocument(getDocumentUri(fixture));
     return vscode.languages.setTextDocumentLanguage(document, languageId);

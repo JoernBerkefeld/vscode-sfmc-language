@@ -8,7 +8,7 @@ suite('AMPscript Diagnostics', () => {
     test('Detects unmatched block delimiters', async () => {
         await activate(documentUri);
 
-        await sleep(2000);
+        await sleep();
         const actualDiagnostics = vscode.languages.getDiagnostics(documentUri);
 
         assert.ok(actualDiagnostics.length > 0, 'Should produce at least one diagnostic');
@@ -25,7 +25,7 @@ suite('AMPscript Invalid Syntax Diagnostics', () => {
 
     suiteSetup(async () => {
         await activate(documentUri);
-        await sleep(2000);
+        await sleep();
         diags = vscode.languages
             .getDiagnostics(documentUri)
             .filter((d) => d.source === 'ampscript');
@@ -97,10 +97,9 @@ suite('AMPscript Invalid Syntax Diagnostics', () => {
 });
 
 /**
- * Resolve to a promise after the given delay.
- * @param ms - delay in milliseconds
- * @returns a promise that resolves after the delay
- */
-function sleep(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+Resolve to a promise after the two-second diagnostic settling delay.
+@returns a promise that resolves after the delay
+*/
+function sleep() {
+    return new Promise((resolve) => setTimeout(resolve, 2000));
 }

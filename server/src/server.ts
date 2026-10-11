@@ -1,9 +1,9 @@
 /**
- * SFMC Language Server
- *
- * Thin LSP adapter — all language intelligence is delegated to sfmc-language-lsp.
- * This file owns only the connection lifecycle, document management, and settings.
- */
+SFMC Language Server
+
+Thin LSP adapter — all language intelligence is delegated to sfmc-language-lsp.
+This file owns only the connection lifecycle, document management, and settings.
+*/
 import {
     createConnection,
     TextDocuments,
@@ -116,10 +116,10 @@ connection.onDidChangeConfiguration((change) => {
 });
 
 /**
- * Resolve the effective settings for a document, caching per-resource results.
- * @param resource - the document URI to resolve settings for
- * @returns a promise resolving to the settings for that document
- */
+Resolve the effective settings for a document, caching per-resource results.
+@param resource - the document URI to resolve settings for
+@returns a promise resolving to the settings for that document
+*/
 async function getDocumentSettings(resource: string): Promise<SfmcSettings> {
     if (!capabilityState.hasConfigCapability) {
         return settingsState.globalSettings;
@@ -143,21 +143,21 @@ async function getDocumentSettings(resource: string): Promise<SfmcSettings> {
 // ---------------------------------------------------------------------------
 
 /**
- * True when the document is a Handlebars file. `.hbs` uses VS Code's built-in
- * `handlebars` language id (HTML + Handlebars). Handlebars is Marketing Cloud
- * Next-only, so these documents always run in MCN mode (see effectiveSettings).
- * @param document - the text document to test
- * @returns true if the document is Handlebars (by language id or .hbs extension)
- */
+True when the document is a Handlebars file. `.hbs` uses VS Code's built-in
+`handlebars` language id (HTML + Handlebars). Handlebars is Marketing Cloud
+Next-only, so these documents always run in MCN mode (see effectiveSettings).
+@param document - the text document to test
+@returns true if the document is Handlebars (by language id or .hbs extension)
+*/
 function isHandlebarsDocument(document: TextDocument): boolean {
     return document.languageId === 'handlebars' || document.uri.toLowerCase().endsWith('.hbs');
 }
 
 /**
- * Map a document to the language the SFMC language service should treat it as.
- * @param document - the text document to classify
- * @returns 'ssjs' for SSJS documents, otherwise 'ampscript' (also used for Handlebars)
- */
+Map a document to the language the SFMC language service should treat it as.
+@param document - the text document to classify
+@returns 'ssjs' for SSJS documents, otherwise 'ampscript' (also used for Handlebars)
+*/
 function getDocumentLanguage(document: TextDocument): 'ampscript' | 'ssjs' {
     if (document.languageId === 'ssjs') return 'ssjs';
     if (document.languageId === 'ampscript' || document.languageId === 'sfmc') return 'ampscript';
@@ -167,19 +167,16 @@ function getDocumentLanguage(document: TextDocument): 'ampscript' | 'ssjs' {
 }
 
 /**
- * Return settings adjusted for the given document. Handlebars documents always
- * target Marketing Cloud Next so their MCN Handlebars intelligence (validation,
- * completions, hover, signature help, code actions) is available regardless of
- * the user's `sfmcLanguageServer.targetPlatform` setting.
- * @param document - the text document being processed
- * @param settings - the resolved settings for the document
- * @returns settings with `targetPlatform: 'next'` forced for Handlebars docs
- */
+Return settings adjusted for the given document. Handlebars documents always
+target Marketing Cloud Next so their MCN Handlebars intelligence (validation,
+completions, hover, signature help, code actions) is available regardless of
+the user's `sfmcLanguageServer.targetPlatform` setting.
+@param document - the text document being processed
+@param settings - the resolved settings for the document
+@returns settings with `targetPlatform: 'next'` forced for Handlebars docs
+*/
 function effectiveSettings(document: TextDocument, settings: SfmcSettings): SfmcSettings {
-    if (isHandlebarsDocument(document)) {
-        return { ...settings, targetPlatform: 'next' };
-    }
-    return settings;
+    return isHandlebarsDocument(document) ? { ...settings, targetPlatform: 'next' } : settings;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,10 +185,10 @@ function effectiveSettings(document: TextDocument, settings: SfmcSettings): Sfmc
 // in a visible tab, which breaks extension tests and some editor scenarios.
 // ---------------------------------------------------------------------------
 /**
- * Compute and publish diagnostics for a document (SFMC LSP + embedded SSJS TS).
- * @param uri - the document URI to validate and publish diagnostics for
- * @returns a promise that resolves once diagnostics have been sent
- */
+Compute and publish diagnostics for a document (SFMC LSP + embedded SSJS TS).
+@param uri - the document URI to validate and publish diagnostics for
+@returns a promise that resolves once diagnostics have been sent
+*/
 async function sendDiagnosticsForDocument(uri: string): Promise<void> {
     const document = documents.get(uri);
     if (!document) {
@@ -230,9 +227,9 @@ async function sendDiagnosticsForDocument(uri: string): Promise<void> {
 }
 
 /**
- * Keep the embedded TypeScript virtual file in sync with the document's SSJS.
- * @param document - the text document whose SSJS content should be synced
- */
+Keep the embedded TypeScript virtual file in sync with the document's SSJS.
+@param document - the text document whose SSJS content should be synced
+*/
 function syncSsjsVirtualFile(document: TextDocument): void {
     const lang = getDocumentLanguage(document);
     const text = document.getText();
@@ -432,8 +429,7 @@ connection.onHover(async (parameters) => {
     // TS hover now carries full docs (description, @param, @returns, @example, ssjs.guide link)
     // so it is self-sufficient.  The SFMC LSP hover is used only as a fallback for symbols
     // that have no TS declaration (ECMAScript builtins, local user functions, etc.).
-    if (tsHover) return tsHover;
-    return sfmcHover;
+    return tsHover || sfmcHover;
 });
 
 // ---------------------------------------------------------------------------
@@ -459,14 +455,13 @@ connection.onSignatureHelp(async (parameters) => {
         document_.languageId === 'ssjs' ||
         (document_.languageId === 'ampscript' &&
             isInSsjsRegion(getSsjsRegions(document_.text), document.offsetAt(parameters.position)));
-    if (isInSsjsContext) {
-        return getSsjsSignatureHelp(document.uri, parameters.position);
-    }
-    return sfmcLanguageService.getSignatureHelp(
-        document_,
-        textUpToCursor,
-        effectiveSettings(document, settings)
-    );
+    return isInSsjsContext
+        ? getSsjsSignatureHelp(document.uri, parameters.position)
+        : sfmcLanguageService.getSignatureHelp(
+              document_,
+              textUpToCursor,
+              effectiveSettings(document, settings)
+          );
 });
 
 // ---------------------------------------------------------------------------
@@ -510,8 +505,7 @@ connection.onDefinition((parameters: DefinitionParams): Location | Location[] | 
         uri: document.uri,
     };
     const location = sfmcLanguageService.getDefinition(document_, word);
-    if (!location) return undefined;
-    return { uri: document.uri, range: location.range };
+    return location ? { uri: document.uri, range: location.range } : undefined;
 });
 
 // ---------------------------------------------------------------------------
@@ -552,11 +546,11 @@ interface SsjsRegion {
 }
 
 /**
- * Return character-offset ranges of all SSJS script blocks in the document.
- * Matches `<script runat="server">` WITHOUT `language="ampscript"`.
- * @param text - full document text
- * @returns array of {start, end} character offsets for SSJS content
- */
+Return character-offset ranges of all SSJS script blocks in the document.
+Matches `<script runat="server">` WITHOUT `language="ampscript"`.
+@param text - full document text
+@returns array of {start, end} character offsets for SSJS content
+*/
 function getSsjsRegions(text: string): SsjsRegion[] {
     const regions: SsjsRegion[] = [];
     const openTag =
@@ -575,23 +569,23 @@ function getSsjsRegions(text: string): SsjsRegion[] {
 }
 
 /**
- * Return true if the character offset falls within any SSJS region.
- * @param regions - SSJS regions from getSsjsRegions()
- * @param offset - character offset to test
- * @returns true if inside a SSJS region
- */
+Return true if the character offset falls within any SSJS region.
+@param regions - SSJS regions from getSsjsRegions()
+@param offset - character offset to test
+@returns true if inside a SSJS region
+*/
 function isInSsjsRegion(regions: SsjsRegion[], offset: number): boolean {
     return regions.some((r) => offset >= r.start && offset <= r.end);
 }
 
 /**
- * Return a document-length string containing only SSJS content with all other
- * characters replaced by spaces (newlines preserved to keep line numbers stable).
- * This lets the TypeScript service use the same character offsets as the HTML file.
- * @param text - full document text
- * @param regions - SSJS regions from getSsjsRegions()
- * @returns whitespace-padded string of same length as text
- */
+Return a document-length string containing only SSJS content with all other
+characters replaced by spaces (newlines preserved to keep line numbers stable).
+This lets the TypeScript service use the same character offsets as the HTML file.
+@param text - full document text
+@param regions - SSJS regions from getSsjsRegions()
+@returns whitespace-padded string of same length as text
+*/
 function extractSsjsContent(text: string, regions: SsjsRegion[]): string {
     const out: string[] = [];
     let pos = 0;

@@ -44,8 +44,8 @@ export const TELEMETRY_COMMON_PROPERTIES = [
 export type TelemetryEventName = keyof typeof TELEMETRY_EVENT_PROPERTIES;
 
 /**
- * Runtime dependencies that are injectable only for deterministic lifecycle tests.
- */
+Runtime dependencies that are injectable only for deterministic lifecycle tests.
+*/
 export interface TelemetryRuntime {
     fetch: typeof fetch | undefined;
     isEnabled: () => boolean;
@@ -72,10 +72,10 @@ interface ActiveRequest {
 }
 
 /**
- * Small pseudonymous PostHog reporter gated by VS Code's global telemetry setting.
- * Normal debounced sends are fire-and-forget; extension shutdown can await a
- * bounded final drain through `disposeAsync()`.
- */
+Small pseudonymous PostHog reporter gated by VS Code's global telemetry setting.
+Normal debounced sends are fire-and-forget; extension shutdown can await a
+bounded final drain through `disposeAsync()`.
+*/
 export class TelemetryReporter implements vscode.Disposable {
     private readonly commonProps: Record<string, TelemetryValue>;
     private readonly distinctId: string;
@@ -89,9 +89,9 @@ export class TelemetryReporter implements vscode.Disposable {
     private readonly changeSubscription: vscode.Disposable;
 
     /**
-     * @param options - the emitting extension's short name and own version
-     * @param runtime - optional deterministic runtime seam for lifecycle tests
-     */
+    @param options - the emitting extension's short name and own version
+    @param runtime - optional deterministic runtime seam for lifecycle tests
+    */
     constructor(options: TelemetryReporterOptions, runtime?: TelemetryRuntime) {
         this.runtime =
             runtime ??
@@ -113,27 +113,29 @@ export class TelemetryReporter implements vscode.Disposable {
         };
         this.changeSubscription = this.runtime.onDidChangeEnabled((isEnabled) => {
             this.enabled = isEnabled;
-            if (!isEnabled) {
-                this.clearPending();
-                this.abortActiveRequests();
+            if (isEnabled) {
+                return;
             }
+
+            this.clearPending();
+            this.abortActiveRequests();
         });
     }
 
     /**
-     * Whether the reporter currently accepts events.
-     * @returns true while consent is enabled and the reporter is active
-     */
+    Whether the reporter currently accepts events.
+    @returns true while consent is enabled and the reporter is active
+    */
     get isEnabled(): boolean {
         return !this.disposed && this.enabled && this.runtime.isEnabled();
     }
 
     /**
-     * Enqueue an event for the next debounced flush.
-     * @param event - event name listed in telemetry.json
-     * @param [properties] - flat custom event properties
-     * @returns true only when the event was accepted
-     */
+    Enqueue an event for the next debounced flush.
+    @param event - event name listed in telemetry.json
+    @param [properties] - flat custom event properties
+    @returns true only when the event was accepted
+    */
     track(event: TelemetryEventName, properties?: Record<string, TelemetryValue>): boolean {
         if (!this.isEnabled) return false;
         this.queue.push({
@@ -154,15 +156,15 @@ export class TelemetryReporter implements vscode.Disposable {
 
     /**
     Send the current queue without blocking the caller.
-     */
+    */
     flush(): void {
         void this.flushAsync();
     }
 
     /**
-     * Synchronously dispose for VS Code's Disposable contract. Pending and
-     * active telemetry is cancelled; repeated calls are harmless.
-     */
+    Synchronously dispose for VS Code's Disposable contract. Pending and
+    active telemetry is cancelled; repeated calls are harmless.
+    */
     dispose(): void {
         if (this.disposed) return;
         this.disposed = true;
@@ -172,11 +174,11 @@ export class TelemetryReporter implements vscode.Disposable {
     }
 
     /**
-     * Flush queued telemetry and await all active sends, bounded to two seconds.
-     * This is separate from dispose() so the final request is not immediately
-     * aborted by synchronous subscription disposal.
-     * @returns a promise settled after delivery or the shutdown timeout
-     */
+    Flush queued telemetry and await all active sends, bounded to two seconds.
+    This is separate from dispose() so the final request is not immediately
+    aborted by synchronous subscription disposal.
+    @returns a promise settled after delivery or the shutdown timeout
+    */
     disposeAsync(): Promise<void> {
         if (this.asyncDisposal) return this.asyncDisposal;
         if (this.disposed) return Promise.resolve();
@@ -284,10 +286,10 @@ const NEIGHBOR_ALLOWLIST: Record<string, string> = {
 };
 
 /**
- * Compute passive extension co-installation properties.
- * @param selfId - caller's publisher-qualified extension id
- * @returns flat ecosystem booleans
- */
+Compute passive extension co-installation properties.
+@param selfId - caller's publisher-qualified extension id
+@returns flat ecosystem booleans
+*/
 export function detectEcosystem(selfId: string): Record<string, boolean> {
     const result: Record<string, boolean> = {};
     let isCoInstalledAsDependency = false;

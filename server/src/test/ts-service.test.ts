@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 /**
- * ts-service.test.ts — standalone Node.js unit tests for the embedded
- * TypeScript language service.
- *
- * Run with:  npx ts-node --project tsconfig.json src/test/ts-service.test.ts
- * Or compile + run:  npx tsc --ignoreDeprecations 6.0 && node out/test/ts-service.test.js
- *
- * No VS Code runtime required — pure Node.js / TypeScript.
- */
+ts-service.test.ts — standalone Node.js unit tests for the embedded
+TypeScript language service.
+
+Run with:  npx ts-node --project tsconfig.json src/test/ts-service.test.ts
+Or compile + run:  npx tsc --ignoreDeprecations 6.0 && node out/test/ts-service.test.js
+
+No VS Code runtime required — pure Node.js / TypeScript.
+*/
 import * as assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -37,10 +37,10 @@ import {
 const counters = { test: 0, pass: 0, fail: 0 };
 
 /**
- * Register and run a single lightweight test case, tracking pass/fail counts.
- * @param name - the test description
- * @param function_ - the test body (may be async)
- */
+Register and run a single lightweight test case, tracking pass/fail counts.
+@param name - the test description
+@param function_ - the test body (may be async)
+*/
 function test(name: string, function_: () => void | Promise<void>): void {
     counters.test += 1;
     const index = counters.test;
@@ -76,10 +76,10 @@ const URI_PLATFORM = 'file:///test-platform.ssjs';
 
 // Coordinate helper: column 0 of the last line of a code string
 /**
- * Compute the position at the end of the last line of a code string.
- * @param code - the source string
- * @returns an LSP-style position at the end of the final line
- */
+Compute the position at the end of the last line of a code string.
+@param code - the source string
+@returns an LSP-style position at the end of the final line
+*/
 function endOf(code: string) {
     const lines = code.split('\n');
     return { line: lines.length - 1, character: lines.at(-1)!.length };
@@ -87,18 +87,17 @@ function endOf(code: string) {
 
 // Extract plain text from an LSP Hover regardless of contents shape
 /**
- * Extract plain text from an LSP Hover regardless of its contents shape.
- * @param hover - the hover object to read
- * @param hover.contents - the hover contents (string or MarkupContent)
- * @returns the hover text as a plain string
- */
+Extract plain text from an LSP Hover regardless of its contents shape.
+@param hover - the hover object to read
+@param hover.contents - the hover contents (string or MarkupContent)
+@returns the hover text as a plain string
+*/
 function hoverText(hover: { contents: unknown }): string {
     const { contents } = hover;
     if (typeof contents === 'string') return contents;
-    if (contents && typeof contents === 'object' && 'value' in contents) {
-        return String((contents as { value: unknown }).value);
-    }
-    return '';
+    return contents && typeof contents === 'object' && 'value' in contents
+        ? String((contents as { value: unknown }).value)
+        : '';
 }
 
 // ---------------------------------------------------------------------------
@@ -116,6 +115,36 @@ test('removeSsjsDocument cleans up without error', () => {
     // After removal completions should return empty (not throw)
     const items = getSsjsCompletions('file:///tmp.ssjs', { line: 0, character: 5 });
     assert.deepStrictEqual(items, []);
+});
+
+test('Repeated removal and reopening reset all document service results', () => {
+    const uri = 'file:///lifecycle-reset.ssjs';
+    // Exercise both generated companion declarations before closing the active document.
+    const code = [
+        '/* global lifecycleDeclared */',
+        'String.prototype.lifecycleMethod = function () { return this; };',
+        'lifecycleDeclared;',
+        '"value".lifecycleMethod();',
+    ].join('\n');
+    updateSsjsDocument(uri, code);
+    assert.deepStrictEqual(getSsjsDiagnostics(uri), []);
+    removeSsjsDocument(uri);
+    removeSsjsDocument(uri);
+    assert.deepStrictEqual(getSsjsCompletionInfo(uri, endOf(code)), {
+        items: [],
+        isMemberCompletion: false,
+    });
+    assert.strictEqual(getSsjsHover(uri, { line: 2, character: 3 }), undefined);
+    assert.strictEqual(getSsjsSignatureHelp(uri, endOf(code)), undefined);
+    // Reopening without comments or polyfills must not retain either companion file.
+    try {
+        updateSsjsDocument(uri, 'lifecycleDeclared; "value".lifecycleMethod();');
+        const codes = new Set(getSsjsDiagnostics(uri).map((diagnostic) => diagnostic.code));
+        assert.ok(codes.has(2304), 'Removed global declaration must remain unavailable');
+        assert.ok(codes.has(2339), 'Removed prototype declaration must remain unavailable');
+    } finally {
+        removeSsjsDocument(uri);
+    }
 });
 
 // ---------------------------------------------------------------------------
@@ -411,14 +440,13 @@ test('Hover for deprecated ContentArea mentions deprecated', () => {
     updateSsjsDocument(URI_DEPRECATED, code);
     // Hover over "ContentArea" (character 3 is inside the word)
     const hover = getSsjsHover(URI_DEPRECATED, { line: 0, character: 3 });
-    if (hover) {
-        const text = hoverText(hover);
-        assert.ok(
-            text.toLowerCase().includes('deprecated'),
-            `Hover text should mention deprecated, got: ${text}`
-        );
-    }
     // If TypeScript does not return hover here the d.ts path may not be loaded — acceptable
+    if (!hover) return;
+    const text = hoverText(hover);
+    assert.ok(
+        text.toLowerCase().includes('deprecated'),
+        `Hover text should mention deprecated, got: ${text}`
+    );
 });
 
 test('@remarks tag renders without "remarks:" label prefix (Bug #2b)', () => {
@@ -426,14 +454,13 @@ test('@remarks tag renders without "remarks:" label prefix (Bug #2b)', () => {
     const code = 'BeginImpressionRegion(';
     updateSsjsDocument(URI_DEPRECATED, code);
     const hover = getSsjsHover(URI_DEPRECATED, { line: 0, character: 3 });
-    if (hover) {
-        const text = hoverText(hover);
-        assert.ok(
-            !text.includes('*remarks:*'),
-            `Hover text should not include "*remarks:*" label prefix, got: ${text}`
-        );
-    }
     // If no hover that is acceptable — d.ts may not be loaded in CI
+    if (!hover) return;
+    const text = hoverText(hover);
+    assert.ok(
+        !text.includes('*remarks:*'),
+        `Hover text should not include "*remarks:*" label prefix, got: ${text}`
+    );
 });
 
 // ---------------------------------------------------------------------------
@@ -459,16 +486,15 @@ test('Hover for HTTP.Get mentions requiresCoreLoad', () => {
     updateSsjsDocument(URI_HTTP, code);
     // Hover over "Get" — starts at character 5
     const hover = getSsjsHover(URI_HTTP, { line: 0, character: 6 });
-    if (hover) {
-        const text = hoverText(hover);
-        assert.ok(
-            text.toLowerCase().includes('platform.load') ||
-                text.toLowerCase().includes('requirescoreload') ||
-                text.toLowerCase().includes('core'),
-            `Hover text should mention Platform.Load/requiresCoreLoad, got: ${text}`
-        );
-    }
     // If TypeScript does not return hover here the d.ts path may not be loaded — acceptable
+    if (!hover) return;
+    const text = hoverText(hover);
+    assert.ok(
+        text.toLowerCase().includes('platform.load') ||
+            text.toLowerCase().includes('requirescoreload') ||
+            text.toLowerCase().includes('core'),
+        `Hover text should mention Platform.Load/requiresCoreLoad, got: ${text}`
+    );
 });
 
 // ---------------------------------------------------------------------------
@@ -543,48 +569,43 @@ test('@param tags render in native TypeScript style "@param `name` — desc"', (
     updateSsjsDocument(URI_JSDOC, code);
     // Hover over "Lookup" — starts at character 18
     const hover = getSsjsHover(URI_JSDOC, { line: 0, character: 20 });
-    if (hover) {
-        const text = hoverText(hover);
-        // Should use "@param `name` — desc" format, not the "*param:*" fallback
-        assert.ok(
-            !text.includes('*param:*'),
-            `Hover text should not use "*param:*" fallback, got: ${text}`
-        );
-        if (text.includes('@param')) {
-            assert.ok(
-                text.includes('@param `deName`') || text.includes('@param'),
-                `Hover text should use native @param format, got: ${text}`
-            );
-        }
-    }
+    if (!hover) return;
+    const text = hoverText(hover);
+    // Should use "@param `name` — desc" format, not the "*param:*" fallback
+    assert.ok(
+        !text.includes('*param:*'),
+        `Hover text should not use "*param:*" fallback, got: ${text}`
+    );
+    if (!text.includes('@param')) return;
+    assert.ok(
+        text.includes('@param `deName`') || text.includes('@param'),
+        `Hover text should use native @param format, got: ${text}`
+    );
 });
 
 test('ssjs.guide reference link present in hover for Platform.Function.Lookup', () => {
     const code = 'Platform.Function.Lookup(';
     updateSsjsDocument(URI_JSDOC, code);
     const hover = getSsjsHover(URI_JSDOC, { line: 0, character: 20 });
-    if (hover) {
-        const text = hoverText(hover);
-        assert.ok(
-            text.includes('ssjs.guide') || text.includes('ssjs.guide reference'),
-            `Hover text should include ssjs.guide reference link, got: ${text}`
-        );
-    }
+    if (!hover) return;
+    const text = hoverText(hover);
+    assert.ok(
+        text.includes('ssjs.guide') || text.includes('ssjs.guide reference'),
+        `Hover text should include ssjs.guide reference link, got: ${text}`
+    );
 });
 
 test('@example tag renders as "@example" header + fenced javascript code block', () => {
     const code = 'Platform.Function.Lookup(';
     updateSsjsDocument(URI_JSDOC, code);
     const hover = getSsjsHover(URI_JSDOC, { line: 0, character: 20 });
-    if (hover) {
-        const text = hoverText(hover);
-        if (text.includes('@example')) {
-            assert.ok(
-                text.includes('```javascript') || text.includes('```'),
-                `@example should render as fenced code block, got: ${text}`
-            );
-        }
-    }
+    if (!hover) return;
+    const text = hoverText(hover);
+    if (!text.includes('@example')) return;
+    assert.ok(
+        text.includes('```javascript') || text.includes('```'),
+        `@example should render as fenced code block, got: ${text}`
+    );
 });
 
 // ---------------------------------------------------------------------------
@@ -604,50 +625,38 @@ test('getSsjsSignatureHelp returns signature for Platform.Function call', () => 
     const code = 'Platform.Function.Lookup(';
     updateSsjsDocument(URI_SIG, code);
     const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: 25 });
-    if (result) {
-        assert.ok(result.signatures.length > 0, 'Should have at least one signature');
-        const sig = result.signatures[0];
-        assert.ok(sig.label.length > 0, 'Signature label should not be empty');
-        assert.ok(sig.parameters && sig.parameters.length > 0, 'Should have parameters');
-    }
+    if (!result) return;
+    assert.ok(result.signatures.length > 0, 'Should have at least one signature');
+    const sig = result.signatures[0];
+    assert.ok(sig.label.length > 0, 'Signature label should not be empty');
+    assert.ok(sig.parameters && sig.parameters.length > 0, 'Should have parameters');
 });
 
 test('getSsjsSignatureHelp activeParameter advances on comma', () => {
     const code = 'Platform.Function.Lookup("deName", ';
     updateSsjsDocument(URI_SIG, code);
     const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: code.length });
-    if (result) {
-        assert.strictEqual(
-            result.activeParameter,
-            1,
-            'activeParameter should be 1 after first comma'
-        );
-    }
+    if (!result) return;
+    assert.strictEqual(result.activeParameter, 1, 'activeParameter should be 1 after first comma');
 });
 
 test('getSsjsSignatureHelp parameter labels are numeric spans inside sig label', () => {
     const code = 'Platform.Function.Lookup(';
     updateSsjsDocument(URI_SIG, code);
     const result = getSsjsSignatureHelp(URI_SIG, { line: 0, character: 25 });
-    if (result && result.signatures.length > 0) {
-        const sig = result.signatures[0];
-        if (sig.parameters && sig.parameters.length > 0) {
-            const label = sig.parameters[0].label;
-            assert.ok(
-                Array.isArray(label),
-                `Parameter label should be a [start,end] tuple for VS Code highlighting, got: ${JSON.stringify(label)}`
-            );
-            if (Array.isArray(label)) {
-                const [start, end] = label as [number, number];
-                assert.ok(start >= 0 && end > start, 'Parameter span should have valid start/end');
-                const parameterText = sig.label.slice(start, end);
-                assert.ok(
-                    parameterText.length > 0,
-                    'Parameter span should resolve to non-empty text'
-                );
-            }
-        }
-    }
+    if (!result || result.signatures.length === 0) return;
+    const sig = result.signatures[0];
+    if (!sig.parameters || sig.parameters.length === 0) return;
+    const label = sig.parameters[0].label;
+    assert.ok(
+        Array.isArray(label),
+        `Parameter label should be a [start,end] tuple for VS Code highlighting, got: ${JSON.stringify(label)}`
+    );
+    if (!Array.isArray(label)) return;
+    const [start, end] = label as [number, number];
+    assert.ok(start >= 0 && end > start, 'Parameter span should have valid start/end');
+    const parameterText = sig.label.slice(start, end);
+    assert.ok(parameterText.length > 0, 'Parameter span should resolve to non-empty text');
 });
 
 // ---------------------------------------------------------------------------

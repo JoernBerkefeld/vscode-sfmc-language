@@ -5,7 +5,7 @@ import globals from 'globals';
 import jsdoc from 'eslint-plugin-jsdoc';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
+const config = tseslint.config(
     {
         ignores: [
             '**/node_modules/**',
@@ -35,6 +35,8 @@ export default tseslint.config(
         },
         rules: {
             'no-console': 'warn',
+            // Align starless documentation delimiters; Prettier handles blank-line whitespace.
+            'jsdoc/check-alignment': ['error', { innerIndent: 0, ignoreEmptyLines: true }],
             'jsdoc/require-param-type': 'off',
             'jsdoc/require-returns-type': 'off',
         },
@@ -48,3 +50,5 @@ export default tseslint.config(
         },
     }
 );
+
+export default config;

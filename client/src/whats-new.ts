@@ -1,6 +1,6 @@
 /**
- * What's New: changelog-driven webview after extension updates.
- */
+What's New: changelog-driven webview after extension updates.
+*/
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -11,8 +11,8 @@ import { compareSemver, escapeHtml, markdownToHtml, parseChangelogEntry } from '
 export { compareSemver, markdownToHtml, parseChangelogEntry } from './whats-new-core';
 
 /**
- * Synced so users don't see duplicate prompts across machines (see VS Code globalState docs).
- */
+Synced so users don't see duplicate prompts across machines (see VS Code globalState docs).
+*/
 export const WHATS_NEW_VERSION_KEY = 'whatsNew.lastShownVersion';
 
 const PANEL_VIEW_TYPE = 'sfmcLanguage.whatsNew';
@@ -22,9 +22,9 @@ const PANEL_VIEW_TYPE = 'sfmcLanguage.whatsNew';
 const panelState: { panel: WebviewPanel | undefined } = { panel: undefined };
 
 /**
- * Generate a random 32-character nonce for the webview Content-Security-Policy.
- * @returns a random alphanumeric nonce string
- */
+Generate a random 32-character nonce for the webview Content-Security-Policy.
+@returns a random alphanumeric nonce string
+*/
 function getNonce(): string {
     let t = '';
     const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -35,13 +35,13 @@ function getNonce(): string {
 }
 
 /**
- * Build the full HTML document for the What's New webview panel.
- * @param bodyHtml - the rendered changelog body HTML
- * @param title - the panel title
- * @param nonce - the CSP nonce applied to inline style/script
- * @param cspSource - the webview CSP source for allowed resources
- * @returns the complete HTML document string
- */
+Build the full HTML document for the What's New webview panel.
+@param bodyHtml - the rendered changelog body HTML
+@param title - the panel title
+@param nonce - the CSP nonce applied to inline style/script
+@param cspSource - the webview CSP source for allowed resources
+@returns the complete HTML document string
+*/
 function buildWhatsNewHtml(
     bodyHtml: string,
     title: string,
@@ -97,11 +97,11 @@ function buildWhatsNewHtml(
 }
 
 /**
- * Open (or reveal) the What's New webview panel for the current version.
- * @param context - the VS Code extension context
- * @param extensionDisplayName - the display name shown in the panel title
- * @returns a promise that resolves once the panel has been shown
- */
+Open (or reveal) the What's New webview panel for the current version.
+@param context - the VS Code extension context
+@param extensionDisplayName - the display name shown in the panel title
+@returns a promise that resolves once the panel has been shown
+*/
 export async function showWhatsNewPanel(
     context: ExtensionContext,
     extensionDisplayName: string
@@ -148,10 +148,10 @@ export async function showWhatsNewPanel(
 }
 
 /**
- * After an upgrade, prompt once; opening the panel or choosing Later records the version.
- * @param context - VS Code extension context for global state persistence
- * @param extensionDisplayName - human-readable name shown in the notification
- */
+After an upgrade, prompt once; opening the panel or choosing Later records the version.
+@param context - VS Code extension context for global state persistence
+@param extensionDisplayName - human-readable name shown in the notification
+*/
 export async function checkAndShowWhatsNew(
     context: ExtensionContext,
     extensionDisplayName: string

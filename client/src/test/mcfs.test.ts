@@ -11,7 +11,7 @@ import { formatSfmcDocument } from '../formatter';
 
 /**
 Small synthetic filesystem; no org, credentials, or remote writes.
- */
+*/
 class MemoryFiles implements vscode.FileSystemProvider {
     private readonly changes = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
     readonly onDidChangeFile = this.changes.event;
@@ -47,11 +47,11 @@ class MemoryFiles implements vscode.FileSystemProvider {
 }
 
 /**
- * Wait for a diagnostic state, subscribing before checking to avoid lost events.
- * @param uri - Original virtual document URI.
- * @param isExpected - Required publication state.
- * @returns Promise resolved by the required state or rejected at the deadline.
- */
+Wait for a diagnostic state, subscribing before checking to avoid lost events.
+@param uri - Original virtual document URI.
+@param isExpected - Required publication state.
+@returns Promise resolved by the required state or rejected at the deadline.
+*/
 function diagnosticsWhen(
     uri: vscode.Uri,
     isExpected: (diagnostics: readonly vscode.Diagnostic[]) => boolean
@@ -76,11 +76,11 @@ function diagnosticsWhen(
 }
 
 /**
- * Assert providers through VS Code commands, not the shared language service.
- * @param document - Synchronized virtual document.
- * @param token - Function with meaningful hover.
- * @param completion - Expected catalog completion label.
- */
+Assert providers through VS Code commands, not the shared language service.
+@param document - Synchronized virtual document.
+@param token - Function with meaningful hover.
+@param completion - Expected catalog completion label.
+*/
 async function intelligence(
     document: vscode.TextDocument,
     token: string,
@@ -125,12 +125,12 @@ suite('MCFS real client integration', () => {
     let registration: vscode.Disposable;
 
     /**
-     * Open synthetic content using MCFS's current language mappings.
-     * @param name - Virtual basename.
-     * @param content - Synthetic source.
-     * @param language - MCFS language assignment.
-     * @returns Open virtual document.
-     */
+    Open synthetic content using MCFS's current language mappings.
+    @param name - Virtual basename.
+    @param content - Synthetic source.
+    @param language - MCFS language assignment.
+    @returns Open virtual document.
+    */
     async function open(
         name: string,
         content: string,
@@ -183,10 +183,12 @@ suite('MCFS real client integration', () => {
         }
         registration?.dispose();
         files.dispose();
-        if (previous.value) {
-            restoreActivationState(previous.value);
-            await previous.value.client!.start();
+        if (!previous.value) {
+            return;
         }
+
+        restoreActivationState(previous.value);
+        await previous.value.client!.start();
     });
 
     test('already-open AMPscript synchronizes at production client activation and edits clear diagnostics', async () => {

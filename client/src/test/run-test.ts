@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os';
 import { runTests } from '@vscode/test-electron';
 
 /**
- * Launch the integration-test host against the fixture workspace so formatter
- * coexistence can write settings without VS Code toasting a workspace-write error.
- */
+Launch the integration-test host against the fixture workspace so formatter
+coexistence can write settings without VS Code toasting a workspace-write error.
+*/
 async function main() {
     try {
         const extensionDevelopmentPath = path.resolve(__dirname, '../../../');

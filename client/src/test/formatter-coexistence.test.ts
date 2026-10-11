@@ -99,6 +99,22 @@ suite('Formatter coexistence — isPromptDismissed', () => {
 });
 
 suite('Formatter coexistence — isAutoClaimSuppressed', () => {
+    test('preserves false override precedence for every scope combination', () => {
+        const values = [undefined, false, true];
+        for (const folder of values) {
+            for (const workspace of values) {
+                for (const global of values) {
+                    const settings = new Set([folder, workspace, global]);
+                    const isExpected = !settings.has(false) && settings.has(true);
+                    assert.strictEqual(
+                        isAutoClaimSuppressed(folder, workspace, global),
+                        isExpected
+                    );
+                }
+            }
+        }
+    });
+
     test('not suppressed when nothing is set', () => {
         assert.strictEqual(isAutoClaimSuppressed(undefined, undefined, undefined), false);
     });
@@ -199,9 +215,9 @@ suite('Formatter coexistence — language labels', () => {
 });
 
 /**
- * Resolve without performing a configuration write.
- * @returns an already-resolved promise
- */
+Resolve without performing a configuration write.
+@returns an already-resolved promise
+*/
 async function noOperation(): Promise<void> {}
 
 suite('Formatter coexistence — telemetry outcomes', () => {
@@ -210,10 +226,10 @@ suite('Formatter coexistence — telemetry outcomes', () => {
     } as unknown as vscode.ExtensionContext;
 
     /**
-     * Run the real coexistence decision flow with deterministic dependencies.
-     * @param overrides - scenario values and injected operations
-     * @returns every telemetry outcome reported by the flow
-     */
+    Run the real coexistence decision flow with deterministic dependencies.
+    @param overrides - scenario values and injected operations
+    @returns every telemetry outcome reported by the flow
+    */
     async function resolveOutcome(
         overrides: CoexistenceTestOverrides
     ): Promise<CoexistenceOutcome[]> {
