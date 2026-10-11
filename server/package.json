@@ -14,8 +14,8 @@
     "dependencies": {
         "sfmc-language-lsp": "^4.2.1",
         "typescript": "^6.0.3",
-        "vscode-languageserver": "^10.1.0",
-        "vscode-languageserver-textdocument": "^1.0.12"
+        "vscode-languageserver": "^10.1.2",
+        "vscode-languageserver-textdocument": "^1.0.15"
     },
     "scripts": {
         "test": "npx tsc --ignoreDeprecations 6.0 && node out/test/ts-service.test.js"

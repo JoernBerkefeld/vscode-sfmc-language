@@ -139,10 +139,13 @@ test('Documentation routes use the root version and real bounded anchors', () =>
             `https://github.com/JoernBerkefeld/vscode-sfmc-language/blob/v${version}/docs/diagnostics/typescript.md#${anchor}`
         );
         const heading = anchor === 'other-diagnostics' ? 'Other diagnostics' : anchor.toUpperCase();
-        assert.ok(
-            documentation.includes(`## ${heading}\n`),
-            `Missing documentation heading: ${heading}`
-        );
+        for (const newline of ['\n', '\r\n']) {
+            const portableDocumentation = documentation.split(/\r?\n/).join(newline);
+            assert.ok(
+                portableDocumentation.split(/\r?\n/).includes(`## ${heading}`),
+                `Missing documentation heading: ${heading}`
+            );
+        }
     }
 });
 

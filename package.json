@@ -305,29 +305,29 @@
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.2",
     "@vscode/vsce": "^3.9.2",
-    "esbuild": "^0.28.1",
-    "eslint": "^10.8.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsdoc": "^63.3.3",
     "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-unicorn": "^73.0.0",
-    "globals": "^17.9.0",
+    "globals": "^17.13.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.3.0",
+    "lint-staged": "^17.6.0",
     "mocha": "^11.8.0",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.10",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.66.0",
-    "undici-types": "^8.10.0"
+    "typescript-eslint": "^8.71.1",
+    "undici-types": "^8.11.2"
   },
   "dependencies": {
     "sfmc-language-lsp": "^4.2.1"
   },
   "overrides": {
     "diff": "^9.0.0",
-    "serialize-javascript": "^7.0.7"
+    "serialize-javascript": "^7.1.2"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts}": [
