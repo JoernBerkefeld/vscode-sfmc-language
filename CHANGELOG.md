@@ -2,6 +2,24 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.6.2] - 2026-10-11
+
+### Changed
+
+- Migrate to the updated Unicorn and JSDoc lint rules without changing formatter coexistence, language detection, telemetry, or SSJS language-service behavior. Regression coverage preserves What's New nested-list rendering and checks that the Unicorn/JSDoc comment rules agree and converge.
+- Pin `@types/vscode` to exactly 1.101.0 so compilation stays compatible with the unchanged VS Code 1.101 minimum, including Cursor.
+
+### Security
+
+- Upgrade `@vscode/vsce` from 3.9.2 to 4.0.0 to refresh the packaging tool's dependency tree and remove vulnerable transitive dependencies; update the `serialize-javascript` override from 7.0.7 to 7.1.2.
+
+### Dependencies
+
+- Upgrade the bundled `prettier-plugin-sfmc` from 2.0.0 to 2.1.1 and Prettier from 3.9.6 to 3.9.10.
+- Upgrade client `glob` from 11.0.0 to 13.0.6 and `vscode-languageclient` from 10.1.0 to 10.1.2; upgrade server `vscode-languageserver` from 10.1.0 to 10.1.2 and `vscode-languageserver-textdocument` from 1.0.12 to 1.0.15.
+- Refresh development tooling, including ESLint 10.12.0, `eslint-plugin-unicorn` 77.0.0, `eslint-plugin-jsdoc` 65.3.0, Mocha 12.0.3, esbuild 0.28.2, and Node.js typings 24.19.2.
+- The bundled `sfmc-language-lsp` remains at 4.2.1; the `ampscript-data` 4.2.0 and `ssjs-data` 2.1.1 catalogs are unchanged.
+
 ## [3.6.1] - 2026-10-11
 
 ### Fixed
