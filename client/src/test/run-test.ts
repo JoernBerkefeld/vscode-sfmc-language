@@ -1,4 +1,6 @@
 import path from 'node:path';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 
 import { runTests } from '@vscode/test-electron';
 
@@ -11,20 +13,22 @@ async function main() {
         const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
         const extensionTestsPath = path.resolve(__dirname, './index');
         const fixtureWorkspace = path.resolve(__dirname, '../../testFixture');
+        const userDataDirectory = mkdtempSync(path.join(tmpdir(), 'sfmc-extension-test-'));
 
         await runTests({
             extensionDevelopmentPath,
             extensionTestsPath,
             launchArgs: [
                 fixtureWorkspace,
+                `--user-data-dir=${userDataDirectory}`,
                 '--disable-extensions',
                 '--disable-workspace-trust',
                 '--skip-welcome',
                 '--skip-release-notes',
             ],
         });
-    } catch {
-        console.error('Failed to run tests');
+    } catch (error) {
+        console.error('Failed to run tests', error);
         process.exit(1);
     }
 }

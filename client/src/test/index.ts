@@ -12,6 +12,7 @@ export async function run(): Promise<void> {
         color: true,
     });
     mocha.timeout(100_000);
+    if (process.env.SFMC_TEST_GREP) mocha.grep(process.env.SFMC_TEST_GREP);
 
     const testsRoot = __dirname;
 

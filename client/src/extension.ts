@@ -405,8 +405,10 @@ export function activate(
         documentSelector: [
             { scheme: 'file', language: 'ampscript' },
             { scheme: 'untitled', language: 'ampscript' },
+            { scheme: 'mcfs', language: 'ampscript' },
             { scheme: 'file', language: 'sfmc' },
             { scheme: 'untitled', language: 'sfmc' },
+            { scheme: 'mcfs', language: 'sfmc' },
             { scheme: 'file', language: 'ssjs' },
             { scheme: 'untitled', language: 'ssjs' },
             // .hbs files use VS Code's built-in `handlebars` language (HTML +

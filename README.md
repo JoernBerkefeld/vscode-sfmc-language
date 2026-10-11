@@ -20,6 +20,11 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 **Variable resolution** means the language service infers the concrete type (and where possible, the value) held in a variable. Hovering over a local variable reveals its resolved type rather than a generic `any`. This is fully available in SSJS and planned for AMPscript in a future release.
 
+## MCFS virtual documents
+
+Documents opened through the MCFS extension (`mcfs:` URIs) receive AMPscript hover, completions, and diagnostics when their language ID is `ampscript`, and embedded AMPscript/SSJS intelligence when it is `sfmc` (including wrapped script activities). Diagnostics update as you edit the virtual document, without saving it to Salesforce. No separate ESLint extension is required for this language support.
+
+The built-in formatter supports MCFS documents with the `ampscript`, `sfmc`, and `sql` language IDs. Virtual formatting uses the bundled defaults and plugin with synthetic parser filenames; it does not search local disk for `.prettierrc*`, `.editorconfig`, or `.prettierignore` based on the virtual URI. Local-file formatting keeps its existing config and ignore behavior.
 ## Diagnostic documentation
 
 Click a diagnostic code in the Problems panel to open its rule documentation for the version that produced it:

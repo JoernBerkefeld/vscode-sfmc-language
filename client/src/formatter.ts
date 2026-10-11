@@ -120,6 +120,7 @@ export const FORMATTER_LANGUAGES = Object.keys(LANGUAGE_ID_TO_FILEPATH);
  * @returns absolute path to `.prettierignore`, or undefined if none exists
  */
 function resolveIgnorePath(document: TextDocument): string | undefined {
+    if (document.uri.scheme === 'mcfs') return undefined;
     const filePath = document.uri.fsPath;
     if (!filePath) return undefined;
     const stopAt = workspace.getWorkspaceFolder(document.uri)?.uri.fsPath;
@@ -228,7 +229,10 @@ export async function formatSfmcDocument(document: TextDocument): Promise<string
         return undefined;
     }
 
-    const { options, configPath } = await resolveOptions(document.uri.fsPath);
+    const isVirtual = document.uri.scheme === 'mcfs';
+    const { options, configPath } = isVirtual
+        ? { options: { ...STD_CONFIG, plugins: [sfmcPlugin] }, configPath: undefined }
+        : await resolveOptions(document.uri.fsPath);
     logInfo(
         configPath
             ? `Using config file at '${configPath}'`
@@ -237,7 +241,9 @@ export async function formatSfmcDocument(document: TextDocument): Promise<string
 
     // Use a synthetic filepath (right extension) so the correct plugin parser is
     // chosen regardless of the real file name / language mapping.
-    const filepath = path.join(path.dirname(document.uri.fsPath || syntheticName), syntheticName);
+    const filepath = isVirtual
+        ? syntheticName
+        : path.join(path.dirname(document.uri.fsPath || syntheticName), syntheticName);
 
     logInfo(`Prettier Options: ${stringifyOptions({ ...options, filepath })}`);
 
@@ -292,6 +298,9 @@ export function registerFormatter(context: ExtensionContext): void {
             [
                 { scheme: 'file', language: languageId },
                 { scheme: 'untitled', language: languageId },
+                ...(['ampscript', 'sfmc', 'sql'].includes(languageId)
+                    ? [{ scheme: 'mcfs', language: languageId }]
+                    : []),
             ],
             sfmcFormattingProvider
         )

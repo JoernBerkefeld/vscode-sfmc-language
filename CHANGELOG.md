@@ -2,6 +2,13 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.6.1] - 2026-10-11
+
+### Fixed
+
+- Enable hover, completions, and edit-driven diagnostics for MCFS (`mcfs:`) AMPscript and SFMC mixed-content documents, including wrapped SSJS script activities.
+- Enable built-in formatting for MCFS AMPscript, SFMC mixed content, and SQL using bundled defaults and synthetic parser filenames, without treating virtual URIs as local paths for config or ignore discovery. Local-file formatting behavior is unchanged.
+
 ## [3.6.0] - 2026-10-02
 
 ### Added
