@@ -1,9 +1,9 @@
 /**
-ssjs-diagnostics.test.ts — VS Code integration tests for SSJS LSP diagnostics.
-
-Covers Bug K: bare requiresCoreLoad globals (Stringify, Now, GUID, …) must
-produce a diagnostic when called without a preceding Platform.Load("core", …).
-*/
+ * ssjs-diagnostics.test.ts — VS Code integration tests for SSJS LSP diagnostics.
+ *
+ * Covers Bug K: bare requiresCoreLoad globals (Stringify, Now, GUID, …) must
+ * produce a diagnostic when called without a preceding Platform.Load("core", …).
+ */
 import * as vscode from 'vscode';
 import * as assert from 'node:assert';
 import { getDocumentUri, activate } from './helper';
@@ -11,10 +11,10 @@ import { getDocumentUri, activate } from './helper';
 const SETTLE_MS = 3000;
 
 /**
-Resolve to a promise after the given delay.
-@param ms - delay in milliseconds
-@returns a promise that resolves after the delay
-*/
+ * Resolve to a promise after the given delay.
+ * @param ms - delay in milliseconds
+ * @returns a promise that resolves after the delay
+ */
 function sleep(ms: number) {
     return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }

@@ -97,9 +97,9 @@ suite('AMPscript Invalid Syntax Diagnostics', () => {
 });
 
 /**
-Resolve to a promise after the two-second diagnostic settling delay.
-@returns a promise that resolves after the delay
-*/
+ * Resolve to a promise after the given delay.
+ * @returns a promise that resolves after the delay
+ */
 function sleep() {
     return new Promise((resolve) => setTimeout(resolve, 2000));
 }

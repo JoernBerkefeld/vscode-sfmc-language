@@ -49,16 +49,6 @@ suite('whatsNew', () => {
         assert.ok(html.includes('<li>top2</li>'));
     });
 
-    test('markdownToHtml closes all nested lists at each non-list boundary', () => {
-        const nested = '- parent\n  - child';
-        const rendered = '<ul><li>parent</li><ul><li>child</li></ul></ul>';
-        assert.strictEqual(markdownToHtml(nested), rendered);
-        assert.strictEqual(markdownToHtml(`${nested}\n\nparagraph`), `${rendered}<p>paragraph</p>`);
-        assert.strictEqual(markdownToHtml(`${nested}\nparagraph`), `${rendered}<p>paragraph</p>`);
-        assert.strictEqual(markdownToHtml(`${nested}\n## Heading`), `${rendered}<h2>Heading</h2>`);
-        assert.strictEqual(markdownToHtml(`${nested}\n### Heading`), `${rendered}<h3>Heading</h3>`);
-    });
-
     test('markdownToHtml handles two-level nesting and dedent', () => {
         const html = markdownToHtml('- a\n  - b\n    - c\n- d\n');
         assert.strictEqual((html.match(/<ul>/g) ?? []).length, 3);

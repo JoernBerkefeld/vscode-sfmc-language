@@ -2,6 +2,12 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- Restore standard starred JSDoc after reversing the original Unicorn migration and reapplying required lint fixes with `unicorn/no-asterisk-prefix-in-documentation-comments` explicitly disabled. Keep normal JSDoc alignment and add an autofix regression test for top-level and indented documentation comments.
+
 ## [3.6.2] - 2026-10-11
 
 ### Changed

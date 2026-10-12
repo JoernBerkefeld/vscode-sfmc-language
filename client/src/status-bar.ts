@@ -14,14 +14,14 @@ const PUBLISHER = 'joernberkefeld';
 const CMD_SHOW_OUTPUT = `${EXT_ID}.showOutput`;
 
 /**
-Settings search query used to reveal the targetPlatform setting.
-*/
+ * Settings search query used to reveal the targetPlatform setting.
+ */
 const TARGET_PLATFORM_QUERY = `@ext:${PUBLISHER}.${EXT_ID} targetPlatform`;
 
 /**
-Read the configured target platform (workspace/user scope).
-@returns 'next' when Marketing Cloud Next is selected, otherwise 'engagement'.
-*/
+ * Read the configured target platform (workspace/user scope).
+ * @returns 'next' when Marketing Cloud Next is selected, otherwise 'engagement'.
+ */
 function getTargetPlatform(): 'engagement' | 'next' {
     return workspace.getConfiguration('sfmcLanguageServer').get<string>('targetPlatform') === 'next'
         ? 'next'
@@ -29,8 +29,8 @@ function getTargetPlatform(): 'engagement' | 'next' {
 }
 
 /**
-VS Code codicons used for each lifecycle state.
-*/
+ * VS Code codicons used for each lifecycle state.
+ */
 const ICONS = {
     loading: '$(loading~spin)',
     ready: '$(check)',

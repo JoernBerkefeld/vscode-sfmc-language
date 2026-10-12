@@ -8,23 +8,23 @@ import { build } from 'esbuild';
 const projectRoot = path.resolve(import.meta.dirname, '..');
 
 /**
-Require the release tag to match both the owning version and checked-out commit.
-@param tag - release event tag
-@param version - extension root version
-@param head - checked-out commit
-@param taggedCommit - commit resolved from the release tag
-*/
+ * Require the release tag to match both the owning version and checked-out commit.
+ * @param tag - release event tag
+ * @param version - extension root version
+ * @param head - checked-out commit
+ * @param taggedCommit - commit resolved from the release tag
+ */
 export function verifyReleaseTag(tag, version, head, taggedCommit) {
     assert.equal(tag, `v${version}`, 'Release tag must match the extension root package version');
     assert.equal(head, taggedCommit, 'Checkout must point at the release tag commit');
 }
 
 /**
-Verify only extension-owned targets in this checkout, never sibling LSP docs.
-@param root - extension checkout
-@param version - extension root version
-@param urls - URLs emitted by the TypeScript documentation helper
-*/
+ * Verify only extension-owned targets in this checkout, never sibling LSP docs.
+ * @param root - extension checkout
+ * @param version - extension root version
+ * @param urls - URLs emitted by the TypeScript documentation helper
+ */
 export function verifyDocumentationTargets(root, version, urls) {
     assert.ok(urls.length > 0, 'Expected TypeScript documentation URLs');
     const prefix = `https://github.com/JoernBerkefeld/vscode-sfmc-language/blob/v${version}/`;
@@ -47,10 +47,10 @@ export function verifyDocumentationTargets(root, version, urls) {
 }
 
 /**
-Bundle the actual helper offline so its static owning-package metadata is evaluated.
-@param root - extension checkout
-@returns exported TypeScript documentation helper and documented code set
-*/
+ * Bundle the actual helper offline so its static owning-package metadata is evaluated.
+ * @param root - extension checkout
+ * @returns exported TypeScript documentation helper and documented code set
+ */
 export async function loadDocumentationHelper(root = projectRoot) {
     const result = await build({
         entryPoints: [path.join(root, 'server/src/diagnostic-documentation.ts')],
@@ -65,9 +65,9 @@ export async function loadDocumentationHelper(root = projectRoot) {
 }
 
 /**
-Check extension docs, optionally enforcing the release event checkout identity.
-@param isRelease - whether a release tag is required
-*/
+ * Check extension docs, optionally enforcing the release event checkout identity.
+ * @param isRelease - whether a release tag is required
+ */
 export async function validateDiagnosticDocumentation(isRelease = false) {
     const { version } = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf8'));
     if (isRelease) {

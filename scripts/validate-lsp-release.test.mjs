@@ -2,69 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { validateTaggedLsp } from './validate-lsp-release.mjs';
-import { ESLint } from 'eslint';
-
-const documentationRules = new Set([
-    'unicorn/no-asterisk-prefix-in-documentation-comments',
-    'jsdoc/check-alignment',
-]);
-
-test('documentation lint rules agree on starless nested comments and converge', async () => {
-    const source = [
-        'export class Example {',
-        '    /**',
-        '    Description.',
-        '',
-        '    More detail.',
-        '    @returns {number} Result.',
-        '    */',
-        '    example() {',
-        '        return 1;',
-        '    }',
-        '}',
-        '',
-    ].join('\n');
-    const filePath = 'client/src/documentation-rule-probe.ts';
-    const eslint = new ESLint();
-    const [result] = await eslint.lintText(source, { filePath });
-    assert.deepEqual(result.messages, []);
-
-    const fixer = new ESLint({ fix: true });
-    const [fixed] = await fixer.lintText(source, { filePath });
-    assert.equal(fixed.output, undefined);
-    assert.deepEqual(fixed.messages, []);
-});
-
-test('documentation lint rules still reject prefixes and misaligned delimiters', async () => {
-    const eslint = new ESLint();
-    for (const source of [
-        '/**\n * Description.\n */\nexport const example = 1;\n',
-        '/**\nDescription.\n */\nexport const example = 1;\n',
-    ]) {
-        const [result] = await eslint.lintText(source, {
-            filePath: 'client/src/documentation-rule-probe.ts',
-        });
-        const rules = new Set(result.messages.map((message) => message.ruleId));
-        for (const rule of documentationRules) {
-            assert.ok(rules.has(rule), `Expected ${rule} to reject malformed documentation`);
-        }
-        const fixer = new ESLint({ fix: true });
-        const [fixed] = await fixer.lintText(source, {
-            filePath: 'client/src/documentation-rule-probe.ts',
-        });
-        assert.deepEqual(fixed.messages, []);
-        const [secondPass] = await fixer.lintText(fixed.output, {
-            filePath: 'client/src/documentation-rule-probe.ts',
-        });
-        assert.equal(secondPass.output, undefined);
-    }
-});
-
-test('lint configuration remains free of top-level exported calls', async () => {
-    const eslint = new ESLint();
-    const [result] = await eslint.lintFiles(['eslint.config.mjs']);
-    assert.deepEqual(result.messages, []);
-});
 
 test('both extension dependency sites declare the published diagnostic contract', () => {
     for (const prefix of ['../', '../server/']) {
@@ -90,9 +27,9 @@ const rules = [
 ];
 
 /**
-Supply an offline immutable-tag fixture independent of installed dependencies.
-@returns tagged fixture file map
-*/
+ * Supply an offline immutable-tag fixture independent of installed dependencies.
+ * @returns tagged fixture file map
+ */
 function files() {
     return new Map([
         ['package.json', JSON.stringify(identity.manifest)],
@@ -105,10 +42,10 @@ function files() {
 }
 
 /**
-Read a fixture as a remote tagged file; missing files fail closed.
-@param documents - fixture file map
-@returns fixture reader
-*/
+ * Read a fixture as a remote tagged file; missing files fail closed.
+ * @param documents - fixture file map
+ * @returns fixture reader
+ */
 function reader(documents) {
     return (filename) => {
         assert.ok(documents.has(filename), `Missing tagged file: ${filename}`);

@@ -286,8 +286,8 @@
     "package:test": "npx @vscode/vsce package --no-dependencies --pre-release -o sfmc-language-BETA.vsix",
     "publish": "npx @vscode/vsce publish --no-dependencies",
     "publish:pre-release": "npx @vscode/vsce publish --no-dependencies --pre-release",
-    "lint": "eslint server/src client/src eslint.config.mjs scripts/validate-diagnostic-documentation.mjs scripts/validate-diagnostic-documentation.test.mjs scripts/test-server-artifact.mjs scripts/test-server-artifact.test.mjs scripts/validate-lsp-release.mjs scripts/validate-lsp-release.test.mjs",
-    "lint:fix": "eslint --fix server/src client/src eslint.config.mjs scripts/validate-diagnostic-documentation.mjs scripts/validate-diagnostic-documentation.test.mjs scripts/test-server-artifact.mjs scripts/test-server-artifact.test.mjs scripts/validate-lsp-release.mjs scripts/validate-lsp-release.test.mjs",
+    "lint": "eslint server/src client/src eslint.config.mjs scripts/validate-diagnostic-documentation.mjs scripts/validate-diagnostic-documentation.test.mjs scripts/test-server-artifact.mjs scripts/test-server-artifact.test.mjs scripts/validate-lsp-release.mjs scripts/validate-lsp-release.test.mjs scripts/test-jsdoc-formatting.test.mjs",
+    "lint:fix": "eslint --fix server/src client/src eslint.config.mjs scripts/validate-diagnostic-documentation.mjs scripts/validate-diagnostic-documentation.test.mjs scripts/test-server-artifact.mjs scripts/test-server-artifact.test.mjs scripts/validate-lsp-release.mjs scripts/validate-lsp-release.test.mjs scripts/test-jsdoc-formatting.test.mjs",
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -296,10 +296,11 @@
     "test:server-artifact": "node --test scripts/test-server-artifact.test.mjs",
     "test:deps": "node ./scripts/check-client-mocha-types.mjs",
     "test:telemetry-catalog": "node ./scripts/validate-telemetry-catalog.mjs",
+    "test:jsdoc-formatting": "node --test scripts/test-jsdoc-formatting.test.mjs",
     "test:diagnostic-docs": "node --test scripts/validate-diagnostic-documentation.test.mjs scripts/validate-lsp-release.test.mjs",
     "verify:lsp-release": "node scripts/validate-lsp-release.mjs",
     "verify:release-docs": "node scripts/validate-diagnostic-documentation.mjs --release",
-    "test": "npm run test:deps && npm run test:telemetry-catalog && npm run test:diagnostic-docs && npm run test:server-artifact && npm run test:bundle && node ./client/out/test/run-test"
+    "test": "npm run test:jsdoc-formatting && npm run test:deps && npm run test:telemetry-catalog && npm run test:diagnostic-docs && npm run test:server-artifact && npm run test:bundle && node ./client/out/test/run-test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

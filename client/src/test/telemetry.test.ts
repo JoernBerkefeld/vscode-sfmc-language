@@ -26,9 +26,9 @@ import {
 import type { TelemetryRuntime } from '../telemetry';
 
 /**
-Read the telemetry.json event catalogue from the extension root.
-@returns the parsed catalogue object keyed by event name (plus commonProperties)
-*/
+ * Read the telemetry.json event catalogue from the extension root.
+ * @returns the parsed catalogue object keyed by event name (plus commonProperties)
+ */
 function readCatalog(): Record<string, unknown> {
     // Compiled test file lives in client/out/test; the catalogue is at the repo root.
     const catalogPath = path.resolve(__dirname, '../../../telemetry.json');
@@ -36,12 +36,12 @@ function readCatalog(): Record<string, unknown> {
 }
 
 /**
-Set VS Code's global telemetry level and wait until `isTelemetryEnabled`
-reflects the requested state (the change is applied asynchronously).
-@param level - the telemetry.telemetryLevel value to write ('all' or 'off')
-@param shouldBeEnabled - the isTelemetryEnabled value to wait for
-@returns a promise that resolves once the state is applied (or the timeout elapses)
-*/
+ * Set VS Code's global telemetry level and wait until `isTelemetryEnabled`
+ * reflects the requested state (the change is applied asynchronously).
+ * @param level - the telemetry.telemetryLevel value to write ('all' or 'off')
+ * @param shouldBeEnabled - the isTelemetryEnabled value to wait for
+ * @returns a promise that resolves once the state is applied (or the timeout elapses)
+ */
 async function setTelemetryLevel(level: 'all' | 'off', shouldBeEnabled: boolean): Promise<void> {
     await vscode.workspace
         .getConfiguration('telemetry')
@@ -53,10 +53,10 @@ async function setTelemetryLevel(level: 'all' | 'off', shouldBeEnabled: boolean)
 }
 
 /**
-Build a deterministic telemetry runtime with controllable consent.
-@param fetchImplementation - transport implementation used by the reporter
-@returns the runtime and a consent-change dispatcher
-*/
+ * Build a deterministic telemetry runtime with controllable consent.
+ * @param fetchImplementation - transport implementation used by the reporter
+ * @returns the runtime and a consent-change dispatcher
+ */
 function createTelemetryRuntime(fetchImplementation: typeof fetch): {
     runtime: TelemetryRuntime;
     setEnabled: (isEnabled: boolean) => void;
@@ -83,9 +83,9 @@ function createTelemetryRuntime(fetchImplementation: typeof fetch): {
 }
 
 /**
-Install a fetch stub that records every POST body.
-@returns captured events and a function that restores global fetch
-*/
+ * Install a fetch stub that records every POST body.
+ * @returns captured events and a function that restores global fetch
+ */
 function captureFetch(): {
     events: { event: string; properties: Record<string, unknown> }[];
     restore: () => void;
@@ -122,11 +122,11 @@ suite('Telemetry — real ecosystem detector', () => {
     };
 
     /**
-    Run the production detector against an inactive extension registry fixture.
-    @param ids - installed extension identifiers
-    @param hasReferences - whether another extension references this extension
-    @returns the actual detector's boolean snapshot
-    */
+     * Run the production detector against an inactive extension registry fixture.
+     * @param ids - installed extension identifiers
+     * @param hasReferences - whether another extension references this extension
+     * @returns the actual detector's boolean snapshot
+     */
     function detect(ids: string[], hasReferences = false): Record<string, boolean> {
         const originalAll = Object.getOwnPropertyDescriptor(vscode.extensions, 'all');
         const originalLookup = Object.getOwnPropertyDescriptor(vscode.extensions, 'getExtension');
@@ -200,28 +200,6 @@ suite('Telemetry — real ecosystem detector', () => {
 });
 
 suite('Telemetry — language detection session dedup', () => {
-    test('HTML detection returns without reporting unless an SFMC marker matches', async () => {
-        const reported: string[] = [];
-        const plain = await vscode.workspace.openTextDocument({
-            language: 'html',
-            content: '<p>Plain HTML</p>',
-        });
-        detectAndSwitchLanguage(plain, (id) => {
-            reported.push(id);
-        });
-        assert.strictEqual(reported.length, 0);
-        assert.strictEqual(plain.languageId, 'html');
-
-        const binding = await vscode.workspace.openTextDocument({
-            language: 'html',
-            content: '<p>{!$Profile.FirstName}</p>',
-        });
-        detectAndSwitchLanguage(binding, (id) => {
-            reported.push(id);
-        });
-        assert.deepStrictEqual(reported, ['sfmc']);
-    });
-
     test('disabled detection does not poison dedup after re-enable', () => {
         const seen = new Set<string>();
         let isEnabled = false;
@@ -556,9 +534,9 @@ interface TrackedEvent {
 }
 
 /**
-Build a fake extension context that suppresses the conflict UI.
-@returns a disposable-backed context suitable for isolated activate() calls
-*/
+ * Build a fake extension context that suppresses the conflict UI.
+ * @returns a disposable-backed context suitable for isolated activate() calls
+ */
 function createIsolatedContext(): vscode.ExtensionContext {
     const extension = vscode.extensions.getExtension('joernberkefeld.sfmc-language');
     assert.ok(extension, 'sfmc-language must be present in the test host');

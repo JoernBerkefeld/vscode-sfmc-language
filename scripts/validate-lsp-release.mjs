@@ -11,12 +11,12 @@ const github = (endpoint) =>
     );
 
 /**
-Verify documentation from one immutable producer commit, not the consumer checkout.
-@param identity - actual bundled package identity
-@param rules - installed diagnostic registry
-@param readTaggedFile - reader pinned to the resolved tag commit
-@returns number of distinct documentation pages checked
-*/
+ * Verify documentation from one immutable producer commit, not the consumer checkout.
+ * @param identity - actual bundled package identity
+ * @param rules - installed diagnostic registry
+ * @param readTaggedFile - reader pinned to the resolved tag commit
+ * @returns number of distinct documentation pages checked
+ */
 export async function validateTaggedLsp(identity, rules, readTaggedFile) {
     const version = identity.manifest.version;
     assert.match(
@@ -55,10 +55,10 @@ export async function validateTaggedLsp(identity, rules, readTaggedFile) {
 }
 
 /**
-Resolve a release tag through GitHub, then read only immutable commit objects.
-Ordinary artifact tests never call this network-only release command.
-@returns verified tag, commit and page count
-*/
+ * Resolve a release tag through GitHub, then read only immutable commit objects.
+ * Ordinary artifact tests never call this network-only release command.
+ * @returns verified tag, commit and page count
+ */
 export async function validateLspRelease() {
     const artifact = await buildServerArtifact();
     const identity = await resolveBundledLsp(artifact.metafile);

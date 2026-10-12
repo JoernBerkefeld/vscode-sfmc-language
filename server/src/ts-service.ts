@@ -1,13 +1,13 @@
 /**
-ts-service.ts
-
-Embedded TypeScript language service for SSJS files.
-
-Loads sfmc-globals.d.ts as the sole built-in library (noLib:true) so the
-compiler only knows about the SFMC-supported API surface.  Each open SSJS
-document is tracked in a virtual JS file, and the service exposes helpers
-that return LSP-typed results ready to merge into the server handlers.
-*/
+ * ts-service.ts
+ *
+ * Embedded TypeScript language service for SSJS files.
+ *
+ * Loads sfmc-globals.d.ts as the sole built-in library (noLib:true) so the
+ * compiler only knows about the SFMC-supported API surface.  Each open SSJS
+ * document is tracked in a virtual JS file, and the service exposes helpers
+ * that return LSP-typed results ready to merge into the server handlers.
+ */
 import * as ts from 'typescript';
 import { getTypescriptDiagnosticUrl } from './diagnostic-documentation';
 import * as fs from 'node:fs';
@@ -36,9 +36,9 @@ import {
 const GLOBALS_FILENAME = '__sfmc_globals.d.ts';
 
 /**
-Load the bundled SSJS globals `.d.ts` content used to type the virtual files.
-@returns the globals declaration file content as a string
-*/
+ * Load the bundled SSJS globals `.d.ts` content used to type the virtual files.
+ * @returns the globals declaration file content as a string
+ */
 function loadGlobalsContent(): string {
     // Resolve the path to ssjs-data via require if possible (handles hoisted installs)
     let resolvedPackagePath: string | undefined;
@@ -98,10 +98,10 @@ const virtualFiles = new Map<string, VirtualFile>([
 ]);
 
 /**
-Create or update a virtual in-memory file, bumping its version and snapshot.
-@param name - the virtual filename
-@param content - the file content
-*/
+ * Create or update a virtual in-memory file, bumping its version and snapshot.
+ * @param name - the virtual filename
+ * @param content - the file content
+ */
 function setVirtualFile(name: string, content: string): void {
     const existing = virtualFiles.get(name);
     virtualFiles.set(name, {
@@ -133,10 +133,10 @@ const uriToGlobalsName = new Map<string, string>();
 const uriToPolyfillsName = new Map<string, string>();
 
 /**
-Get (or lazily assign) the stable synthetic `.js` filename for a document URI.
-@param uri - the LSP document URI
-@returns the virtual `.js` filename for that document
-*/
+ * Get (or lazily assign) the stable synthetic `.js` filename for a document URI.
+ * @param uri - the LSP document URI
+ * @returns the virtual `.js` filename for that document
+ */
 function virtualNameForUri(uri: string): string {
     let name = uriToVirtualName.get(uri);
     if (!name) {
@@ -148,23 +148,23 @@ function virtualNameForUri(uri: string): string {
 }
 
 /**
-Mark a document's virtual `.js` file as the one the language service should
-answer for. Only this document (plus the shared globals) is exposed via
-`getScriptFileNames`, isolating its top-level declarations from other open
-SSJS documents (prevents ts2403 cross-file `var` collisions).
-@param name - the active document's virtual `.js` filename, or undefined
-*/
+ * Mark a document's virtual `.js` file as the one the language service should
+ * answer for. Only this document (plus the shared globals) is exposed via
+ * `getScriptFileNames`, isolating its top-level declarations from other open
+ * SSJS documents (prevents ts2403 cross-file `var` collisions).
+ * @param name - the active document's virtual `.js` filename, or undefined
+ */
 function setActiveDocument(name: string | undefined): void {
     activeDocument.js = name;
 }
 
 /**
-Reverse lookup: map a virtual filename produced by `virtualNameForUri` (or its
-`.polyfills.d.ts` / `.globals.d.ts` companions) back to the originating LSP
-document URI. Returns undefined for the shared globals file or unknown names.
-@param fileName - virtual filename from the TS language service
-@returns the originating document URI, or undefined
-*/
+ * Reverse lookup: map a virtual filename produced by `virtualNameForUri` (or its
+ * `.polyfills.d.ts` / `.globals.d.ts` companions) back to the originating LSP
+ * document URI. Returns undefined for the shared globals file or unknown names.
+ * @param fileName - virtual filename from the TS language service
+ * @returns the originating document URI, or undefined
+ */
 function uriForVirtualName(fileName: string): string | undefined {
     // Companion files share the document's counter; normalize to the base .js name.
     const base = fileName.replace(/\.polyfills\.d\.ts$/, '.js').replace(/\.globals\.d\.ts$/, '.js');
@@ -175,10 +175,10 @@ function uriForVirtualName(fileName: string): string | undefined {
 }
 
 /**
-Get (or lazily assign) the companion `.globals.d.ts` filename for a document.
-@param uri - the LSP document URI
-@returns the virtual globals declaration filename for that document
-*/
+ * Get (or lazily assign) the companion `.globals.d.ts` filename for a document.
+ * @param uri - the LSP document URI
+ * @returns the virtual globals declaration filename for that document
+ */
 function globalsNameForUri(uri: string): string {
     let name = uriToGlobalsName.get(uri);
     if (!name) {
@@ -191,10 +191,10 @@ function globalsNameForUri(uri: string): string {
 }
 
 /**
-Get (or lazily assign) the companion `.polyfills.d.ts` filename for a document.
-@param uri - the LSP document URI
-@returns the virtual polyfills declaration filename for that document
-*/
+ * Get (or lazily assign) the companion `.polyfills.d.ts` filename for a document.
+ * @param uri - the LSP document URI
+ * @returns the virtual polyfills declaration filename for that document
+ */
 function polyfillsNameForUri(uri: string): string {
     let name = uriToPolyfillsName.get(uri);
     if (!name) {
@@ -211,21 +211,21 @@ function polyfillsNameForUri(uri: string): string {
 // ---------------------------------------------------------------------------
 
 /**
-Parses ESLint-style global comments from SSJS source text and returns a
-TypeScript ambient declaration string for all declared names.
-
-Supported forms:
-  /* global DEBUG, deKey * /
-  /* globals DEBUG, deKey * /
-  /* global DEBUG:readonly, deKey:writable * /
-
-Qualifiers (`:readonly`, `:writable`) are accepted for ESLint compatibility
-but ignored — all names are declared as `any` for the TS checker.
-
-Returns an empty string when no global comments are present.
-@param text - SSJS source text to scan
-@returns TypeScript `declare var` statements, or an empty string
-*/
+ * Parses ESLint-style global comments from SSJS source text and returns a
+ * TypeScript ambient declaration string for all declared names.
+ *
+ * Supported forms:
+ *   /* global DEBUG, deKey * /
+ *   /* globals DEBUG, deKey * /
+ *   /* global DEBUG:readonly, deKey:writable * /
+ *
+ * Qualifiers (`:readonly`, `:writable`) are accepted for ESLint compatibility
+ * but ignored — all names are declared as `any` for the TS checker.
+ *
+ * Returns an empty string when no global comments are present.
+ * @param text - SSJS source text to scan
+ * @returns TypeScript `declare var` statements, or an empty string
+ */
 function parseGlobalCommentDeclarations(text: string): string {
     // Matches: /* global[s] <body> */  — non-greedy, allows multiline bodies.
     const GLOBAL_COMMENT = /\/\*\s*globals?\s+([\s\S]*?)\*\//g;
@@ -257,11 +257,11 @@ function parseGlobalCommentDeclarations(text: string): string {
 // ---------------------------------------------------------------------------
 
 /**
-Built-in constructors whose `.prototype` can be polyfilled in SSJS, mapped to
-the TypeScript interface that `sfmc-globals.d.ts` declares for instances of
-that type. `Array` is generic (`interface Array<T>`) so it carries its type
-parameter; the rest are non-generic.
-*/
+ * Built-in constructors whose `.prototype` can be polyfilled in SSJS, mapped to
+ * the TypeScript interface that `sfmc-globals.d.ts` declares for instances of
+ * that type. `Array` is generic (`interface Array<T>`) so it carries its type
+ * parameter; the rest are non-generic.
+ */
 const POLYFILL_INTERFACE_BY_CTOR: Record<string, { iface: string; typeParams: string }> = {
     Array: { iface: 'Array', typeParams: '<T>' },
     String: { iface: 'String', typeParams: '' },
@@ -274,32 +274,32 @@ const POLYFILL_INTERFACE_BY_CTOR: Record<string, { iface: string; typeParams: st
 };
 
 /**
-Scans SSJS source for prototype polyfills of the form
-`Ctor.prototype.method = ...` and returns TypeScript interface-merge
-declarations that add each polyfilled method to the matching built-in
-interface from `sfmc-globals.d.ts`.
-
-Because the bundled `sfmc-globals.d.ts` intentionally declares only the
-SSJS-supported subset of built-in methods (no `Array.prototype.forEach`,
-`String.prototype.startsWith`, …), polyfilling an unsupported method would
-otherwise raise `Property 'X' does not exist` on both the assignment and
-every later call. Merging the polyfilled members back into the interface
-teaches the checker that those methods now exist for this document.
-
-Each polyfilled member is emitted as a *method signature* (not a bare
-`: any` property) so hover reports `(method) String.startsWith(...)` rather
-than `(property) … : any`.  When the polyfill is assigned a function
-expression, the function's own parameter names are reused — typed from the
-polyfill's `@param {Type}` / `@returns {Type}` JSDoc when present, otherwise
-`any` — and any JSDoc block immediately preceding the assignment is forwarded
-so the checker surfaces the documented `@param` / `@returns` text on hover.
-The polyfill's body is still type-checked normally and unrelated diagnostics
-are preserved.
-
-Returns an empty string when no prototype polyfills are present.
-@param text - SSJS source text to scan
-@returns TypeScript interface-merge statements, or an empty string
-*/
+ * Scans SSJS source for prototype polyfills of the form
+ * `Ctor.prototype.method = ...` and returns TypeScript interface-merge
+ * declarations that add each polyfilled method to the matching built-in
+ * interface from `sfmc-globals.d.ts`.
+ *
+ * Because the bundled `sfmc-globals.d.ts` intentionally declares only the
+ * SSJS-supported subset of built-in methods (no `Array.prototype.forEach`,
+ * `String.prototype.startsWith`, …), polyfilling an unsupported method would
+ * otherwise raise `Property 'X' does not exist` on both the assignment and
+ * every later call. Merging the polyfilled members back into the interface
+ * teaches the checker that those methods now exist for this document.
+ *
+ * Each polyfilled member is emitted as a *method signature* (not a bare
+ * `: any` property) so hover reports `(method) String.startsWith(...)` rather
+ * than `(property) … : any`.  When the polyfill is assigned a function
+ * expression, the function's own parameter names are reused — typed from the
+ * polyfill's `@param {Type}` / `@returns {Type}` JSDoc when present, otherwise
+ * `any` — and any JSDoc block immediately preceding the assignment is forwarded
+ * so the checker surfaces the documented `@param` / `@returns` text on hover.
+ * The polyfill's body is still type-checked normally and unrelated diagnostics
+ * are preserved.
+ *
+ * Returns an empty string when no prototype polyfills are present.
+ * @param text - SSJS source text to scan
+ * @returns TypeScript interface-merge statements, or an empty string
+ */
 function parsePolyfillDeclarations(text: string): string {
     // Match `Ctor.prototype.method = function (params) {` where Ctor is a known
     // built-in. Captures the constructor, the method name, and — when the value
@@ -412,11 +412,11 @@ function parsePolyfillDeclarations(text: string): string {
 }
 
 /**
-Built-in constructors whose STATIC members can be polyfilled in SSJS, mapped to
-the declaration target that the merge must re-open. `Math` is a namespace
-(`declare namespace Math`), the others are `*Constructor` interfaces declared by
-`sfmc-globals.d.ts` (e.g. `interface ArrayConstructor`).
-*/
+ * Built-in constructors whose STATIC members can be polyfilled in SSJS, mapped to
+ * the declaration target that the merge must re-open. `Math` is a namespace
+ * (`declare namespace Math`), the others are `*Constructor` interfaces declared by
+ * `sfmc-globals.d.ts` (e.g. `interface ArrayConstructor`).
+ */
 const STATIC_POLYFILL_TARGET_BY_CTOR: Record<
     string,
     { target: string; kind: 'interface' | 'namespace' }
@@ -431,21 +431,21 @@ const STATIC_POLYFILL_TARGET_BY_CTOR: Record<
 };
 
 /**
-Scans SSJS source for STATIC polyfills of the form `Ctor.method = function (…)`
-(e.g. `Array.isArray = …`, `Object.getPrototypeOf = …`, `Math.max = …`) and
-returns TypeScript declarations that add each member to the matching
-`*Constructor` interface (via declaration merging) or `Math`/`JSON` namespace.
-
-Like `parsePolyfillDeclarations` for prototype members, this is required because
-`sfmc-globals.d.ts` intentionally omits unsupported statics. Once the
-"Insert polyfill" quick-fix adds `Array.isArray = function () { … }`, the
-assignment target must exist or TypeScript raises ts2339
-("Property 'isArray' does not exist on type 'ArrayConstructor'").
-
-Returns an empty string when no static polyfills are present.
-@param text - SSJS source text to scan
-@returns TypeScript merge statements, or an empty string
-*/
+ * Scans SSJS source for STATIC polyfills of the form `Ctor.method = function (…)`
+ * (e.g. `Array.isArray = …`, `Object.getPrototypeOf = …`, `Math.max = …`) and
+ * returns TypeScript declarations that add each member to the matching
+ * `*Constructor` interface (via declaration merging) or `Math`/`JSON` namespace.
+ *
+ * Like `parsePolyfillDeclarations` for prototype members, this is required because
+ * `sfmc-globals.d.ts` intentionally omits unsupported statics. Once the
+ * "Insert polyfill" quick-fix adds `Array.isArray = function () { … }`, the
+ * assignment target must exist or TypeScript raises ts2339
+ * ("Property 'isArray' does not exist on type 'ArrayConstructor'").
+ *
+ * Returns an empty string when no static polyfills are present.
+ * @param text - SSJS source text to scan
+ * @returns TypeScript merge statements, or an empty string
+ */
 function parseStaticPolyfillDeclarations(text: string): string {
     // Match `Ctor.method = function (params)` where Ctor is a known built-in and
     // `method` is NOT `prototype` (those are handled by parsePolyfillDeclarations).
@@ -537,14 +537,14 @@ function parseStaticPolyfillDeclarations(text: string): string {
 }
 
 /**
-Map a single JSDoc type token to a TypeScript-safe type. Primitives and the
-known built-in interfaces pass through (with canonical casing); `Array`
-becomes `any[]`; anything not recognised (e.g. user types like `Client` that
-are not declared in the virtual program) falls back to `any` so the generated
-`.polyfills.d.ts` never references an undeclared name.
-@param raw - a single JSDoc type token (no `{}`)
-@returns a TypeScript-safe type string
-*/
+ * Map a single JSDoc type token to a TypeScript-safe type. Primitives and the
+ * known built-in interfaces pass through (with canonical casing); `Array`
+ * becomes `any[]`; anything not recognised (e.g. user types like `Client` that
+ * are not declared in the virtual program) falls back to `any` so the generated
+ * `.polyfills.d.ts` never references an undeclared name.
+ * @param raw - a single JSDoc type token (no `{}`)
+ * @returns a TypeScript-safe type string
+ */
 function jsdocTokenToTsType(raw: string): string {
     const t = raw.trim();
     if (!t) return 'any';
@@ -585,12 +585,12 @@ function jsdocTokenToTsType(raw: string): string {
 }
 
 /**
-Convert a JSDoc type expression (the text inside `{...}`) into a TypeScript
-type, supporting `|` unions and `Type[]` array suffixes. Unknown tokens
-degrade to `any`.
-@param expression - JSDoc type expression without surrounding braces
-@returns a TypeScript-safe type string
-*/
+ * Convert a JSDoc type expression (the text inside `{...}`) into a TypeScript
+ * type, supporting `|` unions and `Type[]` array suffixes. Unknown tokens
+ * degrade to `any`.
+ * @param expression - JSDoc type expression without surrounding braces
+ * @returns a TypeScript-safe type string
+ */
 function jsdocTypeToTs(expression: string): string {
     const trimmed = expression.trim();
     if (!trimmed) return 'any';
@@ -610,13 +610,13 @@ function jsdocTypeToTs(expression: string): string {
 }
 
 /**
-Parse `@param {Type} name` and `@returns {Type}` annotations out of a JSDoc
-comment block, returning a map of parameter name to TS type, the set of
-parameters marked optional (JSDoc `[name]` / `[name=default]` syntax), and the
-return type (defaulting to `any` when no `@returns` type is documented).
-@param jsdoc - the raw JSDoc comment block
-@returns parsed parameter types, optional-parameter names, and the return type
-*/
+ * Parse `@param {Type} name` and `@returns {Type}` annotations out of a JSDoc
+ * comment block, returning a map of parameter name to TS type, the set of
+ * parameters marked optional (JSDoc `[name]` / `[name=default]` syntax), and the
+ * return type (defaulting to `any` when no `@returns` type is documented).
+ * @param jsdoc - the raw JSDoc comment block
+ * @returns parsed parameter types, optional-parameter names, and the return type
+ */
 function parseJsdocTypes(jsdoc: string): {
     paramTypes: Map<string, string>;
     optionalParams: Set<string>;
@@ -647,17 +647,17 @@ function parseJsdocTypes(jsdoc: string): {
 }
 
 /**
-Remove JSDoc *type* annotations from a comment block so it is safe to forward
-into a generated `.d.ts`. TypeScript type-checks type expressions inside JSDoc
-tags (`@param {Type}`, `@returns {Type}`, `@property {Type}`, `@typedef
-{Type}`, …); an undeclared or duplicate type name in a forwarded comment
-would raise spurious diagnostics and can break the surrounding interface merge.
-Stripping the `{...}` (and dropping whole `@typedef`/`@property` lines, which
-only exist to declare types) leaves human-readable descriptions intact while
-removing anything TypeScript would try to resolve.
-@param jsdoc - the raw JSDoc comment block
-@returns the JSDoc block with type annotations removed
-*/
+ * Remove JSDoc *type* annotations from a comment block so it is safe to forward
+ * into a generated `.d.ts`. TypeScript type-checks type expressions inside JSDoc
+ * tags (`@param {Type}`, `@returns {Type}`, `@property {Type}`, `@typedef
+ * {Type}`, …); an undeclared or duplicate type name in a forwarded comment
+ * would raise spurious diagnostics and can break the surrounding interface merge.
+ * Stripping the `{...}` (and dropping whole `@typedef`/`@property` lines, which
+ * only exist to declare types) leaves human-readable descriptions intact while
+ * removing anything TypeScript would try to resolve.
+ * @param jsdoc - the raw JSDoc comment block
+ * @returns the JSDoc block with type annotations removed
+ */
 function stripJsdocTypeAnnotations(jsdoc: string): string {
     if (!jsdoc) return '';
     const cleaned = jsdoc
@@ -670,13 +670,13 @@ function stripJsdocTypeAnnotations(jsdoc: string): string {
 }
 
 /**
-Extract the JSDoc block (`/** … *\/`) immediately preceding `index` in
-`text`, ignoring intervening whitespace. Returns the raw comment (without
-surrounding indentation) or an empty string when none is directly adjacent.
-@param text - full source text
-@param index - offset of the polyfill assignment
-@returns the adjacent JSDoc comment, or an empty string
-*/
+ * Extract the JSDoc block (`/** … *\/`) immediately preceding `index` in
+ * `text`, ignoring intervening whitespace. Returns the raw comment (without
+ * surrounding indentation) or an empty string when none is directly adjacent.
+ * @param text - full source text
+ * @param index - offset of the polyfill assignment
+ * @returns the adjacent JSDoc comment, or an empty string
+ */
 function extractPrecedingJsdoc(text: string, index: number): string {
     const before = text.slice(0, index);
     // Only a JSDoc block separated from the assignment by whitespace counts.
@@ -693,11 +693,11 @@ function extractPrecedingJsdoc(text: string, index: number): string {
 }
 
 /**
-Re-indent a multi-line block so every line is prefixed with `indent`.
-@param block - text block to indent
-@param indent - indentation string to prepend to each line
-@returns the indented block
-*/
+ * Re-indent a multi-line block so every line is prefixed with `indent`.
+ * @param block - text block to indent
+ * @param indent - indentation string to prepend to each line
+ * @returns the indented block
+ */
 function indentLines(block: string, indent: string): string {
     return block
         .split('\n')
@@ -789,11 +789,11 @@ const languageService = ts.createLanguageService(host, ts.createDocumentRegistry
 // ---------------------------------------------------------------------------
 
 /**
-Convert an LSP position to a zero-based character offset in the text.
-@param text - the source text
-@param position - the LSP line/character position
-@returns the character offset within the text
-*/
+ * Convert an LSP position to a zero-based character offset in the text.
+ * @param text - the source text
+ * @param position - the LSP line/character position
+ * @returns the character offset within the text
+ */
 function positionToOffset(text: string, position: Position): number {
     const lines = text.split('\n');
     let offset = 0;
@@ -804,11 +804,11 @@ function positionToOffset(text: string, position: Position): number {
 }
 
 /**
-Convert a zero-based character offset to an LSP position.
-@param text - the source text
-@param offset - the character offset within the text
-@returns the LSP line/character position
-*/
+ * Convert a zero-based character offset to an LSP position.
+ * @param text - the source text
+ * @param offset - the character offset within the text
+ * @returns the LSP line/character position
+ */
 function offsetToPosition(text: string, offset: number): Position {
     const slice = text.slice(0, Math.max(0, offset));
     const lines = slice.split('\n');
@@ -845,10 +845,10 @@ const TS_KIND_MAP: Partial<Record<string, CompletionItemKind>> = {
 };
 
 /**
-Map a TypeScript script-element kind to an LSP completion item kind.
-@param kind - the TypeScript `ScriptElementKind` value
-@returns the corresponding LSP `CompletionItemKind`
-*/
+ * Map a TypeScript script-element kind to an LSP completion item kind.
+ * @param kind - the TypeScript `ScriptElementKind` value
+ * @returns the corresponding LSP `CompletionItemKind`
+ */
 function tsKindToLsp(kind: string): CompletionItemKind {
     return TS_KIND_MAP[kind] ?? CompletionItemKind.Text;
 }
@@ -858,10 +858,10 @@ function tsKindToLsp(kind: string): CompletionItemKind {
 // ---------------------------------------------------------------------------
 
 /**
-Map a TypeScript diagnostic category to an LSP diagnostic severity.
-@param category - the TypeScript `DiagnosticCategory` value
-@returns the corresponding LSP `DiagnosticSeverity`
-*/
+ * Map a TypeScript diagnostic category to an LSP diagnostic severity.
+ * @param category - the TypeScript `DiagnosticCategory` value
+ * @returns the corresponding LSP `DiagnosticSeverity`
+ */
 function tsCategoryToSeverity(category: ts.DiagnosticCategory): DiagnosticSeverity {
     switch (category) {
         case ts.DiagnosticCategory.Error: {
@@ -884,17 +884,17 @@ function tsCategoryToSeverity(category: ts.DiagnosticCategory): DiagnosticSeveri
 // ---------------------------------------------------------------------------
 
 /**
-Notify the service that a SSJS document's content has changed.
-Must be called before any completions / diagnostics / hover for that URI.
-
-Also scans the text for ESLint-style global-comment annotations
-(the `global` and `globals` block-comment forms) and maintains a
-per-document companion `.globals.d.ts` virtual file containing
-the corresponding `declare var` statements so the TypeScript checker
-does not emit "Cannot find name" errors for those identifiers.
-@param uri - LSP document URI
-@param text - full document text
-*/
+ * Notify the service that a SSJS document's content has changed.
+ * Must be called before any completions / diagnostics / hover for that URI.
+ *
+ * Also scans the text for ESLint-style global-comment annotations
+ * (the `global` and `globals` block-comment forms) and maintains a
+ * per-document companion `.globals.d.ts` virtual file containing
+ * the corresponding `declare var` statements so the TypeScript checker
+ * does not emit "Cannot find name" errors for those identifiers.
+ * @param uri - LSP document URI
+ * @param text - full document text
+ */
 export function updateSsjsDocument(uri: string, text: string): void {
     setVirtualFile(virtualNameForUri(uri), text);
 
@@ -920,10 +920,10 @@ export function updateSsjsDocument(uri: string, text: string): void {
 }
 
 /**
-Remove a SSJS document from the virtual FS (e.g. on close).
-Also removes the companion globals declaration file if one exists.
-@param uri - LSP document URI
-*/
+ * Remove a SSJS document from the virtual FS (e.g. on close).
+ * Also removes the companion globals declaration file if one exists.
+ * @param uri - LSP document URI
+ */
 export function removeSsjsDocument(uri: string): void {
     const name = uriToVirtualName.get(uri);
     if (name) {
@@ -946,13 +946,13 @@ export function removeSsjsDocument(uri: string): void {
 }
 
 /**
-Return LSP CompletionItems from the embedded TypeScript language service
-at the given cursor position.  Returns an empty array when the service has
-no results or the document is not known.
-@param uri - LSP document URI
-@param position - cursor position in the document
-@returns LSP completion items, or an empty array if none are available
-*/
+ * Return LSP CompletionItems from the embedded TypeScript language service
+ * at the given cursor position.  Returns an empty array when the service has
+ * no results or the document is not known.
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns LSP completion items, or an empty array if none are available
+ */
 export function getSsjsCompletions(uri: string, position: Position): CompletionItem[] {
     const name = uriToVirtualName.get(uri);
     if (!name) return [];
@@ -987,14 +987,14 @@ export function getSsjsCompletions(uri: string, position: Position): CompletionI
 }
 
 /**
-Same as getSsjsCompletions, but also returns whether the completion was
-triggered for member access (e.g. `de.` or `Platform.Function.`).
-Use this in server.ts to decide whether to suppress SFMC global completions
-that would pollute member-completion lists.
-@param uri - LSP document URI
-@param position - cursor position in the document
-@returns completion items and a flag indicating whether this is a member-access completion
-*/
+ * Same as getSsjsCompletions, but also returns whether the completion was
+ * triggered for member access (e.g. `de.` or `Platform.Function.`).
+ * Use this in server.ts to decide whether to suppress SFMC global completions
+ * that would pollute member-completion lists.
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns completion items and a flag indicating whether this is a member-access completion
+ */
 export function getSsjsCompletionInfo(
     uri: string,
     position: Position
@@ -1033,10 +1033,10 @@ export function getSsjsCompletionInfo(
 }
 
 /**
-Return LSP Diagnostics from the embedded TypeScript language service for the given SSJS document URI.
-@param uri - LSP document URI
-@returns LSP diagnostics, or an empty array if none are found
-*/
+ * Return LSP Diagnostics from the embedded TypeScript language service for the given SSJS document URI.
+ * @param uri - LSP document URI
+ * @returns LSP diagnostics, or an empty array if none are found
+ */
 export function getSsjsDiagnostics(uri: string): Diagnostic[] {
     const name = uriToVirtualName.get(uri);
     if (!name) return [];
@@ -1103,11 +1103,11 @@ export function getSsjsDiagnostics(uri: string): Diagnostic[] {
 }
 
 /**
-Compute the `[start, end)` offset ranges of every JSDoc block comment
-(`/** … *\/`) in the given source text.
-@param text - full document text
-@returns an array of `[start, end)` offset tuples
-*/
+ * Compute the `[start, end)` offset ranges of every JSDoc block comment
+ * (`/** … *\/`) in the given source text.
+ * @param text - full document text
+ * @returns an array of `[start, end)` offset tuples
+ */
 function jsdocCommentRanges(text: string): Array<[number, number]> {
     const ranges: Array<[number, number]> = [];
     const re = /\/\*\*[\s\S]*?\*\//g;
@@ -1119,28 +1119,28 @@ function jsdocCommentRanges(text: string): Array<[number, number]> {
 }
 
 /**
-Determine whether `offset` falls within any of the supplied comment ranges.
-@param offset - character offset to test
-@param ranges - JSDoc comment ranges from {@link jsdocCommentRanges}
-@returns true when the offset is inside a JSDoc comment
-*/
+ * Determine whether `offset` falls within any of the supplied comment ranges.
+ * @param offset - character offset to test
+ * @param ranges - JSDoc comment ranges from {@link jsdocCommentRanges}
+ * @returns true when the offset is inside a JSDoc comment
+ */
 function isInsideJsdoc(offset: number, ranges: Array<[number, number]>): boolean {
     return ranges.some(([start, end]) => offset >= start && offset < end);
 }
 
 /**
-Compute the `[start, end)` offset ranges of every prototype-polyfill
-assignment body — `Ctor.prototype.method = [Ctor.prototype.method ||] function (…) { … }`.
-
-The self-guarded form (`X = X || function () {}`) defeats TypeScript's
-contextual `this` typing under `noLib:true`: the declared `this: any[]`
-parameter on the merged interface member does not flow into the function
-operand of the `||`, so a body reading `this.length` or doing `return this`
-raises spurious ts2339 / ts2322. These are known-good SSJS polyfills, so the
-`this`-related diagnostics inside their bodies are suppressed.
-@param text - full document text
-@returns an array of `[start, end)` offset tuples spanning each assignment body
-*/
+ * Compute the `[start, end)` offset ranges of every prototype-polyfill
+ * assignment body — `Ctor.prototype.method = [Ctor.prototype.method ||] function (…) { … }`.
+ *
+ * The self-guarded form (`X = X || function () {}`) defeats TypeScript's
+ * contextual `this` typing under `noLib:true`: the declared `this: any[]`
+ * parameter on the merged interface member does not flow into the function
+ * operand of the `||`, so a body reading `this.length` or doing `return this`
+ * raises spurious ts2339 / ts2322. These are known-good SSJS polyfills, so the
+ * `this`-related diagnostics inside their bodies are suppressed.
+ * @param text - full document text
+ * @returns an array of `[start, end)` offset tuples spanning each assignment body
+ */
 function prototypePolyfillBodyRanges(text: string): Array<[number, number]> {
     const ranges: Array<[number, number]> = [];
     // Match up to the opening `{` of the function body; then balance braces to
@@ -1163,12 +1163,12 @@ function prototypePolyfillBodyRanges(text: string): Array<[number, number]> {
 }
 
 /**
-Return an LSP Hover from the embedded TypeScript language service at the
-given cursor position.  Returns null when there is nothing to show.
-@param uri - LSP document URI
-@param position - cursor position in the document
-@returns LSP Hover with markdown content, or undefined if nothing to show
-*/
+ * Return an LSP Hover from the embedded TypeScript language service at the
+ * given cursor position.  Returns null when there is nothing to show.
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns LSP Hover with markdown content, or undefined if nothing to show
+ */
 export function getSsjsHover(uri: string, position: Position): Hover | undefined {
     const name = uriToVirtualName.get(uri);
     if (!name) return undefined;
@@ -1234,19 +1234,19 @@ export function getSsjsHover(uri: string, position: Position): Hover | undefined
 }
 
 /**
-Return LSP definition Location(s) from the embedded TypeScript language
-service at the given cursor position. This gives `.ssjs` files the same
-go-to-definition quality as `.js` (top-level functions, locals, object
-members, and prototype-polyfilled methods).
-
-Definitions that resolve into a synthetic companion file (the per-document
-`.polyfills.d.ts` interface-merge) are remapped to the real
-`Ctor.prototype.method = …` assignment in the originating document, so the
-user navigates to their own polyfill rather than a generated declaration.
-@param uri - LSP document URI
-@param position - cursor position in the document
-@returns an array of LSP Locations (possibly empty)
-*/
+ * Return LSP definition Location(s) from the embedded TypeScript language
+ * service at the given cursor position. This gives `.ssjs` files the same
+ * go-to-definition quality as `.js` (top-level functions, locals, object
+ * members, and prototype-polyfilled methods).
+ *
+ * Definitions that resolve into a synthetic companion file (the per-document
+ * `.polyfills.d.ts` interface-merge) are remapped to the real
+ * `Ctor.prototype.method = …` assignment in the originating document, so the
+ * user navigates to their own polyfill rather than a generated declaration.
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns an array of LSP Locations (possibly empty)
+ */
 export function getSsjsDefinition(uri: string, position: Position): Location[] {
     const name = uriToVirtualName.get(uri);
     const file = name ? virtualFiles.get(name) : undefined;
@@ -1302,19 +1302,19 @@ export function getSsjsDefinition(uri: string, position: Position): Location[] {
 }
 
 /**
-Return LSP reference Location(s) from the embedded TypeScript language
-service at the given cursor position — powering Find All References for
-`.ssjs` files (top-level functions, locals, object members, and
-prototype-polyfilled methods).
-
-References that resolve into the synthetic per-document `.polyfills.d.ts`
-companion are remapped to the real `Ctor.prototype.method = …` assignment in
-the originating document, matching the go-to-definition remap, so the user
-never sees a generated declaration in the results.
-@param uri - LSP document URI
-@param position - cursor position in the document
-@returns an array of LSP Locations (possibly empty)
-*/
+ * Return LSP reference Location(s) from the embedded TypeScript language
+ * service at the given cursor position — powering Find All References for
+ * `.ssjs` files (top-level functions, locals, object members, and
+ * prototype-polyfilled methods).
+ *
+ * References that resolve into the synthetic per-document `.polyfills.d.ts`
+ * companion are remapped to the real `Ctor.prototype.method = …` assignment in
+ * the originating document, matching the go-to-definition remap, so the user
+ * never sees a generated declaration in the results.
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns an array of LSP Locations (possibly empty)
+ */
 export function getSsjsReferences(uri: string, position: Position): Location[] {
     const name = uriToVirtualName.get(uri);
     const file = name ? virtualFiles.get(name) : undefined;
@@ -1365,27 +1365,27 @@ export function getSsjsReferences(uri: string, position: Position): Location[] {
 }
 
 /**
-Read the method identifier at `offset` inside a generated `.polyfills.d.ts`
-interface member so the reference remap can locate the matching prototype
-assignment in the source document.
-@param text - the polyfills declaration file content
-@param offset - the reference text-span start within that file
-@returns the method name at the offset, or an empty string
-*/
+ * Read the method identifier at `offset` inside a generated `.polyfills.d.ts`
+ * interface member so the reference remap can locate the matching prototype
+ * assignment in the source document.
+ * @param text - the polyfills declaration file content
+ * @param offset - the reference text-span start within that file
+ * @returns the method name at the offset, or an empty string
+ */
 function prototypeMethodNameFor(text: string, offset: number): string {
     const match = /^[$A-Z_a-z][\w$]*/.exec(text.slice(offset));
     return match ? match[0] : '';
 }
 
 /**
-Determine whether `offset` falls inside a line (`// …`) or block (`/* … *\/`)
-comment in the given source text. Used to detect when TypeScript resolved a
-prototype-polyfill definition into its leading JSDoc block instead of the
-assignment identifier, so the definition can be redirected to the code line.
-@param text - source text to scan
-@param offset - character offset to test
-@returns true when the offset lies within a comment
-*/
+ * Determine whether `offset` falls inside a line (`// …`) or block (`/* … *\/`)
+ * comment in the given source text. Used to detect when TypeScript resolved a
+ * prototype-polyfill definition into its leading JSDoc block instead of the
+ * assignment identifier, so the definition can be redirected to the code line.
+ * @param text - source text to scan
+ * @param offset - character offset to test
+ * @returns true when the offset lies within a comment
+ */
 function isOffsetInsideComment(text: string, offset: number): boolean {
     // Block comments: /* … */ (covers JSDoc /** … */).
     const block = /\/\*[\s\S]*?\*\//g;
@@ -1402,13 +1402,13 @@ function isOffsetInsideComment(text: string, offset: number): boolean {
 }
 
 /**
-Locate the `…prototype.<method>` assignment for a polyfilled method in the
-document source and return the text span covering the method name, so
-go-to-definition lands on the polyfill itself.
-@param text - document source text
-@param method - the polyfilled method name
-@returns the method-name text span, or null if not found
-*/
+ * Locate the `…prototype.<method>` assignment for a polyfilled method in the
+ * document source and return the text span covering the method name, so
+ * go-to-definition lands on the polyfill itself.
+ * @param text - document source text
+ * @param method - the polyfilled method name
+ * @returns the method-name text span, or null if not found
+ */
 function findPrototypeAssignmentSpan(
     text: string,
     method: string
@@ -1430,17 +1430,17 @@ function findPrototypeAssignmentSpan(
 }
 
 /**
-Return an LSP SignatureHelp from the embedded TypeScript language service at
-the given cursor position.  Returns undefined when the cursor is not inside a
-function call or TypeScript has no type information for it.
-
-Uses TypeScript's native display-part machinery to build the label and
-numeric `[startOffset, endOffset]` parameter spans so VS Code highlights
-the active parameter correctly.
-@param uri - LSP document URI
-@param position - cursor position in the document
-@returns LSP SignatureHelp, or undefined if the cursor is not inside a function call
-*/
+ * Return an LSP SignatureHelp from the embedded TypeScript language service at
+ * the given cursor position.  Returns undefined when the cursor is not inside a
+ * function call or TypeScript has no type information for it.
+ *
+ * Uses TypeScript's native display-part machinery to build the label and
+ * numeric `[startOffset, endOffset]` parameter spans so VS Code highlights
+ * the active parameter correctly.
+ * @param uri - LSP document URI
+ * @param position - cursor position in the document
+ * @returns LSP SignatureHelp, or undefined if the cursor is not inside a function call
+ */
 export function getSsjsSignatureHelp(uri: string, position: Position): SignatureHelp | undefined {
     const name = uriToVirtualName.get(uri);
     const file = name ? virtualFiles.get(name) : undefined;
@@ -1501,10 +1501,10 @@ export function getSsjsSignatureHelp(uri: string, position: Position): Signature
 // ---------------------------------------------------------------------------
 
 /**
-Flatten a TypeScript diagnostic message chain into a single newline-joined string.
-@param message - the TypeScript diagnostic message chain
-@returns the flattened message text
-*/
+ * Flatten a TypeScript diagnostic message chain into a single newline-joined string.
+ * @param message - the TypeScript diagnostic message chain
+ * @returns the flattened message text
+ */
 function flattenDiagnosticMessageText(message: ts.DiagnosticMessageChain): string {
     let text = message.messageText;
     if (message.next) {

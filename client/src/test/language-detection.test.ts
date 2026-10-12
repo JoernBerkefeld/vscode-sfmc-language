@@ -3,12 +3,12 @@ import * as assert from 'node:assert';
 import { getDocumentUri, activate } from './helper';
 
 /**
-Helper that waits until `doc.languageId` transitions to the expected value,
-polling every 200 ms up to five seconds. Returns the final language id.
-@param documentUri - VS Code URI of the document to watch
-@param expectedLanguage - language identifier to wait for
-@returns the final language id of the document
-*/
+ * Helper that waits until `doc.languageId` transitions to the expected value,
+ * polling every 200 ms for up to 5000 ms.  Returns the final language id.
+ * @param documentUri - VS Code URI of the document to watch
+ * @param expectedLanguage - language identifier to wait for
+ * @returns the final language id of the document
+ */
 async function waitForLanguage(documentUri: vscode.Uri, expectedLanguage: string): Promise<string> {
     const deadline = Date.now() + 5000;
     while (Date.now() < deadline) {
@@ -25,10 +25,10 @@ async function waitForLanguage(documentUri: vscode.Uri, expectedLanguage: string
 }
 
 /**
-Resolve to a promise after the given delay.
-@param ms - delay in milliseconds
-@returns a promise that resolves after the delay
-*/
+ * Resolve to a promise after the given delay.
+ * @param ms - delay in milliseconds
+ * @returns a promise that resolves after the delay
+ */
 function sleep(ms: number) {
     return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
@@ -164,13 +164,13 @@ suite('SFMC HTML auto-detection', () => {
 });
 
 /**
-Set `sfmcLanguageServer.ssjsFileMode`. The test host opens files without a
-workspace folder, so a Workspace-target write throws ("no workspace is
-opened"); we use the Global target, which the resource-scoped `getSsjsFileMode`
-read resolves as the effective value for every fixture.
-@param value - the mode to write
-@returns a promise resolving once the update is applied
-*/
+ * Set `sfmcLanguageServer.ssjsFileMode`. The test host opens files without a
+ * workspace folder, so a Workspace-target write throws ("no workspace is
+ * opened"); we use the Global target, which the resource-scoped `getSsjsFileMode`
+ * read resolves as the effective value for every fixture.
+ * @param value - the mode to write
+ * @returns a promise resolving once the update is applied
+ */
 async function setSsjsFileMode(value: 'javascript' | 'auto' | 'sfmc'): Promise<void> {
     await vscode.workspace
         .getConfiguration('sfmcLanguageServer')

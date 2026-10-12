@@ -1,13 +1,13 @@
 /**
-Changelog parsing and minimal markdown HTML (no vscode dependency — safe for Node unit tests).
-*/
+ * Changelog parsing and minimal markdown HTML (no vscode dependency — safe for Node unit tests).
+ */
 
 /**
-Compare semver strings (numeric segments only). Returns positive if a > b.
-@param a - first version string
-@param b - second version string
-@returns positive if a > b, negative if a < b, 0 if equal
-*/
+ * Compare semver strings (numeric segments only). Returns positive if a > b.
+ * @param a - first version string
+ * @param b - second version string
+ * @returns positive if a > b, negative if a < b, 0 if equal
+ */
 export function compareSemver(a: string, b: string): number {
     const pa = a.split('.').map((p) => Number(p) || 0);
     const pb = b.split('.').map((p) => Number(p) || 0);
@@ -22,11 +22,11 @@ export function compareSemver(a: string, b: string): number {
 }
 
 /**
-Extract the changelog body for a given version (Keep a Changelog style: ## [x.y.z]).
-@param changelog - full CHANGELOG.md content
-@param version - semver version string to look up
-@returns the changelog body for that version, or undefined if not found
-*/
+ * Extract the changelog body for a given version (Keep a Changelog style: ## [x.y.z]).
+ * @param changelog - full CHANGELOG.md content
+ * @param version - semver version string to look up
+ * @returns the changelog body for that version, or undefined if not found
+ */
 export function parseChangelogEntry(changelog: string, version: string): string | undefined {
     const escaped = version.replaceAll(/[.*+?^${}()|[\]\\]/g, (ch) => `\\${ch}`);
     const re = new RegExp(String.raw`^## \[${escaped}\]` + String.raw`[^\n]*\n`, 'm');
@@ -42,28 +42,28 @@ export function parseChangelogEntry(changelog: string, version: string): string 
 }
 
 /**
-Escape HTML-special characters so a raw string can be embedded in markup.
-@param s - the raw string to escape
-@returns the HTML-escaped string
-*/
+ * Escape HTML-special characters so a raw string can be embedded in markup.
+ * @param s - the raw string to escape
+ * @returns the HTML-escaped string
+ */
 export function escapeHtml(s: string): string {
     return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
 /**
-Determine whether a URL uses a safe scheme (http(s) or mailto) for anchor generation.
-@param url - the URL to test
-@returns true when the URL is safe to turn into an anchor
-*/
+ * Determine whether a URL uses a safe scheme (http(s) or mailto) for anchor generation.
+ * @param url - the URL to test
+ * @returns true when the URL is safe to turn into an anchor
+ */
 function isSafeUrl(url: string): boolean {
     return /^(https?:\/\/|mailto:)/i.test(url);
 }
 
 /**
-Convert inline markdown (links, bold, code) in an already HTML-escaped string to HTML.
-@param escaped - an HTML-escaped string containing inline markdown
-@returns the string with inline markdown replaced by HTML tags
-*/
+ * Convert inline markdown (links, bold, code) in an already HTML-escaped string to HTML.
+ * @param escaped - an HTML-escaped string containing inline markdown
+ * @returns the string with inline markdown replaced by HTML tags
+ */
 function inlineMarkdown(escaped: string): string {
     // [text](url) → anchor. Runs on already-escaped text, so "&" in URLs is "&amp;"
     // (harmless in href). Only safe schemes become links; others stay as literal text.
@@ -76,19 +76,19 @@ function inlineMarkdown(escaped: string): string {
 }
 
 /**
-Escape then apply inline markdown to a raw string in one step.
-@param text - the raw string to escape and render
-@returns the HTML-escaped string with inline markdown applied
-*/
+ * Escape then apply inline markdown to a raw string in one step.
+ * @param text - the raw string to escape and render
+ * @returns the HTML-escaped string with inline markdown applied
+ */
 function renderInline(text: string): string {
     return inlineMarkdown(escapeHtml(text));
 }
 
 /**
-Render a single markdown chunk (paragraphs and unordered lists) to HTML.
-@param chunk - the markdown chunk to render
-@returns the rendered HTML for that chunk
-*/
+ * Render a single markdown chunk (paragraphs and unordered lists) to HTML.
+ * @param chunk - the markdown chunk to render
+ * @returns the rendered HTML for that chunk
+ */
 function renderMarkdownChunk(chunk: string): string {
     const lines = chunk.split(/\r?\n/);
     const out: string[] = [];
@@ -144,10 +144,10 @@ function renderMarkdownChunk(chunk: string): string {
 }
 
 /**
-Minimal markdown → HTML for changelog sections (headings, lists, bold, code).
-@param md - markdown string to convert
-@returns HTML string
-*/
+ * Minimal markdown → HTML for changelog sections (headings, lists, bold, code).
+ * @param md - markdown string to convert
+ * @returns HTML string
+ */
 export function markdownToHtml(md: string): string {
     const parts: string[] = [];
     const fence = /^```(\w*)\r?\n([\s\S]*?)^```$/gm;

@@ -1,9 +1,9 @@
 /**
-ssjs-ts.test.ts — VS Code integration tests for the embedded TypeScript
-language service (tsService) as seen through the extension's LSP client.
-
-All tests use the test-ssjs-ts.ssjs fixture file and the real extension.
-*/
+ * ssjs-ts.test.ts — VS Code integration tests for the embedded TypeScript
+ * language service (tsService) as seen through the extension's LSP client.
+ *
+ * All tests use the test-ssjs-ts.ssjs fixture file and the real extension.
+ */
 import * as vscode from 'vscode';
 import * as assert from 'node:assert';
 import { getDocumentUri, activate } from './helper';
@@ -15,19 +15,19 @@ const SETTLE_MS = 3000;
 const COMPLETIONS_SETTLE_MS = 8000;
 
 /**
-Resolve to a promise after the given delay.
-@param ms - delay in milliseconds
-@returns a promise that resolves after the delay
-*/
+ * Resolve to a promise after the given delay.
+ * @param ms - delay in milliseconds
+ * @returns a promise that resolves after the delay
+ */
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
-Extract the plain-text label from a completion item.
-@param item - the completion item to read the label from
-@returns the item's label string
-*/
+ * Extract the plain-text label from a completion item.
+ * @param item - the completion item to read the label from
+ * @returns the item's label string
+ */
 function labelOf(item: vscode.CompletionItem): string {
     const { label } = item;
     return typeof label === 'string' ? label : label.label;

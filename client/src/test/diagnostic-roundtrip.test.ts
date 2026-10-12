@@ -20,13 +20,13 @@ const protocolConverter = client.protocol2CodeConverter;
 const codeConverter = client.code2ProtocolConverter;
 
 /**
-Read a published envelope without using a foreign ProtocolDiagnostic class.
-The bundle owns a separate languageclient copy: its instanceof check cannot
-match this test's imported converter. Real action requests still go through
-executeCodeActionProvider and the bundle's own production converters.
-@param diagnostic - Actual diagnostic retained by the extension host.
-@returns Protocol fields and the actual published data, for assertions only.
-*/
+ * Read a published envelope without using a foreign ProtocolDiagnostic class.
+ * The bundle owns a separate languageclient copy: its instanceof check cannot
+ * match this test's imported converter. Real action requests still go through
+ * executeCodeActionProvider and the bundle's own production converters.
+ * @param diagnostic - Actual diagnostic retained by the extension host.
+ * @returns Protocol fields and the actual published data, for assertions only.
+ */
 function publishedProtocol(diagnostic: vscode.Diagnostic) {
     const data = (
         diagnostic as vscode.Diagnostic & {
@@ -37,17 +37,17 @@ function publishedProtocol(diagnostic: vscode.Diagnostic) {
 }
 
 /**
-Exercise the installed languageclient converters in the real extension host.
-Synthetic emissions isolate the contract from validators being migrated separately.
-@param content - Initial editor text.
-@param language - Shared service language.
-@param variant - Unambiguous internal fix identity.
-@param range - Exact range of the offending token.
-@param payload - Original primitive or object payload.
-@param title - Expected action title.
-@param edits - Exact expected protocol edits.
-@param expected - Complete editor text after applying the workspace edit.
-*/
+ * Exercise the installed languageclient converters in the real extension host.
+ * Synthetic emissions isolate the contract from validators being migrated separately.
+ * @param content - Initial editor text.
+ * @param language - Shared service language.
+ * @param variant - Unambiguous internal fix identity.
+ * @param range - Exact range of the offending token.
+ * @param payload - Original primitive or object payload.
+ * @param title - Expected action title.
+ * @param edits - Exact expected protocol edits.
+ * @param expected - Complete editor text after applying the workspace edit.
+ */
 async function roundtrip(
     content: string,
     language: 'ampscript' | 'ssjs',
@@ -109,11 +109,11 @@ async function roundtrip(
 }
 
 /**
-Wait for a real server publication carrying the requested internal variant.
-@param document - Editor document synchronized with the server.
-@param variant - Expected diagnostic variant.
-@returns The published editor diagnostic.
-*/
+ * Wait for a real server publication carrying the requested internal variant.
+ * @param document - Editor document synchronized with the server.
+ * @param variant - Expected diagnostic variant.
+ * @returns The published editor diagnostic.
+ */
 async function publishedDiagnostic(
     document: vscode.TextDocument,
     variant: DiagnosticVariant | number

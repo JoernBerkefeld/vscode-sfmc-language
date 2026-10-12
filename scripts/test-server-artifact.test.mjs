@@ -8,9 +8,9 @@ import {
 } from './test-server-artifact.mjs';
 
 /**
-Provide independent diagnostic fixtures for negative identity assertions.
-@returns publication fixtures
-*/
+ * Provide independent diagnostic fixtures for negative identity assertions.
+ * @returns publication fixtures
+ */
 function publications() {
     return [
         [

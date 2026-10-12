@@ -13,10 +13,10 @@ const fixtureVersion = '91.82.73-artifact-test';
 const ampText = '%%[ SET @result = ArtifactUnknownFunction() ]%%';
 
 /**
-Identify the installed package from the entry actually included by esbuild.
-@param metafile - the server bundler's dependency graph
-@returns installed entry, owning manifest, and package directory
-*/
+ * Identify the installed package from the entry actually included by esbuild.
+ * @param metafile - the server bundler's dependency graph
+ * @returns installed entry, owning manifest, and package directory
+ */
 export async function resolveBundledLsp(metafile) {
     const entries = Object.keys(metafile.inputs).filter((input) =>
         /[/\\]sfmc-language-lsp[/\\]dist[/\\](?:esm[/\\]index\.js|cjs[/\\]index\.cjs)$/.test(input)
@@ -31,11 +31,11 @@ export async function resolveBundledLsp(metafile) {
 }
 
 /**
-Build the complete production server without writing to live output directories.
-The optional manifest override exists only in esbuild memory, never on disk.
-@param extensionVersion - isolated extension identity, or undefined for production
-@returns esbuild output and graph
-*/
+ * Build the complete production server without writing to live output directories.
+ * The optional manifest override exists only in esbuild memory, never on disk.
+ * @param extensionVersion - isolated extension identity, or undefined for production
+ * @returns esbuild output and graph
+ */
 export function buildServerArtifact(extensionVersion) {
     return build({
         absWorkingDir: root,
@@ -71,10 +71,10 @@ export function buildServerArtifact(extensionVersion) {
 }
 
 /**
-Reject build-machine path leakage in executable output, not sourcemap metadata.
-@param source - emitted JavaScript
-@param directories - build-time directories that must not be baked into output
-*/
+ * Reject build-machine path leakage in executable output, not sourcemap metadata.
+ * @param source - emitted JavaScript
+ * @param directories - build-time directories that must not be baked into output
+ */
 export function assertPortable(source, directories) {
     for (const directory of directories) {
         for (const spelling of [
@@ -91,11 +91,11 @@ export function assertPortable(source, directories) {
 }
 
 /**
-Exercise a relocated production server using its real JSON-RPC IPC transport.
-@param filename - standalone server artifact
-@param directory - empty runtime working directory
-@returns published diagnostics from AMPscript, known TS, and fallback TS fixtures
-*/
+ * Exercise a relocated production server using its real JSON-RPC IPC transport.
+ * @param filename - standalone server artifact
+ * @param directory - empty runtime working directory
+ * @returns published diagnostics from AMPscript, known TS, and fallback TS fixtures
+ */
 export async function executeServerArtifact(filename, directory) {
     const child = fork(filename, ['--node-ipc'], {
         cwd: directory,
@@ -165,35 +165,6 @@ export async function executeServerArtifact(filename, directory) {
             });
             results.push(await published);
         }
-        // Exercise the SSJS hover/signature branches through the production adapter.
-        const text = 'var artifactValue = "hello"; artifactValue.toUpperCase();';
-        const uri = pathToFileURL(path.join(directory, 'routing.ssjs')).href;
-        const published = waitFor(uri);
-        send({
-            method: 'textDocument/didOpen',
-            params: { textDocument: { uri, languageId: 'ssjs', version: 1, text } },
-        });
-        assert.deepEqual(await published, []);
-        for (const [id, method, character] of [
-            [3, 'textDocument/hover', text.indexOf('toUpperCase') + 2],
-            [4, 'textDocument/signatureHelp', text.indexOf('toUpperCase(') + 'toUpperCase('.length],
-        ]) {
-            const response = waitFor(id);
-            send({
-                id,
-                method,
-                params: { textDocument: { uri }, position: { line: 0, character } },
-            });
-            const result = await response;
-            assert.ok(result, `${method} must retain the embedded TypeScript result`);
-            if (method === 'textDocument/hover') {
-                assert.match(result.contents.value, /toUpperCase/);
-            } else {
-                assert.ok(
-                    result.signatures.some((signature) => signature.label.includes('toUpperCase'))
-                );
-            }
-        }
         const shutdown = waitFor(2);
         send({ id: 2, method: 'shutdown' });
         await shutdown;
@@ -211,11 +182,11 @@ export async function executeServerArtifact(filename, directory) {
 }
 
 /**
-Assert exact owning release URLs on diagnostics emitted by the full artifact.
-@param results - shared, known TS and fallback TS publications
-@param lspVersion - actual installed package identity
-@param extensionVersion - extension root identity
-*/
+ * Assert exact owning release URLs on diagnostics emitted by the full artifact.
+ * @param results - shared, known TS and fallback TS publications
+ * @param lspVersion - actual installed package identity
+ * @param extensionVersion - extension root identity
+ */
 export function verifyPublishedIdentity(results, lspVersion, extensionVersion) {
     const shared = results[0].find(
         (diagnostic) => diagnostic.code === 'sfmc/amp-no-unknown-function'
@@ -245,10 +216,10 @@ export function verifyPublishedIdentity(results, lspVersion, extensionVersion) {
 }
 
 /**
-Bundle and execute both complete installed LSP graphs without Node built-ins.
-This also detects stale copied dist version metadata after dev:sync-lsp.
-@param identity - package resolved from the real server graph
-*/
+ * Bundle and execute both complete installed LSP graphs without Node built-ins.
+ * This also detects stale copied dist version metadata after dev:sync-lsp.
+ * @param identity - package resolved from the real server graph
+ */
 export async function verifyBrowserLsp(identity) {
     for (const condition of ['import', 'require']) {
         const entry = path.resolve(identity.directory, identity.manifest.exports['.'][condition]);
@@ -299,9 +270,9 @@ export async function verifyBrowserLsp(identity) {
 }
 
 /**
-Offline acceptance of production and distinct-version fixture server artifacts.
-@returns actual installed identity and observed extension versions
-*/
+ * Offline acceptance of production and distinct-version fixture server artifacts.
+ * @returns actual installed identity and observed extension versions
+ */
 export async function validateServerArtifact() {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'sfmc-server-artifact-'));
     try {

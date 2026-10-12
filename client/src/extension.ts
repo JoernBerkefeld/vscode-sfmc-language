@@ -1,7 +1,7 @@
 /**
-SFMC Language Client
-Activates the language server for AMPscript, SSJS, and GTL files.
-*/
+ * SFMC Language Client
+ * Activates the language server for AMPscript, SSJS, and GTL files.
+ */
 
 import path from 'node:path';
 import {
@@ -44,10 +44,10 @@ interface ExtensionClient {
 }
 
 /**
-Narrow production dependency seam used by activation integration tests.
-Production `activate()` uses {@link DEFAULT_ACTIVATION_DEPENDENCIES}; tests
-override individual factories without duplicating the activation body.
-*/
+ * Narrow production dependency seam used by activation integration tests.
+ * Production `activate()` uses {@link DEFAULT_ACTIVATION_DEPENDENCIES}; tests
+ * override individual factories without duplicating the activation body.
+ */
 export interface ActivationDependencies {
     createReporter: (context: ExtensionContext) => ExtensionReporter;
     createClient: (
@@ -65,8 +65,8 @@ export interface ActivationDependencies {
 }
 
 /**
-Production factories used when VS Code activates the extension normally.
-*/
+ * Production factories used when VS Code activates the extension normally.
+ */
 export const DEFAULT_ACTIVATION_DEPENDENCIES: ActivationDependencies = {
     createReporter: (context) =>
         new TelemetryReporter({
@@ -94,10 +94,10 @@ const state: { client: ExtensionClient | undefined; reporter: ExtensionReporter 
 };
 
 /**
-Capture the live client/reporter so isolated activation tests can restore
-the host extension after exercising the production `activate()` path.
-@returns the current activation client and reporter
-*/
+ * Capture the live client/reporter so isolated activation tests can restore
+ * the host extension after exercising the production `activate()` path.
+ * @returns the current activation client and reporter
+ */
 export function snapshotActivationState(): {
     client: ExtensionClient | undefined;
     reporter: ExtensionReporter | undefined;
@@ -106,11 +106,11 @@ export function snapshotActivationState(): {
 }
 
 /**
-Restore a previously captured activation client/reporter pair.
-@param snapshot - value returned by {@link snapshotActivationState}
-@param snapshot.client - language client captured by the snapshot
-@param snapshot.reporter - telemetry reporter captured by the snapshot
-*/
+ * Restore a previously captured activation client/reporter pair.
+ * @param snapshot - value returned by {@link snapshotActivationState}
+ * @param snapshot.client - language client captured by the snapshot
+ * @param snapshot.reporter - telemetry reporter captured by the snapshot
+ */
 export function restoreActivationState(snapshot: {
     client: ExtensionClient | undefined;
     reporter: ExtensionReporter | undefined;
@@ -123,19 +123,19 @@ const EXTENSION_DISPLAY_NAME = 'SFMC Language Service';
 
 /**
 Short extension name reported as the telemetry `extension` common property.
-*/
+ */
 const TELEMETRY_EXTENSION_NAME = 'sfmc-language';
 
 // Resolved language ids already reported via `language.detected` this session.
 const reportedLanguages = new Set<string>();
 
 /**
-Build the consent-aware session-deduplicated language reporting callback used
-by both native-language and content-auto-detection call sites.
-@param seen - the session set of accepted language ids
-@param isAccepted - callback that returns true only when telemetry accepted the event
-@returns a callback that reports each accepted language id once
-*/
+ * Build the consent-aware session-deduplicated language reporting callback used
+ * by both native-language and content-auto-detection call sites.
+ * @param seen - the session set of accepted language ids
+ * @param isAccepted - callback that returns true only when telemetry accepted the event
+ * @returns a callback that reports each accepted language id once
+ */
 export function createLanguageDetectedReporter(
     seen: Set<string>,
     isAccepted: (languageId: string) => boolean
@@ -147,8 +147,8 @@ export function createLanguageDetectedReporter(
 }
 
 /**
-Clear language telemetry deduplication at an activation-session boundary.
-*/
+ * Clear language telemetry deduplication at an activation-session boundary.
+ */
 export function resetReportedLanguages(): void {
     reportedLanguages.clear();
 }
@@ -165,10 +165,10 @@ const pendingDetect = new Map<string, NodeJS.Timeout>();
 const DETECT_DEBOUNCE_MS = 250;
 
 /**
-Schedule a trailing-debounced `detectAndSwitchLanguage` for a document. A
-newer change resets the timer so detection runs once typing settles.
-@param document - the changed document to (re-)classify
-*/
+ * Schedule a trailing-debounced `detectAndSwitchLanguage` for a document. A
+ * newer change resets the timer so detection runs once typing settles.
+ * @param document - the changed document to (re-)classify
+ */
 function scheduleDetect(document: TextDocument): void {
     const key = document.uri.toString();
     const existing = pendingDetect.get(key);
@@ -190,11 +190,11 @@ export const CONFLICTING_EXTENSIONS = [
 export const SUPPRESS_KEY = 'suppressConflictWarning';
 
 /**
-Warn the user when a known conflicting extension is installed alongside this one.
-@param context - the extension context used to persist the suppression flag
-@param getExtension - extension lookup used so tests can inject active conflicts
-@returns a promise that resolves once any warning has been handled
-*/
+ * Warn the user when a known conflicting extension is installed alongside this one.
+ * @param context - the extension context used to persist the suppression flag
+ * @param getExtension - extension lookup used so tests can inject active conflicts
+ * @returns a promise that resolves once any warning has been handled
+ */
 async function checkConflictingExtensions(
     context: ExtensionContext,
     getExtension: typeof extensions.getExtension
@@ -249,10 +249,10 @@ const HANDLEBARS_BINDING_MARKER = /\{!\$[A-Za-z0-9_.]/;
 const HANDLEBARS_MUSTACHE_MARKER = /\{\{[#/!{>]?\s*[A-Za-z@]/;
 
 /**
-Test whether the text contains any AMPscript or server-side script markers.
-@param text - the text to search
-@returns true if any marker matches
-*/
+ * Test whether the text contains any of the given string or RegExp markers.
+ * @param text - the text to search
+ * @returns true if any marker matches
+ */
 function hasAnyMarker(text: string): boolean {
     return AMPSCRIPT_MARKERS.some((marker) =>
         typeof marker === 'string' ? text.includes(marker) : marker.test(text)
@@ -260,9 +260,9 @@ function hasAnyMarker(text: string): boolean {
 }
 
 /**
-Whether the configured target platform is Marketing Cloud Next.
-@returns true when `sfmcLanguageServer.targetPlatform` is `next`
-*/
+ * Whether the configured target platform is Marketing Cloud Next.
+ * @returns true when `sfmcLanguageServer.targetPlatform` is `next`
+ */
 function isMcnNextTarget(): boolean {
     return (
         workspace
@@ -272,11 +272,11 @@ function isMcnNextTarget(): boolean {
 }
 
 /**
-How a `.ssjs` file should be interpreted, read resource-scoped so a workspace
-can override it per folder.
-@param document - the document whose URI scopes the config read
-@returns the configured `sfmcLanguageServer.ssjsFileMode` (default `javascript`)
-*/
+ * How a `.ssjs` file should be interpreted, read resource-scoped so a workspace
+ * can override it per folder.
+ * @param document - the document whose URI scopes the config read
+ * @returns the configured `sfmcLanguageServer.ssjsFileMode` (default `javascript`)
+ */
 function getSsjsFileMode(document: TextDocument): 'javascript' | 'auto' | 'sfmc' {
     return workspace
         .getConfiguration('sfmcLanguageServer', document.uri)
@@ -284,11 +284,11 @@ function getSsjsFileMode(document: TextDocument): 'javascript' | 'auto' | 'sfmc'
 }
 
 /**
-Switch a document's language ID to the appropriate SFMC dialect based on its
-path and content (SSJS files, AMPscript/SSJS HTML, and MCN Handlebars).
-@param document - the text document to inspect and possibly re-language
-@param reportDetected - callback receiving the resolved language id
-*/
+ * Switch a document's language ID to the appropriate SFMC dialect based on its
+ * path and content (SSJS files, AMPscript/SSJS HTML, and MCN Handlebars).
+ * @param document - the text document to inspect and possibly re-language
+ * @param reportDetected - callback receiving the resolved language id
+ */
 export function detectAndSwitchLanguage(
     document: TextDocument,
     reportDetected: (languageId: string) => void = reportLanguageDetected
@@ -344,12 +344,12 @@ export function detectAndSwitchLanguage(
 }
 
 /**
-Register a command, ignoring the duplicate-id error that isolated
-activation tests hit because the host extension already registered it.
-@param command - command identifier
-@param callback - command handler
-@returns a disposable for the registration, or a no-op disposable
-*/
+ * Register a command, ignoring the duplicate-id error that isolated
+ * activation tests hit because the host extension already registered it.
+ * @param command - command identifier
+ * @param callback - command handler
+ * @returns a disposable for the registration, or a no-op disposable
+ */
 function registerCommandOnce(command: string, callback: () => void): { dispose: () => void } {
     try {
         return commands.registerCommand(command, callback);
@@ -359,11 +359,11 @@ function registerCommandOnce(command: string, callback: () => void): { dispose: 
 }
 
 /**
-Activate the extension: start the language client, wire up language detection,
-and register the What's New and conflict-detection features.
-@param context - the VS Code extension context
-@param [dependencies] - optional factory overrides for isolated activation tests
-*/
+ * Activate the extension: start the language client, wire up language detection,
+ * and register the What's New and conflict-detection features.
+ * @param context - the VS Code extension context
+ * @param [dependencies] - optional factory overrides for isolated activation tests
+ */
 export function activate(
     context: ExtensionContext,
     dependencies: ActivationDependencies = DEFAULT_ACTIVATION_DEPENDENCIES
@@ -518,9 +518,9 @@ export function activate(
 }
 
 /**
-Deactivate the extension by stopping the language client, if running.
-@returns a promise that resolves when the client has stopped, or undefined
-*/
+ * Deactivate the extension by stopping the language client, if running.
+ * @returns a promise that resolves when the client has stopped, or undefined
+ */
 export async function deactivate(): Promise<void> {
     for (const timer of pendingDetect.values()) clearTimeout(timer);
     pendingDetect.clear();
@@ -535,11 +535,11 @@ export async function deactivate(): Promise<void> {
 }
 
 /**
-Await the telemetry final drain and language-client stop together.
-@param reporter - the active telemetry reporter, if activation created one
-@param client - the active language client, if activation started one
-@returns a promise settled once both shutdown operations finish
-*/
+ * Await the telemetry final drain and language-client stop together.
+ * @param reporter - the active telemetry reporter, if activation created one
+ * @param client - the active language client, if activation started one
+ * @returns a promise settled once both shutdown operations finish
+ */
 export async function stopExtensionServices(
     reporter: Pick<TelemetryReporter, 'disposeAsync'> | undefined,
     client: Pick<ExtensionClient, 'stop'> | undefined
