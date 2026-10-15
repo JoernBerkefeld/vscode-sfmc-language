@@ -21,7 +21,16 @@ import {
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-import { sfmcLanguageService, type SfmcSettings } from 'sfmc-language-lsp';
+import {
+    sfmcLanguageService,
+    type SfmcSettings,
+    getScriptRegions,
+    extractScriptBodies,
+    validateMixedDocumentSsjs,
+    decodeDiagnosticData,
+    getDiagnosticRule,
+} from 'sfmc-language-lsp';
+import { BrowserJsService } from './browser-js-service';
 import {
     updateSsjsDocument,
     removeSsjsDocument,
@@ -38,6 +47,8 @@ import {
 // ---------------------------------------------------------------------------
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
+const browserJs = new BrowserJsService();
+connection.onShutdown(() => browserJs.dispose());
 
 // Mutable server capabilities, kept on a holder object so handlers can update
 // them without reassigning a top-level variable (unicorn/no-top-level-assignment-in-function).
@@ -212,18 +223,23 @@ async function sendDiagnosticsForDocument(uri: string): Promise<void> {
         if (regions.length > 0) {
             // Run SSJS-specific validators (requiresCoreLoad, deprecated, etc.) on the
             // extracted content — positions map 1:1 to the original HTML file.
-            const ssjsDocument = {
-                text: extractSsjsContent(document_.text, regions),
-                languageId: 'ssjs' as const,
-                uri: document_.uri,
-            };
-            ssjsDiags = sfmcLanguageService.validate(ssjsDocument, effective);
+            ssjsDiags = validateMixedDocumentSsjs(document_.text, effective).filter(
+                (diagnostic) => {
+                    if (!effective.disableLspDiagnosticsForEslintRules) return true;
+                    const decoded = decodeDiagnosticData(diagnostic.code, diagnostic.data);
+                    return !decoded || !getDiagnosticRule(decoded.variant)?.suppressWithEslint;
+                }
+            );
             tsDiags = getSsjsDiagnostics(uri).filter((d) =>
                 isInSsjsRegion(regions, document.offsetAt(d.range.start))
             );
         }
     }
-    connection.sendDiagnostics({ uri, diagnostics: [...sfmcDiags, ...ssjsDiags, ...tsDiags] });
+    const browserDiags = browserJs.getDiagnostics(uri);
+    connection.sendDiagnostics({
+        uri,
+        diagnostics: [...sfmcDiags, ...ssjsDiags, ...tsDiags, ...browserDiags],
+    });
 }
 
 /**
@@ -234,11 +250,13 @@ function syncSsjsVirtualFile(document: TextDocument): void {
     const lang = getDocumentLanguage(document);
     const text = document.getText();
     if (lang === 'ssjs') {
+        browserJs.removeDocument(document.uri);
         updateSsjsDocument(document.uri, text);
     } else if (lang === 'ampscript') {
+        browserJs.updateDocument(document.uri, text);
         const regions = getSsjsRegions(text);
         if (regions.length > 0) {
-            updateSsjsDocument(document.uri, extractSsjsContent(text, regions));
+            updateSsjsDocument(document.uri, extractSsjsContent(text));
         } else {
             removeSsjsDocument(document.uri);
         }
@@ -257,6 +275,7 @@ documents.onDidChangeContent((event) => {
 
 documents.onDidClose((event) => {
     documentSettings.delete(event.document.uri);
+    browserJs.removeDocument(event.document.uri);
     const lang = getDocumentLanguage(event.document);
     if (lang === 'ssjs' || lang === 'ampscript') {
         removeSsjsDocument(event.document.uri);
@@ -352,6 +371,8 @@ connection.onCodeAction(async (parameters): Promise<CodeAction[]> => {
 connection.onCompletion(async (parameters: TextDocumentPositionParams) => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return [];
+    if (isBrowserPosition(document, parameters.position))
+        return browserJs.getCompletions(document.uri, parameters.position);
     const settings = await getDocumentSettings(document.uri);
     const document_ = {
         text: document.getText(),
@@ -404,6 +425,8 @@ connection.onCompletionResolve((item) => {
 connection.onHover(async (parameters) => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return;
+    if (isBrowserPosition(document, parameters.position))
+        return browserJs.getHover(document.uri, parameters.position);
     const settings = await getDocumentSettings(document.uri);
     const document_ = {
         text: document.getText(),
@@ -438,6 +461,8 @@ connection.onHover(async (parameters) => {
 connection.onSignatureHelp(async (parameters) => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return;
+    if (isBrowserPosition(document, parameters.position))
+        return browserJs.getSignatureHelp(document.uri, parameters.position);
     const settings = await getDocumentSettings(document.uri);
     const document_ = {
         text: document.getText(),
@@ -470,6 +495,8 @@ connection.onSignatureHelp(async (parameters) => {
 connection.onDefinition((parameters: DefinitionParams): Location | Location[] | undefined => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return undefined;
+    if (isBrowserPosition(document, parameters.position))
+        return browserJs.getDefinition(document.uri, parameters.position);
     const definitionLang = getDocumentLanguage(document);
     const definitionText = document.getText();
     const isInSsjsForDefinition =
@@ -500,7 +527,7 @@ connection.onDefinition((parameters: DefinitionParams): Location | Location[] | 
     const word = wordMatch[0];
 
     const document_ = {
-        text: document.getText(),
+        text: definitionLang === 'ssjs' ? definitionText : extractSsjsContent(definitionText),
         languageId: 'ssjs' as const,
         uri: document.uri,
     };
@@ -514,6 +541,8 @@ connection.onDefinition((parameters: DefinitionParams): Location | Location[] | 
 connection.onReferences((parameters: ReferenceParams): Location[] | undefined => {
     const document = documents.get(parameters.textDocument.uri);
     if (!document) return undefined;
+    if (isBrowserPosition(document, parameters.position))
+        return browserJs.getReferences(document.uri, parameters.position);
     const referenceLang = getDocumentLanguage(document);
     const referenceText = document.getText();
     const isInSsjsForReference =
@@ -546,26 +575,14 @@ interface SsjsRegion {
 }
 
 /**
- * Return character-offset ranges of all SSJS script blocks in the document.
- * Matches `<script runat="server">` WITHOUT `language="ampscript"`.
+ * Return SSJS body offsets from the shared HTML script classifier.
  * @param text - full document text
  * @returns array of {start, end} character offsets for SSJS content
  */
 function getSsjsRegions(text: string): SsjsRegion[] {
-    const regions: SsjsRegion[] = [];
-    const openTag =
-        /<script(?=[^>]*\brunat\s*=\s*["']server["'])(?![^>]*\blanguage\s*=\s*["']ampscript["'])[^>]*>/gi;
-    const closeTag = /<\/script>/gi;
-    let openMatch: RegExpExecArray | null;
-    while ((openMatch = openTag.exec(text)) !== null) {
-        const contentStart = openMatch.index + openMatch[0].length;
-        closeTag.lastIndex = contentStart;
-        const closeMatch = closeTag.exec(text);
-        if (!closeMatch) break;
-        regions.push({ start: contentStart, end: closeMatch.index });
-        openTag.lastIndex = closeMatch.index + closeMatch[0].length;
-    }
-    return regions;
+    return getScriptRegions(text)
+        .filter((region) => region.kind === 'ssjs')
+        .map((region) => ({ start: region.bodyStart, end: region.bodyEnd }));
 }
 
 /**
@@ -583,23 +600,39 @@ function isInSsjsRegion(regions: SsjsRegion[], offset: number): boolean {
  * characters replaced by spaces (newlines preserved to keep line numbers stable).
  * This lets the TypeScript service use the same character offsets as the HTML file.
  * @param text - full document text
- * @param regions - SSJS regions from getSsjsRegions()
  * @returns whitespace-padded string of same length as text
  */
-function extractSsjsContent(text: string, regions: SsjsRegion[]): string {
-    const out: string[] = [];
-    let pos = 0;
-    for (const region of regions) {
-        for (let index = pos; index < region.start; index++) {
-            out.push(text[index] === '\n' ? '\n' : ' ');
-        }
-        out.push(text.slice(region.start, region.end));
-        pos = region.end;
-    }
-    for (let index = pos; index < text.length; index++) {
-        out.push(text[index] === '\n' ? '\n' : ' ');
-    }
-    return out.join('');
+function extractSsjsContent(text: string): string {
+    return extractScriptBodies(text, ['ssjs']).text;
+}
+
+/**
+ * Route browser bodies without stealing AMPscript or Handlebars expressions.
+ * Unsafe dynamic browser scripts still belong to this route, so they cannot
+ * fall through to unrelated SFMC completions when the browser service skips them.
+ * @param document - Original mixed document.
+ * @param position - Original UTF-16 cursor position.
+ * @returns Whether browser JavaScript owns this position.
+ */
+function isBrowserPosition(
+    document: TextDocument,
+    position: import('vscode-languageserver').Position
+): boolean {
+    if (getDocumentLanguage(document) === 'ssjs') return false;
+    const text = document.getText();
+    const offset = document.offsetAt(position);
+    const before = text.slice(0, offset);
+    return before.lastIndexOf('%%[') > before.lastIndexOf(']%%') ||
+        before.lastIndexOf('%%=') > before.lastIndexOf('=%%') ||
+        before.lastIndexOf('{{') > before.lastIndexOf('}}') ||
+        before.lastIndexOf('{!$') > before.lastIndexOf('}')
+        ? false
+        : getScriptRegions(text).some(
+              (region) =>
+                  (region.kind === 'browser-classic' || region.kind === 'browser-module') &&
+                  offset >= region.bodyStart &&
+                  offset <= region.bodyEnd
+          );
 }
 
 // ---------------------------------------------------------------------------

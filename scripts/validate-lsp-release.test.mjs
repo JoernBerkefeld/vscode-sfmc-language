@@ -11,8 +11,13 @@ test('both extension dependency sites declare the published diagnostic contract'
         const lock = JSON.parse(
             readFileSync(new URL(`${prefix}package-lock.json`, import.meta.url), 'utf8')
         );
-        assert.equal(manifest.dependencies['sfmc-language-lsp'], '^4.2.1');
-        assert.equal(lock.packages['node_modules/sfmc-language-lsp'].version, '4.2.1');
+        assert.equal(manifest.dependencies['sfmc-language-lsp'], '^4.3.1');
+        assert.equal(lock.packages['node_modules/sfmc-language-lsp'].version, '4.3.1');
+        assert.equal(lock.packages['node_modules/sfmc-language-lsp'].link, undefined);
+        assert.equal(
+            lock.packages['node_modules/sfmc-language-lsp'].resolved,
+            'https://registry.npmjs.org/sfmc-language-lsp/-/sfmc-language-lsp-4.3.1.tgz'
+        );
         assert.equal(lock.packages['node_modules/ampscript-data'].version, '4.2.0');
         assert.equal(lock.packages['node_modules/ssjs-data'].version, '2.1.1');
     }

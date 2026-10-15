@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
-import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -165,6 +165,75 @@ export async function executeServerArtifact(filename, directory) {
             });
             results.push(await published);
         }
+        // Verify the full relocated routing adapter, not just the browser service.
+        const browserUri = pathToFileURL(path.join(directory, 'browser.amp')).href;
+        const browserText = '<script>document.querySelector("body"); const broken = ;</script>';
+        const browserPublished = waitFor(browserUri);
+        send({
+            method: 'textDocument/didOpen',
+            params: {
+                textDocument: {
+                    uri: browserUri,
+                    languageId: 'ampscript',
+                    version: 1,
+                    text: browserText,
+                },
+            },
+        });
+        const browserDiagnostics = await browserPublished;
+        assert.equal(browserDiagnostics.length, 1);
+        const browserDiagnostic = browserDiagnostics[0];
+        assert.equal(browserDiagnostic.source, 'javascript');
+        assert.equal(browserDiagnostic.message, 'Expression expected.');
+        const errorOffset = browserText.indexOf(';', browserText.indexOf('const broken'));
+        assert.deepEqual(browserDiagnostic.range, {
+            start: { line: 0, character: errorOffset },
+            end: { line: 0, character: errorOffset + 1 },
+        });
+        assert.equal(browserDiagnostic.severity, 1);
+        assert.equal(Object.hasOwn(browserDiagnostic, 'code'), false);
+        assert.equal(Object.hasOwn(browserDiagnostic, 'codeDescription'), false);
+        assert.ok(
+            browserDiagnostics.every(
+                (diagnostic) => !['ssjs', 'sfmc-ts'].includes(diagnostic.source)
+            )
+        );
+        const completion = waitFor(3);
+        send({
+            id: 3,
+            method: 'textDocument/completion',
+            params: { textDocument: { uri: browserUri }, position: { line: 0, character: 17 } },
+        });
+        const browserItems = await completion;
+        assert.ok(browserItems.some((item) => item.label === 'querySelector'));
+        const dynamicText = '<script>const generated = %%=Concat(1,2)=%%; document.</script>';
+        const changed = waitFor(browserUri);
+        send({
+            method: 'textDocument/didChange',
+            params: {
+                textDocument: { uri: browserUri, version: 2 },
+                contentChanges: [{ text: dynamicText }],
+            },
+        });
+        const changedDiagnostics = await changed;
+        assert.ok(changedDiagnostics.every((diagnostic) => diagnostic.source !== 'javascript'));
+        const skipped = waitFor(4);
+        send({
+            id: 4,
+            method: 'textDocument/completion',
+            params: {
+                textDocument: { uri: browserUri },
+                position: { line: 0, character: dynamicText.indexOf('document.') + 9 },
+            },
+        });
+        assert.deepEqual(
+            await skipped,
+            [],
+            'Unsafe browser code must not fall through to SFMC items'
+        );
+        const closed = waitFor(browserUri);
+        send({ method: 'textDocument/didClose', params: { textDocument: { uri: browserUri } } });
+        assert.deepEqual(await closed, []);
         const shutdown = waitFor(2);
         send({ id: 2, method: 'shutdown' });
         await shutdown;
@@ -290,6 +359,10 @@ export async function validateServerArtifact() {
             path.join(root, 'server/node_modules/ssjs-data/dist/sfmc-globals.d.ts'),
             path.join(directory, 'sfmc-globals.d.ts')
         );
+        // The routed server now initializes its browser service at startup.
+        await cp(path.join(root, 'server/out/browser-libs'), path.join(directory, 'browser-libs'), {
+            recursive: true,
+        });
         for (const [version, artifact] of [
             [manifest.version, production],
             [fixtureVersion, await buildServerArtifact(fixtureVersion)],

@@ -1,0 +1,47 @@
+<!-- Local acceptance only: do not deploy or execute these intentionally invalid examples. -->
+%%[
+/* AMPscript marker and hover sample, supported in MCN since API 67.0. */
+VAR @label
+SET @label = Concat("Local", " candidate")
+]%%
+<div id="acceptance">Browser acceptance</div>
+<script>
+    // Classic declarations are shared only within this document.
+    const releaseClassic = "local";
+    /**
+     * Return a local greeting.
+     * @param {string} name - Display name.
+     * @returns {string} Greeting.
+     */
+    function releaseGreet(name) { return "Hello " + name; }
+    document.querySelector("#acceptance");
+</script>
+<script>
+    // Hover releaseClassic; use F12 and references on releaseGreet.
+    releaseGreet(releaseClassic);
+    // Safe quoted output retains browser intelligence outside the template.
+    const quotedTemplate = "%%=Concat('safe', ' text')=%%";
+    document.querySelector("#acceptance");
+</script>
+<script type="module">
+    // Module declarations do not leak into sibling modules or classic scripts.
+    const releasePrivate = releaseClassic;
+    document.querySelector("#acceptance");
+    releasePrivate;
+</script>
+<script type="module">
+    // @ts-check
+    // Expected semantic error: private to the previous module.
+    releasePrivate;
+    // Expected semantic error: DOM has no such member.
+    document.releaseMissingMember();
+</script>
+<script>
+    // Generated output is unsafe to interpret: this entire script is skipped.
+    const generated = %%=Concat("1", "2")=%%;
+    document.querySelector("#acceptance");
+</script>
+<script>
+    // A skipped script must not disable intelligence in this sibling.
+    document.querySelector("#acceptance");
+</script>

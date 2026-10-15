@@ -1,12 +1,22 @@
-# TypeScript-backed SSJS diagnostics
+# TypeScript-backed JavaScript diagnostics
 
-Diagnostics with source `sfmc-ts` come from the extension's embedded TypeScript language service. The numeric code remains the compiler's code; the documentation link describes this extension's SSJS adapter, not a shared LSP rule. Its URL is pinned to the **extension root package version**, not the server subpackage version or the installed TypeScript version.
+The extension uses separate embedded TypeScript environments for SSJS and browser JavaScript. Diagnostics with source `sfmc-ts` belong to SSJS and retain the compiler's numeric code and documentation link. Browser diagnostics use source `javascript` without a compiler number or documentation link; their messages, severity, and original ranges are preserved. SSJS documentation links describe this extension's adapter, not a shared LSP rule. Their URLs are pinned to the **extension root package version**, not the server subpackage version or the installed TypeScript version.
 
 Development builds intentionally link to the prospective release tag. Until that version and this page are tagged together, GitHub may return 404. There is no fallback to a moving branch or older documentation.
 
-## How the adapter works
+## Browser JavaScript: `javascript`
 
-The adapter checks virtual JavaScript files using `checkJs` and `noLib`. Its bundled `sfmc-globals.d.ts` supplies the supported API declarations instead of the standard browser or Node.js libraries. Each document is isolated from other open documents: opening another file does not declare its variables in this one. Embedded scripts are checked through the server's extraction and position mapping.
+The browser service uses bundled TypeScript ECMAScript 2024 and DOM declarations, including DOM iterables, rather than SFMC declarations. DOM globals such as `window` and `document` belong here; SSJS-only APIs do not. Each mixed document is isolated: classic scripts share a document-local context, while `type="module"` scripts retain module scope. External scripts, imports from project files, and workspace JavaScript configuration are not loaded.
+
+Syntax diagnostics are enabled without forced `checkJs` or strict checking. Put `// @ts-check` inside a browser script to opt into semantic checking; applicable TypeScript checking directives are honored per script. The browser service is static analysis, not browser execution or a guarantee of support in every user's browser.
+
+Ranges use the original document's UTF-16 coordinates. Safely quoted/comment AMPscript (`%%[...]%%` / `%%=...=%%`), Handlebars (`{{...}}`), and `{!$...}` interpolation is masked and excluded from browser diagnostics. Unquoted or incomplete interpolation causes the entire script to be skipped, avoiding invented JavaScript semantics. A missing browser diagnostic in a skipped script is not evidence that the generated code is valid.
+
+For browser messages, check browser declarations and scope: do not add SFMC declarations or replace modern browser JavaScript with SSJS workarounds. Browser definitions/references are limited to source in the current document, not library declarations. The numeric-code explanations below apply only to SSJS diagnostics with source `sfmc-ts`.
+
+## SSJS: `sfmc-ts`
+
+The SSJS adapter checks virtual JavaScript files using `checkJs` and `noLib`. Its bundled `sfmc-globals.d.ts` supplies the supported API declarations instead of the standard browser or Node.js libraries. Each document is isolated from other open documents: opening another file does not declare its variables in this one. Embedded scripts are checked through the server's extraction and position mapping.
 
 This is static checking, not execution in Marketing Cloud. A clean result does not prove that credentials, data, network requests, or a particular runtime method will work. Conversely, a missing declaration or imprecise inferred type can cause a warning on code that runs successfully. The adapter recognizes selected global comments and polyfill patterns, not every dynamically constructed API. It filters selected JSDoc and guarded-polyfill diagnostics to avoid known false positives; it does not disable all compiler checking inside these constructs.
 
@@ -32,6 +42,8 @@ Reduce the input to the smallest example that still produces the message. Distin
 
 ## Troubleshooting the adapter
 
+- First check the diagnostic source. `javascript` expects DOM/ECMAScript APIs; `sfmc-ts` uses restricted SFMC declarations with `noLib`. Do not merge these environments to silence errors.
+- If browser completions or diagnostics fail after packaging, verify that `server/out/browser-libs` contains the standard-library reference closure copied by `copy-browser-libraries`. It must come from the bundled TypeScript version; a developer checkout's global TypeScript installation is not a substitute.
 - If many SFMC globals suddenly appear undeclared, check that the extension's bundled `sfmc-globals.d.ts` is present. In a source checkout, the `copy-globals` build step copies the installed `ssjs-data` declarations into server output. Rebuild and restart the language server after repairing a missing artifact.
 - Check the file's language mode and SSJS interpretation setting when embedded markup is being treated as JavaScript or ranges seem wrong. Include the surrounding script boundary in a sanitized reproduction.
 - Global comments, annotations, and recognized polyfills affect static analysis only. They do not load libraries or provide missing runtime functionality.

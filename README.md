@@ -20,22 +20,37 @@ A Visual Studio Code extension providing comprehensive language support for **Sa
 
 **Variable resolution** means the language service infers the concrete type (and where possible, the value) held in a variable. Hovering over a local variable reveals its resolved type rather than a generic `any`. This is fully available in SSJS and planned for AMPscript in a future release.
 
+## Browser JavaScript in mixed documents
+
+Client-side JavaScript inside `.amp` / `.ampscript` documents and HTML in the `sfmc` language mode receives DOM and modern ECMAScript completions, hover, signature help, document-local definitions and references, and diagnostics. A separate embedded TypeScript service uses bundled browser declarations; it does not add browser APIs to SSJS. Ordinary HTML containing only browser scripts stays in the `html` language mode and remains owned by VS Code's HTML support.
+
+- Classic browser scripts share their document-local context. Scripts with `type="module"` retain module scope. Other documents do not contribute globals.
+- Syntax diagnostics are enabled by default, without forced `checkJs` or strict checking. Add `// @ts-check` inside a browser script to opt into semantic type checking; applicable TypeScript checking directives are honored per script.
+- Quoted/comment template interpolation is masked where safe, with original UTF-16 positions retained. If AMPscript (`%%[...]%%` / `%%=...=%%`), Handlebars (`{{...}}`), or `{!$...}` output is unquoted or incomplete, browser analysis skips that entire script rather than guessing the generated JavaScript. Template ranges remain owned by their template-language services.
+- `runat="server"` scripts remain SSJS (or AMPscript when declared as such); JSON/import maps and other non-JavaScript script bodies are not browser JavaScript.
+- Analysis is document-local: no external/CDN scripts, imported project files, or workspace JavaScript projects are crawled. Browser navigation targets source in the current document, not bundled library declarations. Browser execution, rename, and code actions are outside this feature's scope.
+
+Browser diagnostics use source `javascript` without a compiler number or documentation link. Their messages, severity, and highlighted ranges are unchanged; see the [TypeScript diagnostic guide](docs/diagnostics/typescript.md) for the distinction from `sfmc-ts` SSJS checks.
+
+Extension 3.7.0 bundles `sfmc-language-lsp` 4.3.1 browser APIs and 71 TypeScript browser/ECMAScript declaration files with their upstream license and notices. The manual acceptance files and checklist are in `client/testFixture/release-3.7.0/`.
+
 ## MCFS virtual documents
 
 Documents opened through the MCFS extension (`mcfs:` URIs) receive AMPscript hover, completions, and diagnostics when their language ID is `ampscript`, and embedded AMPscript/SSJS intelligence when it is `sfmc` (including wrapped script activities). Diagnostics update as you edit the virtual document, without saving it to Salesforce. No separate ESLint extension is required for this language support.
 
 The built-in formatter supports MCFS documents with the `ampscript`, `sfmc`, and `sql` language IDs. Virtual formatting uses the bundled defaults and plugin with synthetic parser filenames; it does not search local disk for `.prettierrc*`, `.editorconfig`, or `.prettierignore` based on the virtual URI. Local-file formatting keeps its existing config and ignore behavior.
+
 ## Diagnostic documentation
 
 Click a diagnostic code in the Problems panel to open its rule documentation for the version that produced it:
 
-- Shared AMPscript, SSJS, GTL, and Handlebars diagnostics use canonical `sfmc/...` codes. Browse the [shared rule index](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.2.1/docs/rules/README.md) for triggers, fixes, variants, and suppression options. These links belong to the bundled **LSP version**, not the extension version.
+- Shared AMPscript, SSJS, GTL, and Handlebars diagnostics use canonical `sfmc/...` codes. Browse the [shared rule index](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.3.1/docs/rules/README.md) for triggers, fixes, variants, and suppression options. These links belong to the bundled **LSP version**, not the extension version.
 - TypeScript-backed SSJS diagnostics keep their numeric codes and `sfmc-ts` source. Their links belong to the **extension version**; see the [TypeScript diagnostic guide](docs/diagnostics/typescript.md) for documented codes and the fallback explanation for other compiler messages.
 - Quick fixes preserve the original diagnostic variant and payload, including embedded code. When ESLint-overlap suppression is enabled, the AttributeValue recommendation is now suppressed with its corresponding ESLint rule. ESLint parser failures and third-party rules are not relabeled as SFMC rules.
 
-For adapter integrations, see the [LSP diagnostic-contract migration notes](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.2.1/README.md#diagnostic-identities-and-documentation). Development builds use prospective version links, which may not resolve until a **new tag contains both implementation and documentation**; there is no fallback to a moving branch or an older release.
+For adapter integrations, see the [LSP diagnostic-contract migration notes](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.3.1/README.md#diagnostic-identities-and-documentation). Development builds use prospective version links, which may not resolve until a **new tag contains both implementation and documentation**; there is no fallback to a moving branch or an older release.
 
-Extension **3.6.0** adopts the published LSP `^4.2.1` at both dependency sites and bundles the `ampscript-data` 4.2.0 and `ssjs-data` 2.1.1 catalogs. Release verification uses clean registry installs and `npm run verify:lsp-release --no-workspaces` to check the actual bundled LSP against its immutable tagged documentation; local tarball acceptance alone is not release evidence.
+Extension **3.7.0** adopts the published LSP `^4.3.1` at both dependency sites and bundles the unchanged `ampscript-data` 4.2.0 and `ssjs-data` 2.1.1 catalogs. Release verification uses clean registry installs and `npm run verify:lsp-release --no-workspaces` to check the actual bundled LSP against its immutable tagged documentation; local tarball acceptance alone is not release evidence.
 
 ## AMPscript
 
@@ -89,7 +104,7 @@ Set **`sfmcLanguageServer.targetPlatform`** to `"next"` (default: `"engagement"`
 - **Error** on any `<script runat="server">` block — SSJS is not supported in Marketing Cloud Next
 - **MCN Handlebars** support activates: validation, completions, hover, signature help, and code actions for `{{...}}` mustaches and `{!$...}` built-in bindings. Binding hovers link to the Salesforce Developers documentation.
 
-**Hover cards** always show the MCN support line regardless of the setting: `"Supported in Marketing Cloud Next (API v67.0+)"` or `"Not supported in Marketing Cloud Next"`, so you can check at a glance without switching modes.
+**Hover cards** always show the MCN support line regardless of the setting: `"Supported in Marketing Cloud Next (since Summer '26 / API v67.0+)"` or `"Not supported in Marketing Cloud Next"`, so you can check at a glance without switching modes.
 
 ### Variable Resolution
 

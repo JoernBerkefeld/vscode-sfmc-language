@@ -2,7 +2,18 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
-## [Unreleased]
+## [3.7.0] - 2026-10-15
+
+### Dependencies
+
+- Upgrade the bundled `sfmc-language-lsp` from 4.2.1 to the published 4.3.1 at both extension and server dependency sites. The `ampscript-data` 4.2.0 and `ssjs-data` 2.1.1 catalogs are unchanged.
+
+### Added
+
+- Add browser JavaScript completions, hover, signature help, document-local definitions/references, and diagnostics inside AMPscript documents and SFMC HTML. Classic scripts share document-local context; module scripts retain module scope. Bundled DOM and modern ECMAScript declarations are isolated from the existing SSJS environment. Package 71 TypeScript declaration files together with upstream license and notices.
+- Show release-name context in supported AMPscript hover cards: `Supported in Marketing Cloud Next (since Summer '26 / API v67.0+)`, supplied by the bundled LSP 4.3.1.
+- Report browser diagnostics with source `javascript`, without compiler numbers or documentation links; SSJS `sfmc-ts` numeric codes and links are unchanged.
+- Report browser syntax diagnostics by default with semantic type checking opt-in through `// @ts-check`. Keep original UTF-16 positions and conservatively skip scripts with unquoted or incomplete AMPscript, Handlebars, or `{!$...}` output. External scripts and project crawling are not supported; plain browser-only HTML stays with VS Code's HTML support.
 
 ### Fixed
 

@@ -1,0 +1,29 @@
+<!-- Select language mode SFMC (sfmc), not HTML. Local acceptance only; do not deploy. -->
+%%= Concat('HTML', ' acceptance') =%%
+<div id="acceptance">Separate document</div>
+<script>
+    // @ts-check
+    // Expected error: a classic global from browser.amp must not leak here.
+    releaseClassic;
+    // Expected error until @ts-check is removed; no forced semantic checking.
+    document.releaseMissingMember();
+    document.querySelector('#acceptance');
+</script>
+<script type="module">
+    // DOM completion, hover and signature help work in module scripts too.
+    document.querySelector('#acceptance');
+</script>
+<script>
+    // Quoted Handlebars output preserves browser intelligence around it.
+    const quotedHandlebars = '{{value}}';
+    document.querySelector('#acceptance');
+</script>
+<script>
+    // Unquoted Handlebars output excludes only this script.
+    const generated = {{value}};
+    document.querySelector('#acceptance');
+</script>
+<script>
+    // Browser syntax errors are reported even without @ts-check.
+    const syntaxError = ;
+</script>
