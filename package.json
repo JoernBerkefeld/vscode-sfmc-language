@@ -324,7 +324,7 @@
     "prettier": "^3.9.10",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.1",
-    "undici-types": "^8.11.2"
+    "undici-types": "^8.12.3"
   },
   "dependencies": {
     "sfmc-language-lsp": "^4.3.1"
