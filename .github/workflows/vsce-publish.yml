@@ -38,6 +38,10 @@ jobs:
               run: npm run verify:lsp-release --no-workspaces
               env:
                   GH_TOKEN: ${{ github.token }}
+            # The VSIX inlines its dependencies, so a stale lockfile ships a stale package even
+            # when the fix is already published. Fails if any bundled SFMC package is behind npm.
+            - name: Verify bundled SFMC packages are the newest published versions (release-only network)
+              run: npm run verify:bundled-latest --no-workspaces
             - name: Verify server artifact and installed LSP identity
               run: npm run test:server-artifact --no-workspaces
             - name: Verify client bundle is OS-portable
@@ -69,6 +73,10 @@ jobs:
               run: npm run verify:lsp-release --no-workspaces
               env:
                   GH_TOKEN: ${{ github.token }}
+            # The VSIX inlines its dependencies, so a stale lockfile ships a stale package even
+            # when the fix is already published. Fails if any bundled SFMC package is behind npm.
+            - name: Verify bundled SFMC packages are the newest published versions (release-only network)
+              run: npm run verify:bundled-latest --no-workspaces
             - name: Verify server artifact and installed LSP identity
               run: npm run test:server-artifact --no-workspaces
             - name: Package VSIX
