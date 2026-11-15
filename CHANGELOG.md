@@ -2,6 +2,16 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.8.2] - 2026-11-15
+
+### Dependencies
+
+- The built-in formatter now bundles `ampscript-data` 4.2.0 and `ssjs-data` 2.1.2. Release 3.8.1 updated `prettier-plugin-sfmc` to 2.2.0 but still resolved these two catalogs to 4.0.0 and 2.0.0 from a stale lockfile.
+
+### Changed
+
+- Releases now verify that every bundled SFMC package in the root, client and server lockfiles is the newest version published on npm (`npm run verify:bundled-latest`), so a fixed package can no longer ship in an outdated version.
+
 ## [3.8.1] - 2026-11-15
 
 ### Dependencies
