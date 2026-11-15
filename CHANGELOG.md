@@ -2,6 +2,18 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.8.1] - 2026-11-15
+
+### Dependencies
+
+- Upgrade the bundled `prettier-plugin-sfmc` from 2.1.1 to 2.2.0 (with `ampscript-parser` 0.4.0). Release 3.8.0 updated the language service but still shipped the previous formatter.
+
+### Fixed
+
+- The built-in formatter leaves AMPscript inside `<script>` and `<style>` elements exactly as written. Before, it reformatted AMPscript inside JavaScript strings, could insert line breaks into them (which broke `Platform.Function.TreatAsContent('%%[ … ]%%')` calls) and could swap the quotes around a string.
+- Formatting no longer corrupts lines that follow a personalization string directly followed by `=` or `[`, such as `x?e=%%emailaddr%%=1` or `%%firstname%%[x]`.
+- AMPscript delimiters inside server-side JavaScript (`<script runat="server">`) are no longer treated as AMPscript by the formatter.
+
 ## [3.8.0] - 2026-11-15
 
 ### Dependencies
