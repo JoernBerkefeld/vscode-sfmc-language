@@ -32,7 +32,7 @@ Client-side JavaScript inside `.amp` / `.ampscript` documents and HTML in the `s
 
 Browser diagnostics use source `javascript` without a compiler number or documentation link. Their messages, severity, and highlighted ranges are unchanged; see the [TypeScript diagnostic guide](docs/diagnostics/typescript.md) for the distinction from `sfmc-ts` SSJS checks.
 
-Extension 3.7.0 bundles `sfmc-language-lsp` 4.3.1 browser APIs and 71 TypeScript browser/ECMAScript declaration files with their upstream license and notices. The manual acceptance files and checklist are in `client/testFixture/release-3.7.0/`.
+Since extension 3.7.0 the bundle contains the `sfmc-language-lsp` browser APIs and 71 TypeScript browser/ECMAScript declaration files with their upstream license and notices. The manual acceptance files and checklist are in `client/testFixture/release-3.7.0/`.
 
 ## MCFS virtual documents
 
@@ -44,13 +44,13 @@ The built-in formatter supports MCFS documents with the `ampscript`, `sfmc`, and
 
 Click a diagnostic code in the Problems panel to open its rule documentation for the version that produced it:
 
-- Shared AMPscript, SSJS, GTL, and Handlebars diagnostics use canonical `sfmc/...` codes. Browse the [shared rule index](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.3.1/docs/rules/README.md) for triggers, fixes, variants, and suppression options. These links belong to the bundled **LSP version**, not the extension version.
+- Shared AMPscript, SSJS, GTL, and Handlebars diagnostics use canonical `sfmc/...` codes. Browse the [shared rule index](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.4.0/docs/rules/README.md) for triggers, fixes, variants, and suppression options. These links belong to the bundled **LSP version**, not the extension version.
 - TypeScript-backed SSJS diagnostics keep their numeric codes and `sfmc-ts` source. Their links belong to the **extension version**; see the [TypeScript diagnostic guide](docs/diagnostics/typescript.md) for documented codes and the fallback explanation for other compiler messages.
 - Quick fixes preserve the original diagnostic variant and payload, including embedded code. When ESLint-overlap suppression is enabled, the AttributeValue recommendation is now suppressed with its corresponding ESLint rule. ESLint parser failures and third-party rules are not relabeled as SFMC rules.
 
-For adapter integrations, see the [LSP diagnostic-contract migration notes](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.3.1/README.md#diagnostic-identities-and-documentation). Development builds use prospective version links, which may not resolve until a **new tag contains both implementation and documentation**; there is no fallback to a moving branch or an older release.
+For adapter integrations, see the [LSP diagnostic-contract migration notes](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.4.0/README.md#diagnostic-identities-and-documentation). Development builds use prospective version links, which may not resolve until a **new tag contains both implementation and documentation**; there is no fallback to a moving branch or an older release.
 
-Extension **3.7.0** adopts the published LSP `^4.3.1` at both dependency sites and bundles the unchanged `ampscript-data` 4.2.0 and `ssjs-data` 2.1.1 catalogs. Release verification uses clean registry installs and `npm run verify:lsp-release --no-workspaces` to check the actual bundled LSP against its immutable tagged documentation; local tarball acceptance alone is not release evidence.
+Extension **3.8.0** adopts the published LSP `^4.4.0` at both dependency sites and bundles `ampscript-data` 4.2.0 and `ssjs-data` 2.1.2. Release verification uses clean registry installs and `npm run verify:lsp-release --no-workspaces` to check the actual bundled LSP against its immutable tagged documentation; local tarball acceptance alone is not release evidence.
 
 ## AMPscript
 

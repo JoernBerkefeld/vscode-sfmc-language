@@ -2,6 +2,26 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.8.0] - 2026-11-15
+
+### Dependencies
+
+- Upgrade the bundled `sfmc-language-lsp` from 4.3.1 to the published 4.4.0 at both extension and server dependency sites. This also brings `ssjs-data` 2.1.2 (the SSJS globals list now includes `HTTP`); `ampscript-data` 4.2.0 is unchanged.
+
+### Added
+
+- New warning `sfmc/amp-no-ambiguous-personalization-delimiter`: reported when a personalization string is immediately followed by `[` or `=`, as in `x?e=%%emailaddr%%=1` or `%%First Name%%[x]`. Marketing Cloud replaces a string it can resolve before it parses AMPscript, so whether the following text starts AMPscript depends on the name. The message differs for system personalization strings and for other names and suggests putting a space or another character in between. With ESLint-overlap suppression enabled, the matching rule in `eslint-plugin-sfmc` 5.3.0 reports it instead.
+
+### Fixed
+
+- Personalization strings no longer cause false AMPscript delimiter errors. `<a href="x?e=%%emailaddr%%&a=1">` no longer reports `Unexpected =%% without a matching %%= opener`, and `%%emailaddr%%=1` or `%%firstname%%[x]` no longer report a nested or unclosed delimiter.
+- Inline AMPscript inside an AMPscript string, as in `TreatAsContent('%%=v(@a)=%%')` within a block, is no longer reported as a nested delimiter. A nested `%%[` inside a block is still reported.
+- AMPscript delimiters inside server-side JavaScript (`<script runat="server">`) are no longer checked as AMPscript, because Marketing Cloud does not evaluate AMPscript there.
+
+### Changed
+
+- AMPscript delimiter checks read the document left to right. A block ends at the first `]%%`, so `%%[ a %%[ b ]%%` reports the nested `%%[` without an additional unclosed-block error, and stray closing delimiters are reported one by one.
+
 ## [3.7.0] - 2026-10-15
 
 ### Dependencies

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<!-- Rule: sfmc/amp-no-ambiguous-personalization-delimiter
+     Warns when a personalization string is immediately followed by an
+     opening square bracket or an equals sign. Marketing Cloud replaces a
+     string it can resolve before it parses AMPscript, so what follows may
+     or may not be read as AMPscript. -->
+
+<!-- ACCEPTED - a separator follows the personalization string -->
+<a href="https://example.com/?e=%%emailaddr%%&amp;source=1">link</a>
+<p>%%emailaddr%% = your address</p>
+
+<!-- FAIL - system personalization string directly followed by an equals sign -->
+<a href="https://example.com/?e=%%emailaddr%%=1">link</a>
+
+<!-- FAIL - other name directly followed by an opening square bracket -->
+<td>%%First Name%%[x]</td>
+
+</body>
+</html>
