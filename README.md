@@ -50,7 +50,7 @@ Click a diagnostic code in the Problems panel to open its rule documentation for
 
 For adapter integrations, see the [LSP diagnostic-contract migration notes](https://github.com/JoernBerkefeld/sfmc-language-lsp/blob/v4.4.0/README.md#diagnostic-identities-and-documentation). Development builds use prospective version links, which may not resolve until a **new tag contains both implementation and documentation**; there is no fallback to a moving branch or an older release.
 
-Extension **3.8.0** adopts the published LSP `^4.4.0` at both dependency sites and bundles `ampscript-data` 4.2.0 and `ssjs-data` 2.1.2. Release verification uses clean registry installs and `npm run verify:lsp-release --no-workspaces` to check the actual bundled LSP against its immutable tagged documentation; local tarball acceptance alone is not release evidence.
+Extension **3.9.0** adopts the published LSP `^4.5.1` at both dependency sites and bundles `ampscript-data` 4.2.0 and `ssjs-data` 2.1.2. Release verification uses clean registry installs and `npm run verify:lsp-release --no-workspaces` to check the actual bundled LSP against its immutable tagged documentation; local tarball acceptance alone is not release evidence.
 
 ## AMPscript
 

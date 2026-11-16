@@ -2,6 +2,26 @@
 
 All notable changes to the SFMC Language Service extension will be documented in this file.
 
+## [3.9.0] - 2026-11-16
+
+### Dependencies
+
+- Upgrade the bundled `sfmc-language-lsp` from 4.4.0 to 4.5.1 at both extension and server dependency sites, and the bundled `prettier-plugin-sfmc` from 2.2.0 to 2.2.1. The `ampscript-data` 4.2.0 and `ssjs-data` 2.1.2 catalogs are unchanged.
+
+### Changed
+
+- SSJS member completions after `Platform.Function.` (and other members the catalogue knows) now show the catalogue's description and documentation and insert a call snippet with tab stops instead of the bare name.
+- Members of a typed value are listed however many there are; the earlier limit of 50 suggestions is gone.
+- After `new Script.Util.`, `WSProxy` and the other constructors are completed as a call; without `new`, only the name is inserted.
+- A value whose type is unknown no longer offers suggestions after the dot. Before, a small file could list unrelated names.
+
+### Fixed
+
+- A `/* global X */` declaration or a polyfill that is removed and added again is now read afresh; diagnostics could keep using the earlier version.
+- Diagnostics about a function argument (boolean literal, argument type, allowed value) now underline the argument alone. With one argument per line the underline started on the previous line, and the quick fix (for example "Replace with `false`") removed the line break and indentation.
+- The built-in formatter leaves AMPscript with a syntax error exactly as written instead of trying to repair it (missing bracket, unclosed string, `IF` without `THEN`).
+- "IF without ENDIF" and FOR/NEXT warnings are reported on the right line when HTML, comments or multi-line strings come before them.
+
 ## [3.8.2] - 2026-11-15
 
 ### Dependencies

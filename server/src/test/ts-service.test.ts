@@ -27,6 +27,9 @@ import {
     DOCUMENTED_TYPESCRIPT_CODES,
     getTypescriptDiagnosticUrl,
 } from '../diagnostic-documentation';
+import { sfmcLanguageService } from 'sfmc-language-lsp';
+import type { CompletionItem } from 'vscode-languageserver/node';
+import { ssjsMemberCompletions, ssjsMemberReceiver } from '../ssjs-completion';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1395,3 +1398,104 @@ for (const fixture of POLYFILL_FIXTURES) {
         removeSsjsDocument(uri);
     });
 }
+
+// ---------------------------------------------------------------------------
+// Suite: member completion rule of the server (ssjs-completion.ts)
+// ---------------------------------------------------------------------------
+console.log('Suite: server member completions');
+
+const URI_MEMBERS = 'file:///test-members.ssjs';
+
+/**
+ * Answer a completion request at the end of some SSJS the way `onCompletion` does.
+ * @param code - SSJS ending at the cursor
+ * @returns the server's member completions, or undefined at top level
+ */
+function serverMembersAtEnd(code: string): CompletionItem[] | undefined {
+    const position = endOf(code);
+    updateSsjsDocument(URI_MEMBERS, code);
+    const catalogueItems = sfmcLanguageService.getCompletions(
+        { text: code, languageId: 'ssjs', uri: URI_MEMBERS },
+        position,
+        { maxNumberOfProblems: 100 }
+    ) as CompletionItem[];
+    return ssjsMemberCompletions(
+        code.split('\n').at(-1)!,
+        getSsjsCompletionInfo(URI_MEMBERS, position),
+        catalogueItems
+    );
+}
+
+test('receiver is the dotted expression before the last dot', () => {
+    assert.deepStrictEqual(ssjsMemberReceiver('var x = Platform.Function.'), {
+        receiver: 'Platform.Function',
+        hasNew: false,
+    });
+    assert.deepStrictEqual(ssjsMemberReceiver('Platform.Function.Loo'), {
+        receiver: 'Platform.Function',
+        hasNew: false,
+    });
+    assert.deepStrictEqual(ssjsMemberReceiver('var p = new Script.Util.'), {
+        receiver: 'Script.Util',
+        hasNew: true,
+    });
+    assert.deepStrictEqual(ssjsMemberReceiver('DataExtension.Init("x").Rows.'), {
+        receiver: '',
+        hasNew: false,
+    });
+    assert.deepStrictEqual(ssjsMemberReceiver('var x = 1'), { receiver: '', hasNew: false });
+});
+
+test('"Platform.Function." yields all members with catalogue docs and member-only snippets', () => {
+    const members = serverMembersAtEnd('Platform.Function.');
+    assert.ok(members, 'member access expected');
+    const lookup = members.find((item) => item.label === 'Lookup');
+    assert.ok(lookup, `Lookup expected, got ${members.length} items`);
+    assert.ok(lookup.documentation, 'catalogue documentation expected');
+    const insertText = lookup.insertText ?? '';
+    assert.ok(
+        insertText.startsWith('Lookup(${1:'),
+        `snippet must insert only the call, got: ${insertText}`
+    );
+    assert.strictEqual(lookup.insertTextFormat, 2, 'snippet format expected');
+    assert.ok(members.some((item) => item.label === 'GUID'));
+    assert.ok(
+        members.every((item) => !item.label.includes('.')),
+        'labels are the short member names'
+    );
+});
+
+test('a partially typed member keeps the member rule', () => {
+    const members = serverMembersAtEnd('Platform.Function.Loo');
+    assert.ok(members?.some((item) => item.label === 'LookupRows' && item.documentation));
+});
+
+test('an instance member chain yields the members TypeScript knows', () => {
+    const members = serverMembersAtEnd('DataExtension.Init("x").Rows.');
+    assert.ok(members, 'member access expected');
+    const labels = members.map((item) => item.label);
+    for (const expected of ['Add', 'Lookup', 'Remove', 'Retrieve']) {
+        assert.ok(labels.includes(expected), `${expected} expected, got ${labels.join(', ')}`);
+    }
+});
+
+test('"new Script.Util." takes the constructor snippet without a second "new"', () => {
+    const members = serverMembersAtEnd('var proxy = new Script.Util.');
+    const proxy = members?.find((item) => item.label === 'WSProxy');
+    assert.ok(proxy, 'WSProxy expected');
+    assert.strictEqual(proxy.insertText, 'WSProxy()');
+    const bare = serverMembersAtEnd('var proxy = Script.Util.')?.find(
+        (item) => item.label === 'WSProxy'
+    );
+    assert.ok(bare, 'WSProxy expected without new');
+    assert.ok(!bare.insertText?.startsWith('new'), 'no constructor snippet without new');
+});
+
+test('an unknown receiver yields nothing', () => {
+    assert.deepStrictEqual(serverMembersAtEnd('var a = 1;\nvar b = 2;\nunknownThing.'), []);
+});
+
+test('top level is not a member access', () => {
+    assert.strictEqual(serverMembersAtEnd('var a = 1;\nPlat'), undefined);
+    removeSsjsDocument(URI_MEMBERS);
+});

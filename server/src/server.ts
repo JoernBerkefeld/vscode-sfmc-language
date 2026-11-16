@@ -25,11 +25,11 @@ import {
     sfmcLanguageService,
     type SfmcSettings,
     getScriptRegions,
-    extractScriptBodies,
     validateMixedDocumentSsjs,
     decodeDiagnosticData,
     getDiagnosticRule,
 } from 'sfmc-language-lsp';
+import { ssjsProjection, isInSsjsRegion } from 'sfmc-language-lsp/typescript';
 import { BrowserJsService } from './browser-js-service';
 import {
     updateSsjsDocument,
@@ -41,6 +41,7 @@ import {
     getSsjsDefinition as getSsjsTsDefinition,
     getSsjsReferences as getSsjsTsReferences,
 } from './ts-service';
+import { ssjsMemberCompletions } from './ssjs-completion';
 
 // ---------------------------------------------------------------------------
 // Connection & Document Manager
@@ -230,9 +231,10 @@ async function sendDiagnosticsForDocument(uri: string): Promise<void> {
                     return !decoded || !getDiagnosticRule(decoded.variant)?.suppressWithEslint;
                 }
             );
-            tsDiags = getSsjsDiagnostics(uri).filter((d) =>
-                isInSsjsRegion(regions, document.offsetAt(d.range.start))
-            );
+            tsDiags = getSsjsDiagnostics(uri).filter((d) => {
+                const offset = document.offsetAt(d.range.start);
+                return regions.some((r) => offset >= r.start && offset <= r.end);
+            });
         }
     }
     const browserDiags = browserJs.getDiagnostics(uri);
@@ -256,7 +258,7 @@ function syncSsjsVirtualFile(document: TextDocument): void {
         browserJs.updateDocument(document.uri, text);
         const regions = getSsjsRegions(text);
         if (regions.length > 0) {
-            updateSsjsDocument(document.uri, extractSsjsContent(text));
+            updateSsjsDocument(document.uri, ssjsProjection(text));
         } else {
             removeSsjsDocument(document.uri);
         }
@@ -389,26 +391,19 @@ connection.onCompletion(async (parameters: TextDocumentPositionParams) => {
     const isInSsjsContext =
         document_.languageId === 'ssjs' ||
         (document_.languageId === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(document_.text), document.offsetAt(parameters.position)));
+            isInSsjsRegion(document_.text, document.offsetAt(parameters.position)));
     if (!isInSsjsContext) return sfmcItems;
 
-    const { items: tsItems, isMemberCompletion } = getSsjsCompletionInfo(
-        document.uri,
-        parameters.position
-    );
-    // Text-based dot-access detection — catches edge cases where TypeScript's
-    // isMemberCompletion is false despite a trailing dot.
+    const tsInfo = getSsjsCompletionInfo(document.uri, parameters.position);
     const textBefore = document.getText({
         start: { line: parameters.position.line, character: 0 },
         end: parameters.position,
     });
-    const isDotAccess = /\.\s*$/.test(textBefore);
-    if (isMemberCompletion || isDotAccess) {
-        // Only show TS items that are "specific" (≤50 = typed namespace members).
-        // If TS returns 100+ items it means the type is `any` (e.g. unknown variable
-        // or a namespace TypeScript can't resolve) — return nothing to avoid noise.
-        return tsItems.length <= 50 ? tsItems : [];
-    }
+    // Member access: TypeScript decides which members exist, the catalogue describes
+    // those it knows. An unknown receiver (type `any`) yields nothing.
+    const members = ssjsMemberCompletions(textBefore, tsInfo, sfmcItems);
+    if (members) return members;
+    const tsItems = tsInfo.items;
     // Top-level: SFMC catalog first, TS fills in anything not already present.
     const sfmcLabels = new Set(sfmcItems.map((index) => index.label));
     const merged = [...sfmcItems, ...tsItems.filter((index) => !sfmcLabels.has(index.label))];
@@ -446,7 +441,7 @@ connection.onHover(async (parameters) => {
     const isInSsjsForHover =
         document_.languageId === 'ssjs' ||
         (document_.languageId === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(document_.text), document.offsetAt(parameters.position)));
+            isInSsjsRegion(document_.text, document.offsetAt(parameters.position)));
     if (!isInSsjsForHover) return sfmcHover;
     const tsHover = getSsjsHover(document.uri, parameters.position);
     // TS hover now carries full docs (description, @param, @returns, @example, ssjs.guide link)
@@ -479,7 +474,7 @@ connection.onSignatureHelp(async (parameters) => {
     const isInSsjsContext =
         document_.languageId === 'ssjs' ||
         (document_.languageId === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(document_.text), document.offsetAt(parameters.position)));
+            isInSsjsRegion(document_.text, document.offsetAt(parameters.position)));
     return isInSsjsContext
         ? getSsjsSignatureHelp(document.uri, parameters.position)
         : sfmcLanguageService.getSignatureHelp(
@@ -502,7 +497,7 @@ connection.onDefinition((parameters: DefinitionParams): Location | Location[] | 
     const isInSsjsForDefinition =
         definitionLang === 'ssjs' ||
         (definitionLang === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(definitionText), document.offsetAt(parameters.position)));
+            isInSsjsRegion(definitionText, document.offsetAt(parameters.position)));
     if (!isInSsjsForDefinition) return undefined;
 
     // Prefer the embedded TypeScript language service: it resolves top-level
@@ -527,7 +522,7 @@ connection.onDefinition((parameters: DefinitionParams): Location | Location[] | 
     const word = wordMatch[0];
 
     const document_ = {
-        text: definitionLang === 'ssjs' ? definitionText : extractSsjsContent(definitionText),
+        text: definitionLang === 'ssjs' ? definitionText : ssjsProjection(definitionText),
         languageId: 'ssjs' as const,
         uri: document.uri,
     };
@@ -548,7 +543,7 @@ connection.onReferences((parameters: ReferenceParams): Location[] | undefined =>
     const isInSsjsForReference =
         referenceLang === 'ssjs' ||
         (referenceLang === 'ampscript' &&
-            isInSsjsRegion(getSsjsRegions(referenceText), document.offsetAt(parameters.position)));
+            isInSsjsRegion(referenceText, document.offsetAt(parameters.position)));
     if (!isInSsjsForReference) return undefined;
 
     // The embedded TypeScript language service resolves references for top-level
@@ -583,27 +578,6 @@ function getSsjsRegions(text: string): SsjsRegion[] {
     return getScriptRegions(text)
         .filter((region) => region.kind === 'ssjs')
         .map((region) => ({ start: region.bodyStart, end: region.bodyEnd }));
-}
-
-/**
- * Return true if the character offset falls within any SSJS region.
- * @param regions - SSJS regions from getSsjsRegions()
- * @param offset - character offset to test
- * @returns true if inside a SSJS region
- */
-function isInSsjsRegion(regions: SsjsRegion[], offset: number): boolean {
-    return regions.some((r) => offset >= r.start && offset <= r.end);
-}
-
-/**
- * Return a document-length string containing only SSJS content with all other
- * characters replaced by spaces (newlines preserved to keep line numbers stable).
- * This lets the TypeScript service use the same character offsets as the HTML file.
- * @param text - full document text
- * @returns whitespace-padded string of same length as text
- */
-function extractSsjsContent(text: string): string {
-    return extractScriptBodies(text, ['ssjs']).text;
 }
 
 /**

@@ -61,8 +61,8 @@ test('the client pins the bundled formatter and its parser to the released versi
     const clientLock = JSON.parse(
         readFileSync(new URL('../client/package-lock.json', import.meta.url), 'utf8')
     );
-    assert.equal(manifest.devDependencies['prettier-plugin-sfmc'], '^2.2.0');
-    assert.equal(clientLock.packages['node_modules/prettier-plugin-sfmc'].version, '2.2.0');
+    assert.equal(manifest.devDependencies['prettier-plugin-sfmc'], '^2.2.1');
+    assert.equal(clientLock.packages['node_modules/prettier-plugin-sfmc'].version, '2.2.1');
     assert.equal(clientLock.packages['node_modules/prettier-plugin-sfmc'].link, undefined);
     assert.equal(clientLock.packages['node_modules/ampscript-parser'].version, '0.4.0');
 });
